@@ -34,7 +34,7 @@ kernel:
   event_bus_endpoint: ${kernel.base_uri}/e
   notifications_endpoint: ${kernel.base_uri}/n
   client_id: dcimporter
-  client_secret: secret
+  client_secret: DtKDOTLoCqa6/ybul5f2Hv8q8C0SVS/ZyI1VvhGlBRU
   # NB. once Datacore cache is in place, move datacore scope to its dedicated system user
   scopes_to_require: openid profile email address phone datacore
 
@@ -42,5 +42,5 @@ datacore:
   containerUrl: http://data.ozwillo.com
   url: https://data.ozwillo-preprod.eu
   systemAdminUser:  # Get it using Node.js lib / with DC importer clientId
-    refreshToken: refreshToken
+    refreshToken: eyJpZCI6IjllM2I3YTBmLTMwZGQtNDY1OC05MmU1LTU0OTIzNzhjYTRiNS9ab1RiUDczVXktQW4xUWs2VTR0T1dRIiwiaWF0IjoxNDkzODkwOTI4ODk0LCJleHAiOjE0OTM4OTQ1Mjg4OTR9
     nonce: changeit      #Set it when getting the refreshToken
