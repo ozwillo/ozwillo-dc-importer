@@ -30,7 +30,7 @@ public class SynchronizerService {
 
     		List<DCResource> dcRessources = datacoreClient.findResources("oasis.main","geo:Area_0");
     		
-    		LOGGER.info("findRessources "+dcRessources.toString());
+    		LOGGER.error("findRessources "+dcRessources.toString());
     		
     	});
                 
