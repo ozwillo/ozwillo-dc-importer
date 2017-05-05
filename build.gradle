@@ -6,6 +6,7 @@ buildscript {
 		mavenCentral()
 		maven { url "https://repo.spring.io/snapshot" }
 		maven { url "https://repo.spring.io/milestone" }
+		mavenLocal()
 	}
 	dependencies {
 		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
@@ -24,6 +25,7 @@ repositories {
 	mavenCentral()
 	maven { url "https://repo.spring.io/snapshot" }
 	maven { url "https://repo.spring.io/milestone" }
+	mavenLocal()
 }
 
 
@@ -36,6 +38,10 @@ dependencies {
 	compile('org.springframework.session:spring-session')
 	compile('org.springframework.boot:spring-boot-starter-web')
 	compile('org.springframework.boot:spring-boot-starter-webflux')
+	compile('org.ozwillo:ozwillo-java-spring-integration:1.24')
+
 	runtime('org.springframework.boot:spring-boot-devtools')
+	runtime('org.codehaus.groovy:groovy:2.4.7')
+
 	testCompile('org.springframework.boot:spring-boot-starter-test')
 }
