@@ -21,16 +21,19 @@ public class SynchronizerService {
     @Autowired
     private SystemUserService systemUserService;
 
+    @Autowired
 	private DatacoreClient datacoreClient;
 
     @Scheduled(fixedDelayString = "${application.syncDelay}")
     public void synchronizeOrgs() {
         
     	systemUserService.runAs(() -> {
-
+    		
+    		LOGGER.info("findRessources -----------------------------------------");
+    		
     		List<DCResource> dcRessources = datacoreClient.findResources("oasis.main","geo:Area_0");
     		
-    		LOGGER.error("findRessources "+dcRessources.toString());
+    		LOGGER.info("findRessources "+dcRessources.toString());
     		
     	});
                 
