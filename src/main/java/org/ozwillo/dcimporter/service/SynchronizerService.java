@@ -29,7 +29,7 @@ public class SynchronizerService {
         
     	systemUserService.runAs(() -> {
     		
-    		LOGGER.info("findRessources -----------------------------------------");
+    		LOGGER.info("findRessources");
     		
     		List<DCResource> dcRessources = datacoreClient.findResources("oasis.main","geo:Area_0");
     		
