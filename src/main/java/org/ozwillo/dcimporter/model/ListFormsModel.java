@@ -62,7 +62,7 @@ public class ListFormsModel {
 
 	@Override
 	public String toString() {
-		return "Liste des formulaires :\nFormsModel [id=" + id + ", url=" + url + ", last_update_time=" + last_update_time + ", receipt_time="
+		return "Form "+id+" [id=" + id + ", url=" + url + ", last_update_time=" + last_update_time + ", receipt_time="
 				+ receipt_time + "]";
 	}
 
