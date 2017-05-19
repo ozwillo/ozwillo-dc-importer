@@ -8,11 +8,19 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
+import java.util.Random;
+import java.util.TimeZone;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
+
 import org.apache.commons.codec.binary.Base64;
 
 
@@ -23,24 +31,31 @@ public class PublikService {
 	
 	private RestTemplate restTemplate = new RestTemplate();
 	
-	@Value("${application.formType}")//add the property formType in the application.yml 
-	public String formType ;
+	@Value("${publik.formType}")
+	private String formType;
+	@Value("${publik.algo}")
+	private String algo;
+	@Value("${publik.orig}")
+	private String orig ;
+	@Value("${publik.secret}")
+    private String secret;
 	
-	private ListFormsModel[] forms;
 	
 	/**
 	 * Get the list of forms 
 	 * @return
 	 */
 	public ListFormsModel[] getListForms(){
+		
+		ListFormsModel[] forms;
 
 		String url = "http://localhost:8080/api/forms/"+formType+"/list";
 		forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
 	
-		System.out.println("Liste des formulaires :");
+		LOGGER.debug("Liste des formulaires :");
 		
-		for(ListFormsModel f : forms){
-			System.out.println(f.toString());
+		for(ListFormsModel form : forms){
+			LOGGER.debug(form.toString());
 		}
 		return forms;
 	}
@@ -53,56 +68,95 @@ public class PublikService {
 	public FormModel getForm(String url){
 		
 		FormModel form = restTemplate.getForObject(url, FormModel.class);
-		LOGGER.info(form.toString());
-		System.out.println(form.toString());
+		LOGGER.debug(form.toString());
 	
 		return form;
 	}
 	
-	public ListFormsModel[] getPublikListForms(){
+	/**
+	 * Get a list of forms from publik
+	 * @return
+	 */
+	public void getPublikListForms(){
 
-		String algo = "sha256";
-		String orig = "ozwillo-dcimporter";
-		String thisMoment = ZonedDateTime.now().format( DateTimeFormatter.ISO_INSTANT );
-		thisMoment = thisMoment.substring(0,thisMoment.indexOf("."))+"Z";
-		
-		String url ="https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list?algo="+algo+"&timestamp="+thisMoment+"&orig="+orig+"&signature="+this.calculateSignature();
+		ListFormsModel[] forms;
+		String initUrl = "https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list"; 
+
+		String url = sign_url(initUrl);
+		LOGGER.error("---URL---"+url);
 		
 		forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
 	
-		System.out.println("Liste des formulaires :");
+		LOGGER.debug("Liste des formulaires :");
 		
 		for(ListFormsModel f : forms){
-			System.out.println(f.toString());
+			LOGGER.debug(f.toString());
 		}
-		return forms;
 	}
 	
-	
-	public String calculateSignature() {
+	/**
+	 * Calculate a signature with sha256
+	 * @return
+	 */
+	public String calculateSignature(String message, String key) {
 	    
 		try {
+		     LOGGER.error("message : "+message);
 			
-			String orig = "ozwillo-dcimporter";
-			String thisMoment = ZonedDateTime.now().format( DateTimeFormatter.ISO_INSTANT );
-			thisMoment = thisMoment.substring(0,thisMoment.indexOf("."))+"Z";
-		    
-			String message ="https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list?algo=HASH&timestamp="+thisMoment+"&orig="+orig;			
-		    String secret = "aSYZexOBIzl8";
-	
 		     Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
-		     SecretKeySpec secret_key = new SecretKeySpec(secret.getBytes(), "HmacSHA256");
+		     SecretKeySpec secret_key = new SecretKeySpec(key.getBytes(), "HmacSHA256");
 		     sha256_HMAC.init(secret_key);
 	
 		     String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
-		     System.out.println(hash);
+		     LOGGER.debug("Signature : "+hash);
+		     
 		     return hash;
 	    }
 	    catch (Exception e){
-	    	e.printStackTrace();
+	    	LOGGER.error("Exception when calculate the signature : "+e);
 			return null;
 	    }
 	   
 	}
+	
+	
+	public String sign_url(String url){
+		
+		TimeZone tz = TimeZone.getTimeZone("UTC");
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		df.setTimeZone(tz);
+		String thisMoment = df.format(new Date());
+		
+		String newQuery = "";
+		Random random = new Random();
+		   // create byte array
+		   byte[] nbyte = new byte[16]; 
+		   // put the next byte in the array
+		   random.nextBytes(nbyte);
+		String nonce = DatatypeConverter.printHexBinary(nbyte);
+		LOGGER.error("-----------------Time---------------"+thisMoment);
+		LOGGER.error("-----------------nonce---------------"+nonce);
+
+		
+		try {
+			URL parsedUrl = new URL(url);
+			LOGGER.error("-----------------Query---------------"+parsedUrl.getQuery());
+			
+			if(parsedUrl.getQuery() != null){
+				newQuery += "&";
+			}
+			
+			newQuery += "algo="+this.algo+"&timestamp="+thisMoment+"&nonce="+nonce+"&orig="+this.orig;
+			String signature = calculateSignature(newQuery, this.secret);
+			newQuery += "&signature="+signature;
+			
+			return url+"?"+newQuery;
+		} 
+		catch (MalformedURLException e) {
+			LOGGER.error("MalformedURLException : "+e);
+			return null;
+		}
+	}
+	
 	
 }
