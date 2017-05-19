@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -80,7 +82,7 @@ public class PublikService {
 	public void getPublikListForms(){
 
 		ListFormsModel[] forms;
-		String initUrl = "https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list"; 
+		String initUrl = "https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list?anonymise";
 
 		String url = sign_url(initUrl);
 		LOGGER.error("---URL---"+url);
@@ -109,7 +111,10 @@ public class PublikService {
 	
 		     String hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.getBytes()));
 		     LOGGER.debug("Signature : "+hash);
-		     
+
+			hash = URLEncoder.encode(hash, "UTF-8");
+		     LOGGER.debug("URL encoded hash : " + hash);
+
 		     return hash;
 	    }
 	    catch (Exception e){
@@ -127,7 +132,6 @@ public class PublikService {
 		df.setTimeZone(tz);
 		String thisMoment = df.format(new Date());
 		
-		String newQuery = "";
 		Random random = new Random();
 		   // create byte array
 		   byte[] nbyte = new byte[16]; 
@@ -139,21 +143,27 @@ public class PublikService {
 
 		
 		try {
+			String newQuery = "";
 			URL parsedUrl = new URL(url);
 			LOGGER.error("-----------------Query---------------"+parsedUrl.getQuery());
 			
 			if(parsedUrl.getQuery() != null){
-				newQuery += "&";
-			}
-			
-			newQuery += "algo="+this.algo+"&timestamp="+thisMoment+"&nonce="+nonce+"&orig="+this.orig;
+				newQuery = parsedUrl.getQuery() + "&";
+			} else
+				newQuery += "?";
+
+			newQuery += "algo="+this.algo+"&timestamp="+thisMoment+"&nonce="+nonce+"&orig="+URLEncoder.encode(this.orig, "UTF-8");
+			LOGGER.debug("Signing : " + newQuery);
 			String signature = calculateSignature(newQuery, this.secret);
 			newQuery += "&signature="+signature;
 			
-			return url+"?"+newQuery;
+			return url + newQuery.replaceFirst(parsedUrl.getQuery(), "");
 		} 
 		catch (MalformedURLException e) {
 			LOGGER.error("MalformedURLException : "+e);
+			return null;
+		} catch (UnsupportedEncodingException e) {
+			LOGGER.error("Unsupported encoding exception !?");
 			return null;
 		}
 	}
