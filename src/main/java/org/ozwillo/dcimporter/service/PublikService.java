@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.DateFormat;
@@ -24,7 +26,6 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.binary.Base64;
-
 
 @Service
 public class PublikService {
@@ -41,10 +42,11 @@ public class PublikService {
 	private String orig ;
 	@Value("${publik.secret}")
     private String secret;
-	
+	@Value("${publik.hostName}")
+    private String hostName;
 	
 	/**
-	 * Get the list of forms 
+	 * Get the list of forms (Test)
 	 * @return
 	 */
 	public ListFormsModel[] getListForms(){
@@ -66,34 +68,37 @@ public class PublikService {
 	 * Get a Form with an Url
 	 * @param url
 	 * @return
+	 * @throws URISyntaxException 
 	 */
-	public FormModel getForm(String url){
+	public void getForm(String url) throws URISyntaxException{
 		
-		FormModel form = restTemplate.getForObject(url, FormModel.class);
-		LOGGER.debug(form.toString());
-	
-		return form;
+		URI url_finale =  sign_url(url+"?anonymise");
+		LOGGER.debug("URL get Form :"+url_finale);
+		
+		FormModel form = restTemplate.getForObject(url_finale, FormModel.class);
+
+		LOGGER.error(form.toString());
+
 	}
 	
 	/**
 	 * Get a list of forms from publik
 	 * @return
+	 * @throws URISyntaxException 
 	 */
-	public void getPublikListForms(){
+	public ListFormsModel[] getPublikListForms() throws URISyntaxException{
 
-		ListFormsModel[] forms;
-		String initUrl = "https://demarches-sve.test-demarches.sictiam.fr/api/forms/demande-de-rendez-vous-avec-un-elu/list?anonymise";
+		String initUrl = "https://"+this.hostName+"/api/forms/"+this.formType+"/list?anonymise";
 
-		String url = sign_url(initUrl);
-		LOGGER.error("---URL---"+url);
-		
-		forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
+		URI url = sign_url(initUrl);		
+		ListFormsModel[] forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
 	
-		LOGGER.debug("Liste des formulaires :");
+		LOGGER.error("Liste des formulaires :");
 		
 		for(ListFormsModel f : forms){
-			LOGGER.debug(f.toString());
+			LOGGER.error(f.toString());
 		}
+		return forms;
 	}
 	
 	/**
@@ -103,7 +108,6 @@ public class PublikService {
 	public String calculateSignature(String message, String key) {
 	    
 		try {
-		     LOGGER.error("message : "+message);
 			
 		     Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
 		     SecretKeySpec secret_key = new SecretKeySpec(key.getBytes(), "HmacSHA256");
@@ -125,7 +129,7 @@ public class PublikService {
 	}
 	
 	
-	public String sign_url(String url){
+	public URI sign_url(String url) throws URISyntaxException{
 		
 		TimeZone tz = TimeZone.getTimeZone("UTC");
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -138,26 +142,21 @@ public class PublikService {
 		   // put the next byte in the array
 		   random.nextBytes(nbyte);
 		String nonce = DatatypeConverter.printHexBinary(nbyte);
-		LOGGER.error("-----------------Time---------------"+thisMoment);
-		LOGGER.error("-----------------nonce---------------"+nonce);
-
 		
 		try {
 			String newQuery = "";
 			URL parsedUrl = new URL(url);
-			LOGGER.error("-----------------Query---------------"+parsedUrl.getQuery());
 			
 			if(parsedUrl.getQuery() != null){
 				newQuery = parsedUrl.getQuery() + "&";
 			} else
 				newQuery += "?";
 
-			newQuery += "algo="+this.algo+"&timestamp="+thisMoment+"&nonce="+nonce+"&orig="+URLEncoder.encode(this.orig, "UTF-8");
-			LOGGER.debug("Signing : " + newQuery);
+			newQuery += "algo="+this.algo+"&timestamp="+URLEncoder.encode(thisMoment, "UTF-8")+"&nonce="+nonce+"&orig="+URLEncoder.encode(this.orig, "UTF-8");
 			String signature = calculateSignature(newQuery, this.secret);
 			newQuery += "&signature="+signature;
 			
-			return url + newQuery.replaceFirst(parsedUrl.getQuery(), "");
+			return new URI(parsedUrl.getProtocol()+"://"+parsedUrl.getHost()+parsedUrl.getPath()+"?"+newQuery);
 		} 
 		catch (MalformedURLException e) {
 			LOGGER.error("MalformedURLException : "+e);
@@ -166,6 +165,13 @@ public class PublikService {
 			LOGGER.error("Unsupported encoding exception !?");
 			return null;
 		}
+	}
+	
+	public String formatUrl(String url_base) throws MalformedURLException{
+		
+		URL parsedUrl = new URL(url_base);
+		String url_finale = "https://"+parsedUrl.getHost()+"/api/forms"+parsedUrl.getPath();
+		return url_finale;
 	}
 	
 	

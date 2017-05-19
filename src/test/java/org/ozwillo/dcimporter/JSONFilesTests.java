@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 
 import org.junit.Test;
 import org.ozwillo.dcimporter.model.FormModel;
@@ -40,30 +41,30 @@ public class JSONFilesTests {
 			e.printStackTrace();
 		}
 	}*/
-	
 
 	@Test
-	public void testJSONFiles() throws Exception{
+	public void testJSONFiles() throws IOException{
 		
 		String filePath = "/JsonFiles/Form.json";//path to the json file
-		FileReader file = new FileReader( new ClassPathResource(filePath).getFile());
-		ObjectMapper mapper = new ObjectMapper();
-        StringBuilder builder = new StringBuilder();
-		BufferedReader reader = new BufferedReader(file);
-		try {
 
-			FormModel form = mapper.readValue(file, FormModel.class);	
-			 //reader = new BufferedReader(file);
-	         String line;
+		try {
+			FileReader file = new FileReader( new ClassPathResource(filePath).getFile());
+			ObjectMapper mapper = new ObjectMapper();	
+			FormModel form = mapper.readValue(file, FormModel.class);
+			StringBuilder builder = new StringBuilder();
+			BufferedReader reader = new BufferedReader(file);
+	        String line =null;
+
 	         while ((line = reader.readLine()) != null){
 	               builder.append(line);
 	         }
+	         assertThat(this.json.parse(builder.toString())).isEqualTo(form);
+	         reader.close(); 
 	         
-	        assertThat(this.json.parse(builder.toString())).isEqualTo(form);
-	        
 		} catch (FileNotFoundException e) {
-			LOGGER.error("Exception in the test of JSON"+e);
+			LOGGER.error("Exception in the testJSONFiles method : "+e);
 		}	
+
 	}
 	
 }
