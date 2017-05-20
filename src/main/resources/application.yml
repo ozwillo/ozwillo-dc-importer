@@ -15,6 +15,7 @@ application:
   syncDelay: 10000
   
 publik:
+  baseUrl: https://demarches-sve.test-demarches.sictiam.fr
   formType: demande-de-rendez-vous-avec-un-elu
   secret: secret
   algo: sha256

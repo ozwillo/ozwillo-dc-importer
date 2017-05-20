@@ -42,8 +42,8 @@ public class PublikService {
 	private String orig ;
 	@Value("${publik.secret}")
     private String secret;
-	@Value("${publik.hostName}")
-    private String hostName;
+	@Value("${publik.baseUrl}")
+    private String baseUrl;
 	
 	/**
 	 * Get the list of forms (Test)
@@ -88,7 +88,7 @@ public class PublikService {
 	 */
 	public ListFormsModel[] getPublikListForms() throws URISyntaxException{
 
-		String initUrl = "https://"+this.hostName+"/api/forms/"+this.formType+"/list?anonymise";
+		String initUrl = this.baseUrl + "/api/forms/" + this.formType + "/list?anonymise";
 
 		URI url = sign_url(initUrl);		
 		ListFormsModel[] forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
