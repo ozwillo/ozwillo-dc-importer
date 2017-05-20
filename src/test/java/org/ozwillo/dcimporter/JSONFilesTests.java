@@ -2,28 +2,33 @@ package org.ozwillo.dcimporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.ozwillo.dcimporter.model.FormModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.json.JsonTest;
 import org.springframework.boot.test.json.JacksonTester;
-import org.springframework.core.io.ClassPathResource;
 
+import org.springframework.core.io.Resource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.FileCopyUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+@RunWith(SpringRunner.class)
 @JsonTest
 public class JSONFilesTests {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JSONFilesTests.class);
 
-    private JacksonTester<FormModel> json;
+	@Autowired
+    private JacksonTester<FormModel> formModelJson;
+
+	@Value("classpath:/JsonFiles/Form.json")
+	private Resource formResource;
 	
 	/*@Test
 	public void testJSONListForms() throws Exception{
@@ -43,28 +48,11 @@ public class JSONFilesTests {
 	}*/
 
 	@Test
-	public void testJSONFiles() throws IOException{
+	public void testJsonFormParsing() throws IOException {
 		
-		String filePath = "/JsonFiles/Form.json";//path to the json file
-
-		try {
-			FileReader file = new FileReader( new ClassPathResource(filePath).getFile());
-			ObjectMapper mapper = new ObjectMapper();	
-			FormModel form = mapper.readValue(file, FormModel.class);
-			StringBuilder builder = new StringBuilder();
-			BufferedReader reader = new BufferedReader(file);
-	        String line =null;
-
-	         while ((line = reader.readLine()) != null){
-	               builder.append(line);
-	         }
-	         assertThat(this.json.parse(builder.toString())).isEqualTo(form);
-	         reader.close(); 
-	         
-		} catch (FileNotFoundException e) {
-			LOGGER.error("Exception in the testJSONFiles method : "+e);
-		}	
-
+		byte[] formJson = FileCopyUtils.copyToByteArray(formResource.getInputStream());
+		FormModel formModel = this.formModelJson.parseObject(formJson);
+		assertThat(formModel.getId()).isEqualTo("demande-de-rendez-vous-avec-un-elu/4");
 	}
 	
 }
