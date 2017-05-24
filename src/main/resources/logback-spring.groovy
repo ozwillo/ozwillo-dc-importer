@@ -8,6 +8,6 @@ appender("CONSOLE", ConsoleAppender) {
 
 
 logger("org.oasis_eu.spring.kernel.security", DEBUG)
-logger("org.ozwillo.dcimporter.controller", INFO)
+logger("org.ozwillo.dcimporter", DEBUG)
 
 root(WARN, ["CONSOLE"])
