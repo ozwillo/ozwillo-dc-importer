@@ -20,7 +20,7 @@ publik:
   secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
-  
+  hostName: demarches-sve.test-demarches.sictiam.fr
   
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
