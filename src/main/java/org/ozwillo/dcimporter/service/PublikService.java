@@ -84,10 +84,11 @@ public class PublikService {
 	public void convertToDCModel(FormModel form) {
 		
 		JsonFactory jfactory = new JsonFactory();
+		String path = ""; //set the path to your output file exp: /home/DCForm.json
 
 		/*** write to file ***/
 		try {
-			JsonGenerator jGenerator = jfactory.createGenerator(new File("/home/medhi/DCForm.json"), JsonEncoding.UTF8);
+			JsonGenerator jGenerator = jfactory.createGenerator(new File(path), JsonEncoding.UTF8);
 			
 			jGenerator.writeStartObject(); // {
 
