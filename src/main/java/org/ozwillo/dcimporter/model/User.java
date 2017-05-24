@@ -3,26 +3,22 @@ package org.ozwillo.dcimporter.model;
 import java.util.Arrays;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class UserInformations {
+public class User {
 
 	
-	private String  email;
-	private String[] NameID;
-	private Integer  id;
-	private String  name;
+	private String email;
+	@JsonProperty("NameID")
+	private String[] nameID;
+	private Integer id;
+	private String name;
 
-	public UserInformations() {
+	public User() {
 		super();
 	}
-	public UserInformations(String email, String[] nameID, Integer id, String name) {
-		super();
-		this.email = email;
-		this.NameID = nameID;
-		this.id = id;
-		this.name = name;
-	}
+
 	public String getEmail() {
 		return email;
 	}
@@ -30,10 +26,10 @@ public class UserInformations {
 		this.email = email;
 	}
 	public String[] getNameID() {
-		return NameID;
+		return nameID;
 	}
 	public void setNameID(String[] nameID) {
-		this.NameID = nameID;
+		this.nameID = nameID;
 	}
 	public Integer getId() {
 		return id;
@@ -49,7 +45,7 @@ public class UserInformations {
 	}
 	@Override
 	public String toString() {
-		return "UserInformations [email=" + email + ", NameID=" + Arrays.toString(NameID) + ", id=" + id + ", name="
+		return "UserInformations [email=" + email + ", NameID=" + Arrays.toString(nameID) + ", id=" + id + ", name="
 				+ name + "]";
 	}
 	

@@ -1,6 +1,5 @@
 package org.ozwillo.dcimporter;
 
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
@@ -16,8 +15,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 public class OzwilloDcImporterApplication {
 
 	
-	public static void main(String[] args) {
+	public static void main(String[] args){
 		SpringApplication.run(OzwilloDcImporterApplication.class, args);
-
+	
 		}
 }

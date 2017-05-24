@@ -8,6 +8,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonMappingException;
+
+import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -42,53 +50,24 @@ public class PublikService {
 	private String orig ;
 	@Value("${publik.secret}")
     private String secret;
-	@Value("${publik.baseUrl}")
-    private String baseUrl;
+	@Value("${publik.hostName}")
+    private String hostName;
 	
-	/**
-	 * Get the list of forms (Test)
-	 * @return
-	 */
-	public ListFormsModel[] getListForms(){
-		
-		ListFormsModel[] forms;
 
-		String url = "http://localhost:8080/api/forms/"+formType+"/list";
-		forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
-	
-		LOGGER.debug("Liste des formulaires :");
-		
-		for(ListFormsModel form : forms){
-			LOGGER.debug(form.toString());
-		}
-		return forms;
-	}
-	
-	/**
-	 * Get a Form with an Url
-	 * @param url
-	 * @return
-	 * @throws URISyntaxException 
-	 */
-	public void getForm(String url) throws URISyntaxException{
+	private void getForm(String url) throws URISyntaxException{
 		
 		URI url_finale =  sign_url(url+"?anonymise");
-		LOGGER.debug("URL get Form :"+url_finale);
+		LOGGER.error("______________________URL get Form ______________________________"+url_finale);
 		
 		FormModel form = restTemplate.getForObject(url_finale, FormModel.class);
-
+		convertToDCModel(form);
 		LOGGER.error(form.toString());
 
 	}
 	
-	/**
-	 * Get a list of forms from publik
-	 * @return
-	 * @throws URISyntaxException 
-	 */
-	public ListFormsModel[] getPublikListForms() throws URISyntaxException{
+	public ListFormsModel[] getPublikForms() throws URISyntaxException, MalformedURLException{
 
-		String initUrl = this.baseUrl + "/api/forms/" + this.formType + "/list?anonymise";
+		String initUrl = "https://"+this.hostName+"/api/forms/"+this.formType+"/list?anonymise";
 
 		URI url = sign_url(initUrl);		
 		ListFormsModel[] forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
@@ -97,8 +76,58 @@ public class PublikService {
 		
 		for(ListFormsModel f : forms){
 			LOGGER.error(f.toString());
+			getForm(formatUrl(f.getUrl()));
 		}
 		return forms;
+	}
+	
+	public void convertToDCModel(FormModel form) {
+		
+		JsonFactory jfactory = new JsonFactory();
+
+		/*** write to file ***/
+		try {
+			JsonGenerator jGenerator = jfactory.createGenerator(new File("/home/medhi/DCForm.json"), JsonEncoding.UTF8);
+			
+			jGenerator.writeStartObject(); // {
+
+			jGenerator.writeStringField("citizenreq:displayId",form.getDisplay_id() );
+			jGenerator.writeStringField("citizenreq:lastUpdateTime",form.getLast_update_time() );
+			jGenerator.writeStringField("citizenreq:displayName",form.getDisplay_name() );
+			jGenerator.writeStringField("citizenreq:submissionChannel",form.getSubmission().getChannel() );
+			jGenerator.writeBooleanField("citizenreq:submissionBackoffice",form.getSubmission().getBackoffice() );
+			jGenerator.writeStringField("citizenreq:url",form.getUrl() );
+			jGenerator.writeStringField("citizenreq:familyName",form.getFields().getNom_famille() );
+			jGenerator.writeStringField("citizenreq:firstName",form.getFields().getPrenom() );
+			jGenerator.writeStringField("citizenreq:phone",form.getFields().getTelephone() );
+			jGenerator.writeStringField("citizenreq:receiptTime",form.getReceipt_time() );
+			//jGenerator.writeStringField("citizenreq:email",form.getUser().getEmail() );
+			//jGenerator.writeStringField("citizenreq:nameID",form.getUser().getNameID()[0] );
+			//jGenerator.writeNumberField("citizenreq:userId",form.getUser().getId() );
+			//jGenerator.writeStringField("citizenreq:name",form.getUser().getName() );
+			jGenerator.writeNumberField("citizenreq:criticalityLevel",form.getCriticality_level() );
+			jGenerator.writeStringField("citizenreq:id",form.getId() );
+			jGenerator.writeStringField("citizenreq:organization","http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027" );
+			jGenerator.writeStringField("citizenreq:id","demande-de-rendez-vous-avec-un-elu/4" );
+			
+			
+			jGenerator.writeEndObject(); // }
+
+			jGenerator.close();
+		} catch (JsonGenerationException e) {
+
+			e.printStackTrace();
+
+		     } catch (JsonMappingException e) {
+
+			e.printStackTrace();
+
+		     } catch (IOException e) {
+
+			e.printStackTrace();
+
+		     }
+		
 	}
 	
 	/**
@@ -167,7 +196,7 @@ public class PublikService {
 		}
 	}
 	
-	public String formatUrl(String url_base) throws MalformedURLException{
+	private String formatUrl(String url_base) throws MalformedURLException{
 		
 		URL parsedUrl = new URL(url_base);
 		String url_finale = "https://"+parsedUrl.getHost()+"/api/forms"+parsedUrl.getPath();

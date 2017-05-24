@@ -14,13 +14,6 @@ public class Fields {
 		super();
 	}
 
-	public Fields(String nom_famille, String prenom, String telephone) {
-		super();
-		this.nom_famille = nom_famille;
-		this.prenom = prenom;
-		this.telephone = telephone;
-	}
-
 	public String getNom_famille() {
 		return nom_famille;
 	}

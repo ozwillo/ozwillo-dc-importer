@@ -13,7 +13,7 @@ public class FormModel {
 	private String  url;
 	private Fields fields;
 	private String  receipt_time;
-	private UserInformations user;
+	private User user;
 	private Integer  criticality_level;
 	private String  id;
 	
@@ -21,23 +21,6 @@ public class FormModel {
 	public FormModel() {
 		super();
 	}
-
-
-	public FormModel(String display_id, String last_update_time, String display_name, Submission submission, String url,
-			Fields fields, String receipt_time, UserInformations user, Integer criticality_level, String id) {
-		super();
-		this.display_id = display_id;
-		this.last_update_time = last_update_time;
-		this.display_name = display_name;
-		this.submission = submission;
-		this.url = url;
-		this.fields = fields;
-		this.receipt_time = receipt_time;
-		this.user = user;
-		this.criticality_level = criticality_level;
-		this.id = id;
-	}
-
 
 	public String getDisplay_id() {
 		return display_id;
@@ -109,12 +92,12 @@ public class FormModel {
 	}
 
 
-	public UserInformations getUser() {
+	public User getUser() {
 		return user;
 	}
 
 
-	public void setUser(UserInformations user) {
+	public void setUser(User user) {
 		this.user = user;
 	}
 
