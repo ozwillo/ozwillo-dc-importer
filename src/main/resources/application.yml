@@ -21,7 +21,13 @@ publik:
   algo: sha256
   orig: ozwillo-dcimporter
   hostName: demarches-sve.test-demarches.sictiam.fr
-  
+  datacore:
+    project: citizenreq_0
+    model: citizenreq:elecmeeting_0
+    # TODO : hardcoded for now, make it dynamic later
+    organization: http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027
+    organizationIri: FR/25060187900027
+
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
   base_uri: https://kernel.ozwillo-preprod.eu
@@ -52,3 +58,4 @@ datacore:
   systemAdminUser:  # Get it using Node.js lib / with DC importer clientId
     refreshToken: refreshToken
     nonce: changeit      #Set it when getting the refreshToken
+  baseUri: http://data.ozwillo.com/dc/type

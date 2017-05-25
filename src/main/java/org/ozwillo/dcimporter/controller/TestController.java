@@ -19,7 +19,7 @@ public class TestController {
 	@RequestMapping(value = "/test")
 	public void test() throws URISyntaxException, MalformedURLException{
 		
-		publikService.getPublikForms();
+		publikService.syncPublikForms();
 
 	}
 }

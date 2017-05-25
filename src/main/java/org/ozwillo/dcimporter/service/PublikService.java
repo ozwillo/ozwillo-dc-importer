@@ -1,21 +1,16 @@
 package org.ozwillo.dcimporter.service;
 
+import org.oasis_eu.spring.datacore.DatacoreClient;
+import org.oasis_eu.spring.datacore.model.DCResource;
 import org.ozwillo.dcimporter.model.FormModel;
 import org.ozwillo.dcimporter.model.ListFormsModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonEncoding;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonMappingException;
-
-import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -41,7 +36,10 @@ public class PublikService {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PublikService.class);
 	
 	private RestTemplate restTemplate = new RestTemplate();
-	
+
+	private final DatacoreClient datacoreClient;
+    private final SystemUserService systemUserService;
+
 	@Value("${publik.formType}")
 	private String formType;
 	@Value("${publik.algo}")
@@ -52,84 +50,84 @@ public class PublikService {
     private String secret;
 	@Value("${publik.hostName}")
     private String hostName;
-	
+    @Value("${publik.datacore.project}")
+    private String datacoreProject;
+    @Value("${publik.datacore.model}")
+    private String datacoreModel;
+    @Value("${publik.datacore.organization}")
+    private String datacoreOrganization;
+    @Value("${publik.datacore.organizationIri}")
+    private String datacoreOrganizationIri;
+    @Value("${datacore.baseUri}")
+    private String datacoreBaseUri;
 
-	private void getForm(String url) throws URISyntaxException{
+    @Autowired
+    public PublikService(DatacoreClient datacoreClient, SystemUserService systemUserService) {
+        this.datacoreClient = datacoreClient;
+        this.systemUserService = systemUserService;
+    }
+
+    private FormModel getForm(String url) throws URISyntaxException{
 		
 		URI url_finale =  sign_url(url+"?anonymise");
-		LOGGER.error("______________________URL get Form ______________________________"+url_finale);
-		
-		FormModel form = restTemplate.getForObject(url_finale, FormModel.class);
-		convertToDCModel(form);
-		LOGGER.error(form.toString());
+		LOGGER.debug("URL get Form {}", url_finale);
 
+        return restTemplate.getForObject(url_finale, FormModel.class);
 	}
 	
-	public ListFormsModel[] getPublikForms() throws URISyntaxException, MalformedURLException{
+	public void syncPublikForms() throws URISyntaxException, MalformedURLException{
 
 		String initUrl = "https://"+this.hostName+"/api/forms/"+this.formType+"/list?anonymise";
 
-		URI url = sign_url(initUrl);		
-		ListFormsModel[] forms = (ListFormsModel[]) restTemplate.getForObject(url, ListFormsModel[].class);
+		URI url = sign_url(initUrl);
+		LOGGER.debug("Calling Publik at URL {}", url);
+		ListFormsModel[] forms = restTemplate.getForObject(url, ListFormsModel[].class);
 	
-		LOGGER.error("Liste des formulaires :");
+		LOGGER.debug("Liste des formulaires :");
 		
-		for(ListFormsModel f : forms){
-			LOGGER.error(f.toString());
-			getForm(formatUrl(f.getUrl()));
-		}
-		return forms;
+		for (ListFormsModel f : forms) {
+			LOGGER.debug(f.toString());
+			FormModel formModel = getForm(formatUrl(f.getUrl()));
+            DCResource dcResource = convertToDCResource(formModel);
+            LOGGER.debug(dcResource.toString());
+            systemUserService.runAs(() ->
+                datacoreClient.saveResource(datacoreProject, dcResource)
+            );
+        }
 	}
 	
-	public void convertToDCModel(FormModel form) {
+	private DCResource convertToDCResource(FormModel form) {
 		
-		JsonFactory jfactory = new JsonFactory();
-		String path = ""; //set the path to your output file exp: /home/DCForm.json
+        DCResource dcResource = new DCResource();
 
-		/*** write to file ***/
-		try {
-			JsonGenerator jGenerator = jfactory.createGenerator(new File(path), JsonEncoding.UTF8);
-			
-			jGenerator.writeStartObject(); // {
+        dcResource.setBaseUri(datacoreBaseUri);
+        dcResource.setType(datacoreModel);
+        dcResource.setIri(datacoreOrganizationIri + "/" + form.getDisplay_id());
 
-			jGenerator.writeStringField("citizenreq:displayId",form.getDisplay_id() );
-			jGenerator.writeStringField("citizenreq:lastUpdateTime",form.getLast_update_time() );
-			jGenerator.writeStringField("citizenreq:displayName",form.getDisplay_name() );
-			jGenerator.writeStringField("citizenreq:submissionChannel",form.getSubmission().getChannel() );
-			jGenerator.writeBooleanField("citizenreq:submissionBackoffice",form.getSubmission().getBackoffice() );
-			jGenerator.writeStringField("citizenreq:url",form.getUrl() );
-			jGenerator.writeStringField("citizenreq:familyName",form.getFields().getNom_famille() );
-			jGenerator.writeStringField("citizenreq:firstName",form.getFields().getPrenom() );
-			jGenerator.writeStringField("citizenreq:phone",form.getFields().getTelephone() );
-			jGenerator.writeStringField("citizenreq:receiptTime",form.getReceipt_time() );
-			//jGenerator.writeStringField("citizenreq:email",form.getUser().getEmail() );
-			//jGenerator.writeStringField("citizenreq:nameID",form.getUser().getNameID()[0] );
-			//jGenerator.writeNumberField("citizenreq:userId",form.getUser().getId() );
-			//jGenerator.writeStringField("citizenreq:name",form.getUser().getName() );
-			jGenerator.writeNumberField("citizenreq:criticalityLevel",form.getCriticality_level() );
-			jGenerator.writeStringField("citizenreq:id",form.getId() );
-			jGenerator.writeStringField("citizenreq:organization","http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027" );
-			jGenerator.writeStringField("citizenreq:id","demande-de-rendez-vous-avec-un-elu/4" );
-			
-			
-			jGenerator.writeEndObject(); // }
+        dcResource.set("citizenreq:displayId",form.getDisplay_id() );
+        dcResource.set("citizenreq:lastUpdateTime",form.getLast_update_time() );
+        dcResource.set("citizenreq:displayName",form.getDisplay_name() );
+        dcResource.set("citizenreq:submissionChannel",form.getSubmission().getChannel() );
+        dcResource.set("citizenreq:submissionBackoffice",form.getSubmission().getBackoffice().toString() );
+        dcResource.set("citizenreq:url",form.getUrl() );
+        dcResource.set("citizenreq:familyName",form.getFields().getNom_famille() );
+        dcResource.set("citizenreq:firstName",form.getFields().getPrenom() );
+        dcResource.set("citizenreq:phone",form.getFields().getTelephone() );
+        dcResource.set("citizenreq:receiptTime",form.getReceipt_time() );
+        //dcResource.set("citizenreq:email",form.getUser().getEmail() );
+        //dcResource.set("citizenreq:nameID",form.getUser().getNameID()[0] );
+        //jGenerator.writeNumberField("citizenreq:userId",form.getUser().getId() );
+        //dcResource.set("citizenreq:name",form.getUser().getName() );
+        dcResource.set("citizenreq:criticalityLevel",form.getCriticality_level().toString() );
+        dcResource.set("citizenreq:id",form.getId() );
+        dcResource.set("citizenreq:organization", datacoreOrganization);
 
-			jGenerator.close();
-		} catch (JsonGenerationException e) {
+        dcResource.set("citizenreqem:familyName", form.getFields().getNom_famille());
+        dcResource.set("citizenreqem:firstName", form.getFields().getPrenom());
+        dcResource.set("citizenreqem:phone", form.getFields().getTelephone());
 
-			e.printStackTrace();
-
-		     } catch (JsonMappingException e) {
-
-			e.printStackTrace();
-
-		     } catch (IOException e) {
-
-			e.printStackTrace();
-
-		     }
-		
-	}
+        return dcResource;
+    }
 	
 	/**
 	 * Calculate a signature with sha256
