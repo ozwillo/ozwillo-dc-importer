@@ -24,6 +24,7 @@ publik:
   datacore:
     project: citizenreq_0
     model: citizenreq:elecmeeting_0
+    modelUser: citizenreq:user_0
     # TODO : hardcoded for now, make it dynamic later
     organization: http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027
     organizationIri: FR/25060187900027

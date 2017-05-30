@@ -19,7 +19,6 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-
 import java.util.Date;
 import java.util.Random;
 import java.util.TimeZone;
@@ -54,6 +53,8 @@ public class PublikService {
     private String datacoreProject;
     @Value("${publik.datacore.model}")
     private String datacoreModel;
+    @Value("${publik.datacore.modelUser}")
+    private String datacoreModelUser;
     @Value("${publik.datacore.organization}")
     private String datacoreOrganization;
     @Value("${publik.datacore.organizationIri}")
@@ -96,7 +97,7 @@ public class PublikService {
         }
 	}
 	
-	private DCResource convertToDCResource(FormModel form) {
+	public DCResource convertToDCResource(FormModel form) {
 		
         DCResource dcResource = new DCResource();
 
@@ -110,18 +111,14 @@ public class PublikService {
         dcResource.set("citizenreq:submissionChannel",form.getSubmission().getChannel() );
         dcResource.set("citizenreq:submissionBackoffice",form.getSubmission().getBackoffice().toString() );
         dcResource.set("citizenreq:url",form.getUrl() );
-        dcResource.set("citizenreq:familyName",form.getFields().getNom_famille() );
-        dcResource.set("citizenreq:firstName",form.getFields().getPrenom() );
-        dcResource.set("citizenreq:phone",form.getFields().getTelephone() );
         dcResource.set("citizenreq:receiptTime",form.getReceipt_time() );
-        //dcResource.set("citizenreq:email",form.getUser().getEmail() );
-        //dcResource.set("citizenreq:nameID",form.getUser().getNameID()[0] );
-        //jGenerator.writeNumberField("citizenreq:userId",form.getUser().getId() );
-        //dcResource.set("citizenreq:name",form.getUser().getName() );
+        
         dcResource.set("citizenreq:criticalityLevel",form.getCriticality_level().toString() );
         dcResource.set("citizenreq:id",form.getId() );
         dcResource.set("citizenreq:organization", datacoreOrganization);
 
+        dcResource.set("citizenreq:user", createUserDCResource(form));
+        
         dcResource.set("citizenreqem:familyName", form.getFields().getNom_famille());
         dcResource.set("citizenreqem:firstName", form.getFields().getPrenom());
         dcResource.set("citizenreqem:phone", form.getFields().getTelephone());
@@ -129,6 +126,25 @@ public class PublikService {
         return dcResource;
     }
 	
+	public String createUserDCResource(FormModel form) {
+		
+		DCResource dcResource = new DCResource();
+		
+		dcResource.setBaseUri(datacoreBaseUri);
+        dcResource.setType(datacoreModelUser);
+        dcResource.setIri(form.getUser().getNameID()[0]);
+	
+        dcResource.set("citizenrequser:email",form.getUser().getEmail());
+        dcResource.set("citizenrequser:nameID",form.getUser().getNameID()[0]);
+        dcResource.set("citizenrequser:userId",form.getUser().getId().toString());
+        dcResource.set("citizenrequser:name",form.getUser().getName());
+        
+        systemUserService.runAs(() ->
+    		datacoreClient.saveResource(datacoreProject, dcResource)
+        );
+        	    
+	    return dcResource.getUri();
+	}
 	/**
 	 * Calculate a signature with sha256
 	 * @return
