@@ -116,8 +116,9 @@ public class PublikService {
         dcResource.set("citizenreq:criticalityLevel",form.getCriticality_level().toString() );
         dcResource.set("citizenreq:id",form.getId() );
         dcResource.set("citizenreq:organization", datacoreOrganization);
-        
-        dcResource.set("citizenreq:user", createUserDCResource(form));
+
+        if (form.getUser() != null)
+	        dcResource.set("citizenreq:user", createUserDCResource(form));
         
         dcResource.set("citizenreqem:familyName", form.getFields().getNom_famille());
         dcResource.set("citizenreqem:firstName", form.getFields().getPrenom());
