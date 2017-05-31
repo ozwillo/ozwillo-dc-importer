@@ -5,9 +5,6 @@ spring:
 server:
   compression.enabled: true
 
-# URI is of the form mongodb://user:secret@mongo1.example.com:12345,mongo2.example.com:23456/test
-spring.data.mongodb.uri: mongodb://localhost/dcimporter
-
 application:
   url: http://localhost:3000
   security:

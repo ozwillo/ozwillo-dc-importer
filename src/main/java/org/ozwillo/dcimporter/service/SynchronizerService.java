@@ -1,43 +1,45 @@
 package org.ozwillo.dcimporter.service;
 
-
-import java.util.List;
-
 import org.oasis_eu.spring.datacore.DatacoreClient;
-import org.oasis_eu.spring.datacore.model.DCResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
 
-
-@Service
-public class SynchronizerService {
-
+@Component
+public class SynchronizerService implements CommandLineRunner{
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SynchronizerService.class);
 	
-    @Autowired
-    private SystemUserService systemUserService;
+    private final SystemUserService systemUserService;
+    private final DatacoreClient datacoreClient;
+    private final PublikService publikService;
+
+    @Value("${publik.datacore.project}")
+    private String datacoreProject;
+    @Value("${publik.datacore.model}")
+    private String datacoreModel;
 
     @Autowired
-	private DatacoreClient datacoreClient;
-
-    @Scheduled(fixedDelayString = "${application.syncDelay}")
-    public void synchronizeOrgs() {
-        
-    	systemUserService.runAs(() -> {
-    		
-    		LOGGER.info("findRessources");
-    		
-    		List<DCResource> dcRessources = datacoreClient.findResources("oasis.main","geo:Area_0");
-    		
-    		LOGGER.info("findRessources "+dcRessources.toString());
-    		
-    	});
-                
-        
+	public SynchronizerService(SystemUserService systemUserService, DatacoreClient datacoreClient, PublikService publikService) {
+		this.systemUserService = systemUserService;
+		this.datacoreClient = datacoreClient;
+        this.publikService = publikService;
     }
 
+	public void run(String... args) {
+    	systemUserService.runAs(() -> {
+    		if (datacoreClient.findResources(datacoreProject, datacoreModel).isEmpty())
+                try {
+                    publikService.syncPublikForms();
+                    LOGGER.debug("Requests successfully synchronized");
+                } catch (Exception e) {
+                    LOGGER.error("Unable to synchronize past requests", e);
+                }
+            else
+                LOGGER.debug("Requests are already synchronized");
+    	});
+    }
 }
