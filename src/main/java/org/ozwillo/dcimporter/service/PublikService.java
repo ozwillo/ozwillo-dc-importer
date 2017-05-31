@@ -100,7 +100,7 @@ public class PublikService {
 	public DCResource convertToDCResource(FormModel form) {
 		
         DCResource dcResource = new DCResource();
-
+		
         dcResource.setBaseUri(datacoreBaseUri);
         dcResource.setType(datacoreModel);
         dcResource.setIri(datacoreOrganizationIri + "/" + form.getDisplay_id());
@@ -116,7 +116,7 @@ public class PublikService {
         dcResource.set("citizenreq:criticalityLevel",form.getCriticality_level().toString() );
         dcResource.set("citizenreq:id",form.getId() );
         dcResource.set("citizenreq:organization", datacoreOrganization);
-
+        
         dcResource.set("citizenreq:user", createUserDCResource(form));
         
         dcResource.set("citizenreqem:familyName", form.getFields().getNom_famille());
@@ -134,14 +134,16 @@ public class PublikService {
         dcResource.setType(datacoreModelUser);
         dcResource.setIri(form.getUser().getNameID()[0]);
 	
-        dcResource.set("citizenrequser:email",form.getUser().getEmail());
-        dcResource.set("citizenrequser:nameID",form.getUser().getNameID()[0]);
-        dcResource.set("citizenrequser:userId",form.getUser().getId().toString());
-        dcResource.set("citizenrequser:name",form.getUser().getName());
-        
-        systemUserService.runAs(() ->
-    		datacoreClient.saveResource(datacoreProject, dcResource)
-        );
+        systemUserService.runAs(() ->{
+        	if(datacoreClient.getResourceFromURI(datacoreProject, dcResource.getUri()).getResource() == null){
+
+                dcResource.set("citizenrequser:email",form.getUser().getEmail());
+                dcResource.set("citizenrequser:nameID",form.getUser().getNameID()[0]);
+                dcResource.set("citizenrequser:userId",form.getUser().getId().toString());
+                dcResource.set("citizenrequser:name",form.getUser().getName());
+        		datacoreClient.saveResource(datacoreProject, dcResource);
+        	}
+        });
         	    
 	    return dcResource.getUri();
 	}
