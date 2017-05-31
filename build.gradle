@@ -31,8 +31,6 @@ repositories {
 
 dependencies {
 	compile('org.springframework.boot:spring-boot-starter-actuator')
-	compile('org.springframework.boot:spring-boot-starter-data-mongodb')
-	compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
 	compile('org.springframework.boot:spring-boot-starter-mail')
 	compile('org.springframework.boot:spring-boot-starter-security')
 	compile('org.springframework.session:spring-session')
@@ -44,4 +42,12 @@ dependencies {
 	runtime('org.codehaus.groovy:groovy:2.4.7')
 
 	testCompile('org.springframework.boot:spring-boot-starter-test')
+	compile('org.ozwillo:ozwillo-java-spring-integration:1.24')
+	runtime('org.codehaus.groovy:groovy:2.4.7')
+}
+
+bootJar {
+    launchScript {
+        included = true
+    }
 }
