@@ -1,6 +1,9 @@
 package org.ozwillo.dcimporter.model;
 
+import java.util.HashMap;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class FormModel {
@@ -11,7 +14,8 @@ public class FormModel {
 	private String  display_name;
 	private Submission submission;
 	private String  url;
-	private Fields fields;
+	@JsonProperty
+    private HashMap<String, Object> fields;
 	private String  receipt_time;
 	private User user;
 	private Integer  criticality_level;
@@ -72,12 +76,12 @@ public class FormModel {
 	}
 
 
-	public Fields getFields() {
+	public HashMap<String, Object> getFields() {
 		return fields;
 	}
 
 
-	public void setFields(Fields fields) {
+	public void setFields(HashMap<String, Object> fields) {
 		this.fields = fields;
 	}
 
@@ -125,7 +129,7 @@ public class FormModel {
 	@Override
 	public String toString() {
 		return "FormModel [display_id=" + display_id + ", last_update_time=" + last_update_time + ", display_name="
-				+ display_name + ", submission=" + submission + ", url=" + url + ", fields=" + fields
+				+ display_name + ", submission=" + submission + ", url=" + url + ", fields=" + fields.toString()
 				+ ", receipt_time=" + receipt_time + ", user=" + user + ", criticality_level=" + criticality_level
 				+ ", id=" + id + "]";
 	}
