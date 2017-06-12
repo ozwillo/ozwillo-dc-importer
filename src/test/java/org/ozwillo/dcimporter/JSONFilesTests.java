@@ -39,9 +39,9 @@ public class JSONFilesTests {
 		assertThat(formModel.getSubmission().getChannel()).isEqualTo("web");
 		assertThat(formModel.getSubmission().getBackoffice()).isFalse();
 		assertThat(formModel.getUrl()).isEqualTo("https://demarches-sve.test-demarches.sictiam.fr/demande-de-rendez-vous-avec-un-elu/4/");
-		assertThat(formModel.getFields().getNom_famille()).isEqualTo("agent_sictiam");
-		assertThat(formModel.getFields().getPrenom()).isEqualTo("agent_sictiam");
-		assertThat(formModel.getFields().getTelephone()).isEqualTo("0661444444");
+		assertThat(formModel.getFields().get("nom_famille")).isEqualTo("agent_sictiam");
+		assertThat(formModel.getFields().get("prenom")).isEqualTo("agent_sictiam");
+		assertThat(formModel.getFields().get("telephone")).isEqualTo("0661444444");
 		assertThat(formModel.getReceipt_time()).isEqualTo("2017-05-11T09:08:53Z");
 		assertThat(formModel.getUser().getEmail()).isEqualTo("admin@ozwillo-dev.eu");
 		assertThat(formModel.getUser().getNameID()[0]).isEqualTo("5c977a7f1d444fa1ab0f777325fdda93");

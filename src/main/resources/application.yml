@@ -13,13 +13,19 @@ application:
   
 publik:
   baseUrl: https://demarches-sve.test-demarches.sictiam.fr
-  formType: demande-de-rendez-vous-avec-un-elu
+  instance: 
+    - baseUrl: https://demarches-sve.test-demarches.sictiam.fr
+      organization: http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027
+  formTypeEM: demande-de-rendez-vous-avec-un-elu
+  formTypeSVE: saisine-par-voie-electronique-new
   secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
   hostName: demarches-sve.test-demarches.sictiam.fr
   datacore:
     project: citizenreq_0
+    modelEM: citizenreq:elecmeeting_0
+    modelSVE: citizenreq:sve_0
     model: citizenreq:elecmeeting_0
     modelUser: citizenreq:user_0
     # TODO : hardcoded for now, make it dynamic later

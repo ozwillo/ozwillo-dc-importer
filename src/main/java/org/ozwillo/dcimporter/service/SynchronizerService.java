@@ -1,6 +1,11 @@
 package org.ozwillo.dcimporter.service;
 
+import java.util.Arrays;
+
 import org.oasis_eu.spring.datacore.DatacoreClient;
+import org.oasis_eu.spring.datacore.model.DCOperator;
+import org.oasis_eu.spring.datacore.model.DCQueryParameters;
+import org.ozwillo.dcimporter.config.Prop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,37 +14,56 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SynchronizerService implements CommandLineRunner{
+public class SynchronizerService implements CommandLineRunner {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SynchronizerService.class);
-	
-    private final SystemUserService systemUserService;
-    private final DatacoreClient datacoreClient;
-    private final PublikService publikService;
 
-    @Value("${publik.datacore.project}")
-    private String datacoreProject;
-    @Value("${publik.datacore.model}")
-    private String datacoreModel;
+	private final SystemUserService systemUserService;
+	private final DatacoreClient datacoreClient;
+	private final PublikService publikService;
+	private final Prop props;
 
-    @Autowired
-	public SynchronizerService(SystemUserService systemUserService, DatacoreClient datacoreClient, PublikService publikService) {
+	@Value("${publik.datacore.project}")
+	private String datacoreProject;
+	@Value("${publik.datacore.modelEM}")
+	private String datacoreModelEM;
+	@Value("${publik.datacore.modelSVE}")
+	private String datacoreModelSVE;
+	@Value("${publik.formTypeEM}")
+	private String formTypeEM;
+	@Value("${publik.formTypeSVE}")
+	private String formTypeSVE;
+
+	@Autowired
+	public SynchronizerService(SystemUserService systemUserService, DatacoreClient datacoreClient,
+	        PublikService publikService, Prop props) {
 		this.systemUserService = systemUserService;
 		this.datacoreClient = datacoreClient;
-        this.publikService = publikService;
-    }
+		this.publikService = publikService;
+		this.props = props;
+	}
 
 	public void run(String... args) {
-    	systemUserService.runAs(() -> {
-    		if (datacoreClient.findResources(datacoreProject, datacoreModel).isEmpty())
-                try {
-                    publikService.syncPublikForms();
-                    LOGGER.debug("Requests successfully synchronized");
-                } catch (Exception e) {
-                    LOGGER.error("Unable to synchronize past requests", e);
-                }
-            else
-                LOGGER.debug("Requests are already synchronized");
-    	});
-    }
+		systemUserService.runAs(() -> {
+
+			props.getInstance().forEach( instance -> { 
+			DCQueryParameters queryParameters = new DCQueryParameters("citizenreq:organization",DCOperator.EQ,instance.get("organization"));
+			
+			Arrays.asList(datacoreModelEM, datacoreModelSVE).forEach(type -> {
+				if (datacoreClient.findResources(datacoreProject, type, queryParameters, 0, 1).isEmpty())
+					try {
+						if (type.equals(datacoreModelEM))
+							publikService.syncPublikForms(formTypeEM);
+						else if (type.equals(datacoreModelSVE))
+							publikService.syncPublikForms(formTypeSVE);
+						LOGGER.debug("Requests successfully synchronized");
+					} catch (Exception e) {
+						LOGGER.debug("Unable to synchronize past requests", e);
+					}
+				else
+					LOGGER.error("Requests are already synchronized");
+			});
+			});
+		});
+	}
 }
