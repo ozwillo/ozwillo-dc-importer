@@ -36,6 +36,7 @@ dependencies {
 	compile('org.springframework.session:spring-session')
 	compile('org.springframework.boot:spring-boot-starter-web')
 	compile('org.springframework.boot:spring-boot-starter-webflux')
+	compile('org.springframework.boot:spring-boot-configuration-processor')
 	compile('org.ozwillo:ozwillo-java-spring-integration:1.24')
 
 	runtime('org.springframework.boot:spring-boot-devtools')

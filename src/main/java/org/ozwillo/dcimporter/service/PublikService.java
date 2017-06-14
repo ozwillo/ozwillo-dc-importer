@@ -75,8 +75,8 @@ public class PublikService {
 
 	private FormModel getForm(String url) throws URISyntaxException {
 
-		URI url_finale = sign_url(url + "?anonymise");
-		LOGGER.debug("URL get Form {}", url_finale);
+		URI url_finale = sign_url(url);
+		LOGGER.error("URL get Form {}", url_finale);
 
 		return restTemplate.getForObject(url_finale, FormModel.class);
 	}
@@ -94,10 +94,8 @@ public class PublikService {
 			LOGGER.error("Liste des formulaires :");
 
 			for (ListFormsModel f : forms) {
-				LOGGER.error(f.toString());
 				FormModel formModel = getForm(formatUrl(f.getUrl()));
 				DCResource dcResource = convertToDCResource(formModel);
-				LOGGER.error(dcResource.toString());
 				systemUserService.runAs(() -> datacoreClient.saveResource(datacoreProject, dcResource));
 			}
 		} catch (URISyntaxException e) {
@@ -264,10 +262,8 @@ public class PublikService {
 			String newQuery = "";
 			URL parsedUrl = new URL(url);
 
-			if (parsedUrl.getQuery() != null) {
+			if (parsedUrl.getQuery() != null) 
 				newQuery = parsedUrl.getQuery() + "&";
-			} else
-				newQuery += "?";
 
 			newQuery += "algo=" + this.algo + "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") + "&nonce=" + nonce
 			        + "&orig=" + URLEncoder.encode(this.orig, "UTF-8");
