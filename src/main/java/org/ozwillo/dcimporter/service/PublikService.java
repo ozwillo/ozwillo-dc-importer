@@ -1,7 +1,10 @@
 package org.ozwillo.dcimporter.service;
 
 import org.oasis_eu.spring.datacore.DatacoreClient;
+import org.oasis_eu.spring.datacore.model.DCOperator;
+import org.oasis_eu.spring.datacore.model.DCQueryParameters;
 import org.oasis_eu.spring.datacore.model.DCResource;
+import org.ozwillo.dcimporter.config.Prop;
 import org.ozwillo.dcimporter.model.FormModel;
 import org.ozwillo.dcimporter.model.ListFormsModel;
 import org.slf4j.Logger;
@@ -21,6 +24,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 
@@ -39,6 +43,7 @@ public class PublikService {
 
 	private final DatacoreClient datacoreClient;
 	private final SystemUserService systemUserService;
+	private final Prop props;
 
 	@Value("${publik.formTypeEM}")
 	private String formTypeEM;
@@ -58,19 +63,18 @@ public class PublikService {
 	private String datacoreModelEM;
 	@Value("${publik.datacore.modelSVE}")
 	private String datacoreModelSVE;
+	@Value("${publik.datacore.modelORG}")
+	private String datacoreModelORG;
 	@Value("${publik.datacore.modelUser}")
 	private String datacoreModelUser;
-	@Value("${publik.datacore.organization}")
-	private String datacoreOrganization;
-	@Value("${publik.datacore.organizationIri}")
-	private String datacoreOrganizationIri;
 	@Value("${datacore.baseUri}")
 	private String datacoreBaseUri;
 
 	@Autowired
-	public PublikService(DatacoreClient datacoreClient, SystemUserService systemUserService) {
+	public PublikService(DatacoreClient datacoreClient, SystemUserService systemUserService, Prop props) {
 		this.datacoreClient = datacoreClient;
 		this.systemUserService = systemUserService;
+		this.props = props;
 	}
 
 	private FormModel getForm(String url) throws URISyntaxException {
@@ -107,11 +111,22 @@ public class PublikService {
 
 	private DCResource convertToDCResource(FormModel form) {
 
+		String org = null;
+		for (Map<String, String> instance : props.getInstance()) {
+
+			if (form.getUrl().contains(instance.get("organization")))
+				org = instance.get("organization");
+		}
+
+		DCQueryParameters queryParametersOrg = new DCQueryParameters("org:legalName", DCOperator.EQ, org);
+		DCResource dcOrganization = datacoreClient
+				.findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1).get(0);
+
 		DCResource dcResource = new DCResource();
 
 		dcResource.setBaseUri(datacoreBaseUri);
 
-		dcResource.setIri(datacoreOrganizationIri + "/" + form.getDisplay_id());
+		dcResource.setIri(dcOrganization.getIri() + "/" + form.getDisplay_id());
 
 		dcResource.set("citizenreq:displayId", form.getDisplay_id());
 		dcResource.set("citizenreq:lastUpdateTime", form.getLast_update_time());
@@ -123,7 +138,7 @@ public class PublikService {
 
 		dcResource.set("citizenreq:criticalityLevel", form.getCriticality_level().toString());
 		dcResource.set("citizenreq:id", form.getId());
-		dcResource.set("citizenreq:organization", datacoreOrganization);
+		dcResource.set("citizenreq:organization", dcOrganization.getUri());
 
 		if (form.getUser() != null)
 			dcResource.set("citizenreq:user", createUserDCResource(form));
@@ -262,16 +277,16 @@ public class PublikService {
 			String newQuery = "";
 			URL parsedUrl = new URL(url);
 
-			if (parsedUrl.getQuery() != null) 
+			if (parsedUrl.getQuery() != null)
 				newQuery = parsedUrl.getQuery() + "&";
 
 			newQuery += "algo=" + this.algo + "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") + "&nonce=" + nonce
-			        + "&orig=" + URLEncoder.encode(this.orig, "UTF-8");
+					+ "&orig=" + URLEncoder.encode(this.orig, "UTF-8");
 			String signature = calculateSignature(newQuery, this.secret);
 			newQuery += "&signature=" + signature;
 
 			return new URI(
-			        parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + parsedUrl.getPath() + "?" + newQuery);
+					parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + parsedUrl.getPath() + "?" + newQuery);
 		} catch (MalformedURLException e) {
 			LOGGER.error("MalformedURLException : " + e);
 			return null;

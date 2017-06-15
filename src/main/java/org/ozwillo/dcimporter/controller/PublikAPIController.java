@@ -21,18 +21,7 @@ public class PublikAPIController {
 	private String datacoreProject;
 
 	@Autowired
-	PublikService publikService;
-<<<<<<< ec23f31637ad746193dd5bc533fbaf9c4737d2c5
-
-	@RequestMapping(value = "/form/", method = RequestMethod.POST)
-	public void getForm(@RequestBody FormModel form) {
-
-		LOGGER.debug("formModel --> :" + form.toString());
-
-		publikService.saveResourceToDC(form);
-	}
-=======
-	
+	PublikService publikService;	
     
 	@RequestMapping(value = "/form/", method = RequestMethod.POST)
     public void getForm(@RequestBody FormModel form) {
@@ -42,5 +31,4 @@ public class PublikAPIController {
 		publikService.saveResourceToDC(form);
 		
     }
->>>>>>> Add support for multiple Publik instances and organization
 }
