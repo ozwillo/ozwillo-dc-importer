@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.service;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.oasis_eu.spring.datacore.DatacoreClient;
 import org.oasis_eu.spring.datacore.model.DCOperator;
@@ -30,8 +31,6 @@ public class SynchronizerService implements CommandLineRunner {
 	private String datacoreModelEM;
 	@Value("${publik.datacore.modelSVE}")
 	private String datacoreModelSVE;
-	@Value("${publik.datacore.modelORG}")
-	private String datacoreModelORG;
 	@Value("${publik.formTypeEM}")
 	private String formTypeEM;
 	@Value("${publik.formTypeSVE}")
@@ -51,32 +50,28 @@ public class SynchronizerService implements CommandLineRunner {
 
 			props.getInstance().forEach(instance -> {
 
-				DCQueryParameters queryParametersOrg = new DCQueryParameters("org:legalName", DCOperator.EQ,
-						instance.get("organization"));
-				DCResource dcResource = new DCResource();
-				if (!datacoreClient.findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1)
-						.isEmpty()) {
-					dcResource = datacoreClient
-							.findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1).get(0);
+                Optional<DCResource> dcOrg = publikService.getDCOrganization(instance.get("organization"));
+				if (!dcOrg.isPresent()) {
+				    LOGGER.error("Unable to find organization {}", instance.get("organization"));
+                } else {
+                    DCQueryParameters queryParameters =
+                            new DCQueryParameters("citizenreq:organization", DCOperator.EQ, dcOrg.get().getUri());
 
-					DCQueryParameters queryParameters = new DCQueryParameters("citizenreq:organization", DCOperator.EQ,
-							dcResource.getUri());
-
-					Arrays.asList(datacoreModelEM, datacoreModelSVE).forEach(type -> {
-						if (datacoreClient.findResources(datacoreProject, type, queryParameters, 0, 1).isEmpty())
-							try {
-								if (type.equals(datacoreModelEM))
-									publikService.syncPublikForms(formTypeEM);
-								else if (type.equals(datacoreModelSVE))
-									publikService.syncPublikForms(formTypeSVE);
-								LOGGER.debug("Requests successfully synchronized");
-							} catch (Exception e) {
-								LOGGER.debug("Unable to synchronize past requests", e);
-							}
-						else
-							LOGGER.error("Requests are already synchronized");
-					});
-				}
+                    Arrays.asList(datacoreModelEM, datacoreModelSVE).forEach(type -> {
+                        if (datacoreClient.findResources(datacoreProject, type, queryParameters, 0, 1).isEmpty())
+                            try {
+                                if (type.equals(datacoreModelEM))
+                                    publikService.syncPublikForms(instance.get("baseUrl"), dcOrg.get(), formTypeEM);
+                                else if (type.equals(datacoreModelSVE))
+                                    publikService.syncPublikForms(instance.get("baseUrl"), dcOrg.get(), formTypeSVE);
+                                LOGGER.debug("Requests successfully synchronized");
+                            } catch (Exception e) {
+                                LOGGER.debug("Unable to synchronize past requests", e);
+                            }
+                        else
+                            LOGGER.debug("Requests of type {} are already synchronized for {}", type, dcOrg.get().getUri());
+                    });
+                }
 			});
 		});
 	}

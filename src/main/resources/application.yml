@@ -20,13 +20,11 @@ publik:
   secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
-  hostName: demarches-sve.test-demarches.sictiam.fr
   datacore:
     project: citizenreq_0
     modelEM: citizenreq:elecmeeting_0
     modelSVE: citizenreq:sve_0
     modelORG: org:Organization_0
-    model: citizenreq:elecmeeting_0
     modelUser: citizenreq:user_0
 
 # TODO : Copied pasted from portal configuration, check if we really need all of them
