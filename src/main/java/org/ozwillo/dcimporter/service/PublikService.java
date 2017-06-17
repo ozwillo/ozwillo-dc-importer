@@ -1,7 +1,10 @@
 package org.ozwillo.dcimporter.service;
 
 import org.oasis_eu.spring.datacore.DatacoreClient;
+import org.oasis_eu.spring.datacore.model.DCOperator;
+import org.oasis_eu.spring.datacore.model.DCQueryParameters;
 import org.oasis_eu.spring.datacore.model.DCResource;
+import org.ozwillo.dcimporter.config.Prop;
 import org.ozwillo.dcimporter.model.FormModel;
 import org.ozwillo.dcimporter.model.ListFormsModel;
 import org.slf4j.Logger;
@@ -19,10 +22,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Random;
-import java.util.TimeZone;
+import java.util.*;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -39,6 +39,7 @@ public class PublikService {
 
 	private final DatacoreClient datacoreClient;
 	private final SystemUserService systemUserService;
+	private final Prop props;
 
 	@Value("${publik.formTypeEM}")
 	private String formTypeEM;
@@ -50,54 +51,46 @@ public class PublikService {
 	private String orig;
 	@Value("${publik.secret}")
 	private String secret;
-	@Value("${publik.hostName}")
-	private String hostName;
 	@Value("${publik.datacore.project}")
 	private String datacoreProject;
 	@Value("${publik.datacore.modelEM}")
 	private String datacoreModelEM;
 	@Value("${publik.datacore.modelSVE}")
 	private String datacoreModelSVE;
+	@Value("${publik.datacore.modelORG}")
+	private String datacoreModelORG;
 	@Value("${publik.datacore.modelUser}")
 	private String datacoreModelUser;
-	@Value("${publik.datacore.organization}")
-	private String datacoreOrganization;
-	@Value("${publik.datacore.organizationIri}")
-	private String datacoreOrganizationIri;
 	@Value("${datacore.baseUri}")
 	private String datacoreBaseUri;
 
 	@Autowired
-	public PublikService(DatacoreClient datacoreClient, SystemUserService systemUserService) {
+	public PublikService(DatacoreClient datacoreClient, SystemUserService systemUserService, Prop props) {
 		this.datacoreClient = datacoreClient;
 		this.systemUserService = systemUserService;
+		this.props = props;
 	}
 
 	private FormModel getForm(String url) throws URISyntaxException {
 
-		URI url_finale = sign_url(url + "?anonymise");
-		LOGGER.debug("URL get Form {}", url_finale);
+		URI url_finale = sign_url(url);
+		LOGGER.error("URL get Form {}", url_finale);
 
 		return restTemplate.getForObject(url_finale, FormModel.class);
 	}
 
-	public void syncPublikForms(String formType) {
+	public void syncPublikForms(String baseUrl, DCResource dcOrganization, String formType) {
 
-		String initUrl = "https://" + this.hostName + "/api/forms/" + formType + "/list?anonymise";
+		String initUrl = baseUrl + "/api/forms/" + formType + "/list?anonymise";
 
-		URI url;
 		try {
-			url = sign_url(initUrl);
-			LOGGER.error("Calling Publik at URL {}", url);
+			URI url = sign_url(initUrl);
+			LOGGER.debug("Calling Publik at URL {}", url);
 			ListFormsModel[] forms = restTemplate.getForObject(url, ListFormsModel[].class);
 
-			LOGGER.error("Liste des formulaires :");
-
 			for (ListFormsModel f : forms) {
-				LOGGER.error(f.toString());
 				FormModel formModel = getForm(formatUrl(f.getUrl()));
-				DCResource dcResource = convertToDCResource(formModel);
-				LOGGER.error(dcResource.toString());
+				DCResource dcResource = convertToDCResource(dcOrganization, formModel);
 				systemUserService.runAs(() -> datacoreClient.saveResource(datacoreProject, dcResource));
 			}
 		} catch (URISyntaxException e) {
@@ -107,13 +100,30 @@ public class PublikService {
 		}
 	}
 
-	private DCResource convertToDCResource(FormModel form) {
+	public void saveResourceToDC(FormModel form) {
 
-		DCResource dcResource = new DCResource();
+		String orgLegalName = null;
+		for (Map<String, String> instance : props.getInstance()) {
+			if (form.getUrl().contains(instance.get("baseUrl")))
+				orgLegalName = instance.get("organization");
+		}
+
+        Optional<DCResource> dcOrganization = getDCOrganization(orgLegalName);
+		if (!dcOrganization.isPresent()) {
+            LOGGER.error("Unable to get organization {}", orgLegalName);
+            return;
+        }
+
+		systemUserService.runAs(() -> datacoreClient.saveResource(datacoreProject, convertToDCResource(dcOrganization.get(), form)));
+	}
+
+	private DCResource convertToDCResource(DCResource dcOrganization, FormModel form) {
+
+        DCResource dcResource = new DCResource();
 
 		dcResource.setBaseUri(datacoreBaseUri);
 
-		dcResource.setIri(datacoreOrganizationIri + "/" + form.getDisplay_id());
+		dcResource.setIri(dcOrganization.getIri() + "/" + form.getDisplay_id());
 
 		dcResource.set("citizenreq:displayId", form.getDisplay_id());
 		dcResource.set("citizenreq:lastUpdateTime", form.getLast_update_time());
@@ -125,7 +135,7 @@ public class PublikService {
 
 		dcResource.set("citizenreq:criticalityLevel", form.getCriticality_level().toString());
 		dcResource.set("citizenreq:id", form.getId());
-		dcResource.set("citizenreq:organization", datacoreOrganization);
+		dcResource.set("citizenreq:organization", dcOrganization.getUri());
 
 		if (form.getUser() != null)
 			dcResource.set("citizenreq:user", createUserDCResource(form));
@@ -137,11 +147,6 @@ public class PublikService {
 		}
 		LOGGER.debug("DCResouce --> :" + dcResource.toString());
 		return dcResource;
-	}
-
-	public void saveResourceToDC(FormModel form) {
-
-		systemUserService.runAs(() -> datacoreClient.saveResource(datacoreProject, convertToDCResource(form)));
 	}
 
 	private DCResource convertToDCResourceEM(DCResource dcResource, FormModel form) {
@@ -219,6 +224,13 @@ public class PublikService {
 		return dcResource.getUri();
 	}
 
+	public Optional<DCResource> getDCOrganization(String orgLegalName) {
+        DCQueryParameters queryParametersOrg = new DCQueryParameters("org:legalName", DCOperator.EQ, orgLegalName);
+        List<DCResource> dcOrgs = datacoreClient
+                .findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1);
+        return dcOrgs.isEmpty() ? Optional.empty() : Optional.of(dcOrgs.get(0));
+    }
+
 	/**
 	 * Calculate a signature with sha256
 	 * 
@@ -264,18 +276,16 @@ public class PublikService {
 			String newQuery = "";
 			URL parsedUrl = new URL(url);
 
-			if (parsedUrl.getQuery() != null) {
+			if (parsedUrl.getQuery() != null)
 				newQuery = parsedUrl.getQuery() + "&";
-			} else
-				newQuery += "?";
 
 			newQuery += "algo=" + this.algo + "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") + "&nonce=" + nonce
-			        + "&orig=" + URLEncoder.encode(this.orig, "UTF-8");
+					+ "&orig=" + URLEncoder.encode(this.orig, "UTF-8");
 			String signature = calculateSignature(newQuery, this.secret);
 			newQuery += "&signature=" + signature;
 
 			return new URI(
-			        parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + parsedUrl.getPath() + "?" + newQuery);
+					parsedUrl.getProtocol() + "://" + parsedUrl.getHost() + parsedUrl.getPath() + "?" + newQuery);
 		} catch (MalformedURLException e) {
 			LOGGER.error("MalformedURLException : " + e);
 			return null;

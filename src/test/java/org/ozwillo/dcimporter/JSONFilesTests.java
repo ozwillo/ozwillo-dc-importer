@@ -37,8 +37,7 @@ public class JSONFilesTests {
 		assertThat(formModel.getDisplay_name()).isEqualTo("Demande de rendez-vous avec un \u00e9lu - n\u00b017-4");
 		assertThat(formModel.getSubmission().getChannel()).isEqualTo("web");
 		assertThat(formModel.getSubmission().getBackoffice()).isFalse();
-		assertThat(formModel.getUrl())
-		        .isEqualTo("https://demarches-sve.test-demarches.sictiam.fr/demande-de-rendez-vous-avec-un-elu/4/");
+		assertThat(formModel.getUrl()).isEqualTo("https://demarches-sve.test-demarches.sictiam.fr/demande-de-rendez-vous-avec-un-elu/4/");
 		assertThat(formModel.getFields().get("nom_famille")).isEqualTo("agent_sictiam");
 		assertThat(formModel.getFields().get("prenom")).isEqualTo("agent_sictiam");
 		assertThat(formModel.getFields().get("telephone")).isEqualTo("0661444444");

@@ -5,9 +5,6 @@ spring:
 server:
   compression.enabled: true
 
-# URI is of the form mongodb://user:secret@mongo1.example.com:12345,mongo2.example.com:23456/test
-spring.data.mongodb.uri: mongodb://localhost/dcimporter
-
 application:
   url: http://localhost:3000
   security:
@@ -15,21 +12,20 @@ application:
   syncDelay: 10000
   
 publik:
-  baseUrl: https://demarches-sve.test-demarches.sictiam.fr
+  instance: 
+    - baseUrl: https://demarches-sve.test-demarches.sictiam.fr
+      organization: sictiam
   formTypeEM: demande-de-rendez-vous-avec-un-elu
   formTypeSVE: saisine-par-voie-electronique-new
   secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
-  hostName: demarches-sve.test-demarches.sictiam.fr
   datacore:
     project: citizenreq_0
     modelEM: citizenreq:elecmeeting_0
     modelSVE: citizenreq:sve_0
+    modelORG: org:Organization_0
     modelUser: citizenreq:user_0
-    # TODO : hardcoded for now, make it dynamic later
-    organization: http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/25060187900027
-    organizationIri: FR/25060187900027
 
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
