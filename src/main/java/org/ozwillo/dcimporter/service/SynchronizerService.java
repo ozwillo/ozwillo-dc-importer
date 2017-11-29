@@ -66,7 +66,8 @@ public class SynchronizerService implements CommandLineRunner {
                                     publikService.syncPublikForms(instance.get("baseUrl"), dcOrg.get(), formTypeSVE);
                                 LOGGER.debug("Requests successfully synchronized");
                             } catch (Exception e) {
-                                LOGGER.debug("Unable to synchronize past requests", e);
+                                LOGGER.warn("Unable to synchronize past requests of type {} for {}",
+										type, instance.get("organisation"), e);
                             }
                         else
                             LOGGER.debug("Requests of type {} are already synchronized for {}", type, dcOrg.get().getUri());
