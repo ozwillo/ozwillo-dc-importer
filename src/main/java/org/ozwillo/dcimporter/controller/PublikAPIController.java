@@ -23,11 +23,6 @@ public class PublikAPIController {
 		this.publikService = publikService;
 	}
 
-	@RequestMapping("/status")
-	public String status() {
-		return "OK";
-	}
-
 	@RequestMapping(value = "/form", method = RequestMethod.POST)
     public void getForm(@RequestBody FormModel form) {
 		
