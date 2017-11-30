@@ -226,9 +226,13 @@ public class PublikService {
 
 	public Optional<DCResource> getDCOrganization(String orgLegalName) {
         DCQueryParameters queryParametersOrg = new DCQueryParameters("org:legalName", DCOperator.EQ, orgLegalName);
-        List<DCResource> dcOrgs = datacoreClient
-                .findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1);
-        return dcOrgs.isEmpty() ? Optional.empty() : Optional.of(dcOrgs.get(0));
+        List<DCResource> resources = new ArrayList<>();
+		systemUserService.runAs(() -> {
+			resources.addAll(datacoreClient
+					.findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1));
+		});
+
+		return resources.isEmpty() ? Optional.empty() : Optional.of(resources.get(0));
     }
 
 	/**
