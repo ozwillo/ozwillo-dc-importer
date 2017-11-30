@@ -67,7 +67,7 @@ public class SynchronizerService implements CommandLineRunner {
                                 LOGGER.debug("Requests successfully synchronized");
                             } catch (Exception e) {
                                 LOGGER.warn("Unable to synchronize past requests of type {} for {}",
-										type, instance.get("organisation"), e);
+										type, instance.get("organization"), e);
                             }
                         else
                             LOGGER.debug("Requests of type {} are already synchronized for {}", type, dcOrg.get().getUri());
