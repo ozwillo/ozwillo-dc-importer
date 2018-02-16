@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.controller;
 
-import org.ozwillo.dcimporter.model.FormModel;
+import org.ozwillo.dcimporter.model.publik.FormModel;
 import org.ozwillo.dcimporter.service.PublikService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,14 +12,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(value = "/api")
-public class PublikAPIController {
+public class PublikController {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(PublikAPIController.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(PublikController.class);
 
 	private final PublikService publikService;
 
 	@Autowired
-	public PublikAPIController(PublikService publikService) {
+	public PublikController(PublikService publikService) {
 		this.publikService = publikService;
 	}
 
@@ -29,6 +29,5 @@ public class PublikAPIController {
 		LOGGER.debug("formModel --> :"+form.toString());
 		
 		publikService.saveResourceToDC(form);
-		
     }
 }

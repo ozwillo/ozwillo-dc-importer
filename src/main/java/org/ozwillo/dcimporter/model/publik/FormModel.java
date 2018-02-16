@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.model;
+package org.ozwillo.dcimporter.model.publik;
 
 import java.util.HashMap;
 
