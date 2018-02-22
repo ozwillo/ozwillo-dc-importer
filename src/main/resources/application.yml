@@ -1,9 +1,13 @@
 spring:
   output.ansi.enabled: DETECT
   session.store-type: none
+  data:
+    mongodb:
+      database: dcimporter
 
 server:
   compression.enabled: true
+  address: 127.0.0.1
 
 application:
   url: http://localhost:3000
@@ -26,6 +30,13 @@ publik:
     modelSVE: citizenreq:sve_0
     modelORG: org:Organization_0
     modelUser: citizenreq:user_0
+
+maarch:
+  instance:
+    - baseUrl: http://localhost
+      organization: my-organization
+  login: login
+  password: password
 
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:

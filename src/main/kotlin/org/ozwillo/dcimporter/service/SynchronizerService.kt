@@ -5,13 +5,17 @@ import java.util.Arrays
 import org.oasis_eu.spring.datacore.DatacoreClient
 import org.oasis_eu.spring.datacore.model.DCOperator
 import org.oasis_eu.spring.datacore.model.DCQueryParameters
+import org.oasis_eu.spring.datacore.model.DCResult
+import org.oasis_eu.spring.datacore.model.DCResultType
 import org.ozwillo.dcimporter.config.Prop
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
+import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 
 @Component
+@Profile("!test")
 class SynchronizerService(private val systemUserService: SystemUserService,
                           private val datacoreClient: DatacoreClient,
                           private val publikService: PublikService,
@@ -29,7 +33,7 @@ class SynchronizerService(private val systemUserService: SystemUserService,
     private lateinit var formTypeSVE: String
 
     override fun run(vararg args: String) {
-        systemUserService.runAs(Runnable {
+        systemUserService.runAs( {
 
             props.instance.forEach { instance ->
 
@@ -56,6 +60,7 @@ class SynchronizerService(private val systemUserService: SystemUserService,
                     }
                 }
             }
+            DCResult(DCResultType.SUCCESS)
         })
     }
 

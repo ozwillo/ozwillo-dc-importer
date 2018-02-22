@@ -17,4 +17,12 @@ data class FormModel(
     var receipt_time: String,
     var user: User,
     var criticality_level: Int,
-    var id: String)
+    var id: String,
+    var workflowStatus: String) {
+
+    @JsonProperty("workflow")
+    private fun unpackNested(workflow: Map<String, Any>) {
+        val status = workflow["status"] as Map<String, String>
+        this.workflowStatus = status["name"].orEmpty()
+    }
+}

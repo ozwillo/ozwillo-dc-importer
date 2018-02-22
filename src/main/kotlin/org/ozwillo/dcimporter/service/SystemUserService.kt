@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service
 
+import org.oasis_eu.spring.datacore.model.DCResult
 import org.oasis_eu.spring.kernel.security.OpenIdCService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.context.SecurityContextHolder
@@ -17,12 +18,12 @@ class SystemUserService(private val openIdCService: OpenIdCService) {
     @Value("\${kernel.auth.callback_uri:\${application.url}/callback}")
     private lateinit var callbackUri: String
 
-    fun runAs(runnable: Runnable) {
+    fun runAs(runnable: () -> DCResult): DCResult {
         val endUserAuth = SecurityContextHolder.getContext().authentication
         SecurityContextHolder.getContext().authentication = null // or UnauthAuth ?? anyway avoid to do next queries to Kernel with user auth
         try {
             loginAs()
-            runnable.run()
+            return runnable()
         } finally {
             SecurityContextHolder.getContext().authentication = endUserAuth
         }

@@ -2,9 +2,7 @@ package org.ozwillo.dcimporter.service
 
 import org.apache.commons.codec.binary.Base64
 import org.oasis_eu.spring.datacore.DatacoreClient
-import org.oasis_eu.spring.datacore.model.DCOperator
-import org.oasis_eu.spring.datacore.model.DCQueryParameters
-import org.oasis_eu.spring.datacore.model.DCResource
+import org.oasis_eu.spring.datacore.model.*
 import org.ozwillo.dcimporter.config.Prop
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.model.publik.ListFormsModel
@@ -78,7 +76,7 @@ class PublikService(private val datacoreClient: DatacoreClient,
                     .filter { it.url.isEmpty() }
                     .map { getForm(formatUrl(it.url)) }
                     .map { convertToDCResource(dcOrganization, it!!) }
-                    .forEach { systemUserService.runAs( Runnable { datacoreClient.saveResource(datacoreProject, it) }) }
+                    .forEach { systemUserService.runAs( { datacoreClient.saveResource(datacoreProject, it) }) }
         } catch (e: URISyntaxException) {
             LOGGER.error("Exception Uri Syntax : " + e)
         } catch (e: MalformedURLException) {
@@ -87,7 +85,7 @@ class PublikService(private val datacoreClient: DatacoreClient,
 
     }
 
-    fun saveResourceToDC(form: FormModel): Mono<String> {
+    fun saveResourceToDC(form: FormModel): Mono<DCResult> {
 
         val orgLegalName: String? =
                 props.instance.first { !it["baseUrl"]!!.isEmpty() && it["baseUrl"]!!.contains(form.url)}["organization"]
@@ -98,8 +96,8 @@ class PublikService(private val datacoreClient: DatacoreClient,
             return Mono.empty()
         }
 
-        systemUserService.runAs(Runnable { datacoreClient.saveResource(datacoreProject, convertToDCResource(dcOrganization.get(), form)) })
-        return Mono.empty()
+        val result = systemUserService.runAs( { datacoreClient.saveResource(datacoreProject, convertToDCResource(dcOrganization.get(), form)) } )
+        return Mono.just(result)
     }
 
     private fun convertToDCResource(dcOrganization: DCResource, form: FormModel): DCResource {
@@ -192,7 +190,7 @@ class PublikService(private val datacoreClient: DatacoreClient,
         dcResource.type = datacoreModelUser
         dcResource.iri = form.user.nameID[0]
 
-        systemUserService.runAs( Runnable {
+        systemUserService.runAs( {
             if (datacoreClient.getResourceFromURI(datacoreProject, dcResource.uri).resource == null) {
 
                 dcResource.set("citizenrequser:email", form.user.email)
@@ -200,6 +198,8 @@ class PublikService(private val datacoreClient: DatacoreClient,
                 dcResource.set("citizenrequser:userId", form.user.id.toString())
                 dcResource.set("citizenrequser:name", form.user.name)
                 datacoreClient.saveResource(datacoreProject, dcResource)
+            } else {
+                DCResult(DCResultType.SUCCESS)
             }
         })
 
@@ -208,11 +208,11 @@ class PublikService(private val datacoreClient: DatacoreClient,
 
     fun getDCOrganization(orgLegalName: String?): Optional<DCResource> {
         val queryParametersOrg = DCQueryParameters("org:legalName", DCOperator.EQ, orgLegalName)
-        val resources = ArrayList<DCResource>()
-        systemUserService.runAs( Runnable {
-            resources.addAll(datacoreClient
-                    .findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1))
-        })
+        val resources = systemUserService.runAs( {
+            val results = datacoreClient
+                    .findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1)
+            DCResult(DCResultType.SUCCESS, results)
+        }).resources
 
         return if (resources.isEmpty()) Optional.empty() else Optional.of(resources[0])
     }
