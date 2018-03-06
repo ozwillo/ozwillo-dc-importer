@@ -1,13 +1,9 @@
 package org.ozwillo.dcimporter.service
 
-import java.util.Arrays
-
-import org.oasis_eu.spring.datacore.DatacoreClient
-import org.oasis_eu.spring.datacore.model.DCOperator
-import org.oasis_eu.spring.datacore.model.DCQueryParameters
-import org.oasis_eu.spring.datacore.model.DCResult
-import org.oasis_eu.spring.datacore.model.DCResultType
-import org.ozwillo.dcimporter.config.Prop
+import org.ozwillo.dcimporter.model.datacore.DCOperator
+import org.ozwillo.dcimporter.model.datacore.DCOrdering
+import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
+import org.ozwillo.dcimporter.repository.PublikConfigurationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
@@ -16,13 +12,12 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("!test")
-class SynchronizerService(private val systemUserService: SystemUserService,
-                          private val datacoreClient: DatacoreClient,
+class SynchronizerService(private val datacoreService: DatacoreService,
                           private val publikService: PublikService,
-                          private val props: Prop) : CommandLineRunner {
+                          private val publikConfigurationRepository: PublikConfigurationRepository) : CommandLineRunner {
 
     @Value("\${publik.datacore.project}")
-    private val datacoreProject: String? = null
+    private val datacoreProject: String = "datacoreProject"
     @Value("\${publik.datacore.modelEM}")
     private val datacoreModelEM: String? = null
     @Value("\${publik.datacore.modelSVE}")
@@ -33,35 +28,25 @@ class SynchronizerService(private val systemUserService: SystemUserService,
     private lateinit var formTypeSVE: String
 
     override fun run(vararg args: String) {
-        systemUserService.runAs( {
 
-            props.instance.forEach { instance ->
+        publikConfigurationRepository.findAll().subscribe { publikConfiguration ->
 
-                val dcOrg = publikService.getDCOrganization(instance["organization"])
-                if (!dcOrg.isPresent) {
-                    LOGGER.error("Unable to find organization {}", instance["organization"])
-                } else {
-                    val queryParameters = DCQueryParameters("citizenreq:organization", DCOperator.EQ, dcOrg.get().uri)
+            datacoreService.getDCOrganization(publikConfiguration.organizationName).subscribe { dcResource ->
+                val queryParameters = DCQueryParameters("citizenreq:organization", DCOperator.EQ,
+                        DCOrdering.DESCENDING, dcResource.getUri())
 
-                    Arrays.asList<String>(datacoreModelEM, datacoreModelSVE).forEach { type ->
-                        if (datacoreClient.findResources(datacoreProject, type, queryParameters, 0, 1).isEmpty())
-                            try {
-                                if (type == datacoreModelEM)
-                                    publikService.syncPublikForms(instance["baseUrl"]!!, dcOrg.get(), formTypeEM)
-                                else if (type == datacoreModelSVE)
-                                    publikService.syncPublikForms(instance["baseUrl"]!!, dcOrg.get(), formTypeSVE)
-                                LOGGER.debug("Requests successfully synchronized")
-                            } catch (e: Exception) {
-                                LOGGER.warn("Unable to synchronize past requests of type {} for {}",
-                                        type, instance["organization"], e)
-                            }
-                        else
-                            LOGGER.debug("Requests of type {} are already synchronized for {}", type, dcOrg.get().uri)
+                listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
+                    val result = datacoreService.findResource(datacoreProject, type!!, queryParameters).blockOptional()
+                    if (result.isPresent && result.get().isEmpty()) {
+                        if (type == datacoreModelEM)
+                            publikService.syncPublikForms(publikConfiguration, dcResource, formTypeEM)
+                                    .subscribe { LOGGER.debug("Synchro finished with $it") }
+                        else if (type == datacoreModelSVE)
+                            publikService.syncPublikForms(publikConfiguration, dcResource, formTypeSVE).block()
                     }
                 }
             }
-            DCResult(DCResultType.SUCCESS)
-        })
+        }
     }
 
     companion object {

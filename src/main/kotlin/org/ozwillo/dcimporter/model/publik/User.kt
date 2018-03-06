@@ -5,8 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class User(
-    var email: String,
+    val email: String,
     @JsonProperty("NameID")
-    var nameID: ArrayList<String>,
-    var id: Int,
-    var name: String)
+    val nameID: ArrayList<String>,
+    val id: Int,
+    val name: String)

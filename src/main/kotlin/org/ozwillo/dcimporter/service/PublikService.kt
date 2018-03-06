@@ -1,35 +1,36 @@
 package org.ozwillo.dcimporter.service
 
-import org.apache.commons.codec.binary.Base64
-import org.oasis_eu.spring.datacore.DatacoreClient
-import org.oasis_eu.spring.datacore.model.*
-import org.ozwillo.dcimporter.config.Prop
-import org.ozwillo.dcimporter.model.publik.FormModel
-import org.ozwillo.dcimporter.model.publik.ListFormsModel
+import com.fasterxml.jackson.annotation.JsonProperty
+import org.apache.commons.lang3.RandomStringUtils
+import org.ozwillo.dcimporter.config.FullLoggingInterceptor
+import org.ozwillo.dcimporter.model.BusinessMapping
+import org.ozwillo.dcimporter.model.datacore.*
+import org.ozwillo.dcimporter.model.publik.*
+import org.ozwillo.dcimporter.repository.BusinessMappingRepository
+import org.ozwillo.dcimporter.repository.PublikConfigurationRepository
+import org.ozwillo.dcimporter.util.hmac
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Service
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.util.DefaultUriBuilderFactory
 import reactor.core.publisher.Mono
-import java.io.UnsupportedEncodingException
+import java.net.*
 import java.text.SimpleDateFormat
+import java.time.Duration
 import java.util.*
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
-import javax.xml.bind.DatatypeConverter
-
-import java.net.MalformedURLException
-import java.net.URI
-import java.net.URISyntaxException
-import java.net.URL
-import java.net.URLEncoder
 
 @Service
-class PublikService(private val datacoreClient: DatacoreClient,
-                    private val systemUserService: SystemUserService,
-                    private val props: Prop) {
-
-    private val restTemplate = RestTemplate()
+class PublikService(private val datacoreService: DatacoreService,
+                    private val publikConfigurationRepository: PublikConfigurationRepository,
+                    private val businessMappingRepository: BusinessMappingRepository) {
 
     @Value("\${publik.formTypeEM}")
     private val formTypeEM: String? = null
@@ -38,254 +39,254 @@ class PublikService(private val datacoreClient: DatacoreClient,
     @Value("\${publik.algo}")
     private val algo: String? = null
     @Value("\${publik.orig}")
-    private val orig: String? = null
-    @Value("\${publik.secret}")
-    private val secret: String? = null
+    private val orig: String = "ozwillo-dcimporter"
     @Value("\${publik.datacore.project}")
-    private val datacoreProject: String? = null
+    private val datacoreProject: String = "datacoreProject"
     @Value("\${publik.datacore.modelEM}")
     private val datacoreModelEM: String? = null
     @Value("\${publik.datacore.modelSVE}")
     private val datacoreModelSVE: String? = null
-    @Value("\${publik.datacore.modelORG}")
-    private val datacoreModelORG: String? = null
     @Value("\${publik.datacore.modelUser}")
-    private val datacoreModelUser: String? = null
+    private val datacoreModelUser: String = "citizenreq:user_0"
     @Value("\${datacore.baseUri}")
     private val datacoreBaseUri: String? = null
 
-    @Throws(URISyntaxException::class)
-    private fun getForm(url: String): FormModel? {
+    private fun getForm(url: String, secret: String): FormModel? {
 
-        val finalUrl = sign_url(url)
-        LOGGER.error("URL get Form {}", finalUrl)
+        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", secret)
+        LOGGER.debug("Getting Publik form at URL $url?$signedQuery")
 
-        return restTemplate.getForObject(finalUrl!!, FormModel::class.java)
+        val uriBuilderFactory = DefaultUriBuilderFactory()
+        uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
+        val clientV2 = WebClient.builder()
+                .uriBuilderFactory(uriBuilderFactory)
+                .build()
+        return clientV2.get()
+                .uri("$url?$signedQuery")
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError,
+                        { response -> response.bodyToMono(PublikResponse::class.java).map {
+                            RuntimeException(it.toString())
+                        } })
+                .bodyToMono(FormModel::class.java)
+                .block(Duration.ofSeconds(10))
     }
 
-    fun syncPublikForms(baseUrl: String, dcOrganization: DCResource, formType: String) {
+    fun syncPublikForms(publikConfiguration: PublikConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
 
-        val initUrl = "$baseUrl/api/forms/$formType/list?anonymise"
+        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", publikConfiguration.secret)
 
-        try {
-            val url = sign_url(initUrl)
-            LOGGER.debug("Calling Publik at URL {}", url)
-            val forms = restTemplate.getForObject(url!!, Array<ListFormsModel>::class.java)
+        LOGGER.debug("Getting Publik form list at URL https://${publikConfiguration.domain}/api/forms/$formType/list?$signedQuery")
 
-            forms!!
-                    .filter { it.url.isEmpty() }
-                    .map { getForm(formatUrl(it.url)) }
-                    .map { convertToDCResource(dcOrganization, it!!) }
-                    .forEach { systemUserService.runAs( { datacoreClient.saveResource(datacoreProject, it) }) }
-        } catch (e: URISyntaxException) {
-            LOGGER.error("Exception Uri Syntax : " + e)
-        } catch (e: MalformedURLException) {
-            LOGGER.error("MalformedURLException : " + e)
-        }
-
+        val uriBuilderFactory = DefaultUriBuilderFactory()
+        uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
+        val clientV2 = WebClient.builder()
+                .uriBuilderFactory(uriBuilderFactory)
+                .build()
+        return clientV2.get()
+                .uri("https://${publikConfiguration.domain}/api/forms/$formType/list?$signedQuery")
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError,
+                        { response -> response.bodyToMono(PublikResponse::class.java).map {
+                            RuntimeException(it.toString())
+                        } })
+                .bodyToFlux(ListFormsModel::class.java)
+                .map { getForm(formatUrl(it.url), publikConfiguration.secret) }
+                .map { convertToDCResource(dcOrganization, it!!) }
+                .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second) }
+                .count()
+                .map { DCResult(HttpStatus.OK) }
     }
 
-    fun saveResourceToDC(form: FormModel): Mono<DCResult> {
+    data class PublikResponse(@JsonProperty("err_class") val errClass: String,
+                         @JsonProperty("err_desc") val errDesc: String,
+                         @JsonProperty("err") val err: Int)
 
-        val orgLegalName: String? =
-                props.instance.first { !it["baseUrl"]!!.isEmpty() && it["baseUrl"]!!.contains(form.url)}["organization"]
+    fun formToDCResource(form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
 
-        val dcOrganization = getDCOrganization(orgLegalName)
-        if (!dcOrganization.isPresent) {
-            LOGGER.error("Unable to get organization {}", orgLegalName)
-            return Mono.empty()
-        }
+        LOGGER.debug("Got form from Publik : $form")
+        LOGGER.debug("Form has URL ${form.url}")
+        val uri = URI(form.url)
+        val publikConfiguration = publikConfigurationRepository.findByDomain(uri.host).block()!!
+        val orgResource = datacoreService.getDCOrganization(publikConfiguration.organizationName).block()!!
 
-        val result = systemUserService.runAs( { datacoreClient.saveResource(datacoreProject, convertToDCResource(dcOrganization.get(), form)) } )
-        return Mono.just(result)
+        val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
+
+        val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
+                dcId = result.second.getUri())
+        val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
+
+        return result
+//        return publikConfigurationRepository.findByDomain(uri.host).flatMap {
+//            datacoreService.getDCOrganization(it.organizationName).map { orgResource ->
+//                convertToDCResource(orgResource, form)
+//            }
+//        }
     }
 
-    private fun convertToDCResource(dcOrganization: DCResource, form: FormModel): DCResource {
+    private fun convertToDCResource(dcOrganization: DCResourceLight, form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
 
-        val dcResource = DCResource()
+        val userUri = getOrCreateUser(form).block()!!
 
-        dcResource.baseUri = datacoreBaseUri
+            val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
+            val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
 
-        dcResource.iri = dcOrganization.iri + "/" + form.display_id
+            dcResource.baseUri = datacoreBaseUri
+            dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
 
-        dcResource.set("citizenreq:displayId", form.display_id)
-        dcResource.set("citizenreq:lastUpdateTime", form.last_update_time)
-        dcResource.set("citizenreq:displayName", form.display_name)
-        dcResource.set("citizenreq:submissionChannel", form.submission.channel)
-        dcResource.set("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
-        dcResource.set("citizenreq:url", form.url)
-        dcResource.set("citizenreq:receiptTime", form.receipt_time)
+            val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
 
-        dcResource.set("citizenreq:criticalityLevel", form.criticality_level.toString())
-        dcResource.set("citizenreq:id", form.id)
-        dcResource.set("citizenreq:organization", dcOrganization.uri)
+            dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
+            dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
+            dcFormResource.setStringValue("citizenreq:displayName", form.display_name)
+            dcFormResource.setStringValue("citizenreq:submissionChannel", form.submission.channel)
+            dcFormResource.setStringValue("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
+            dcFormResource.setStringValue("citizenreq:url", form.url)
+            dcFormResource.setStringValue("citizenreq:receiptTime", form.receipt_time)
+            dcFormResource.setStringValue("citizenreq:workflowStatus", form.workflowStatus.orEmpty())
 
-        dcResource.set("citizenreq:user", createUserDCResource(form))
+            dcFormResource.setStringValue("citizenreq:criticalityLevel", form.criticality_level.toString())
+            dcFormResource.setStringValue("citizenreq:id", form.id)
+            dcFormResource.setStringValue("citizenreq:organization", dcOrganization.getUri())
 
-        if (isEMrequest(form)) {
-            convertToDCResourceEM(dcResource, form)
-        } else if (isSVErequest(form)) {
-            convertToDCResourceSVE(dcResource, form)
-        }
-        LOGGER.debug("DCResouce --> :" + dcResource.toString())
-        return dcResource
+            dcFormResource.setStringValue("citizenreq:user", userUri)
+
+            if (isEMrequest(form)) {
+                convertToDCResourceEM(dcFormResource, form)
+            } else if (isSVErequest(form)) {
+                convertToDCResourceSVE(dcFormResource, form)
+            }
+
+            return Pair(type, dcFormResource)
     }
 
-    private fun convertToDCResourceEM(dcResource: DCResource, form: FormModel): DCResource {
+    private fun convertToDCResourceEM(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {
 
-        dcResource.type = datacoreModelEM
-
-        dcResource.set("citizenreqem:familyName", form.fields["nom_famille"].toString())
-        dcResource.set("citizenreqem:firstName", form.fields["prenom"].toString())
-        dcResource.set("citizenreqem:phone", form.fields["telephone"].toString())
+        dcResource.setStringValue("citizenreqem:familyName", form.fields["nom_famille"].toString())
+        dcResource.setStringValue("citizenreqem:firstName", form.fields["prenom"].toString())
+        dcResource.setStringValue("citizenreqem:phone", form.fields["telephone"].toString())
         if (form.fields["detail"] != null)
-            dcResource.set("citizenreqem:detail", form.fields["detail"].toString())
-        dcResource.set("citizenreqem:objectSummary", form.fields["objet_rendez_vous_raw"].toString())
-        dcResource.set("citizenreqem:objectDetail", form.fields["objet_rendez_vous"].toString())
-        dcResource.set("citizenreqem:desiredDate", form.fields["date_souhaitee"].toString())
-        dcResource.set("citizenreqem:email", form.fields["courriel"].toString())
+            dcResource.setStringValue("citizenreqem:detail", form.fields["detail"].toString())
+        dcResource.setStringValue("citizenreqem:objectSummary", form.fields["objet_rendez_vous_raw"].toString())
+        dcResource.setStringValue("citizenreqem:objectDetail", form.fields["objet_rendez_vous"].toString())
+        if (form.fields["date_souhaitee"] != null)
+            dcResource.setStringValue("citizenreqem:desiredDate", form.fields["date_souhaitee"].toString())
+        dcResource.setStringValue("citizenreqem:email", form.fields["courriel"].toString())
 
         return dcResource
     }
 
-    private fun convertToDCResourceSVE(dcResource: DCResource, form: FormModel): DCResource {
+    private fun convertToDCResourceSVE(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {
 
-        dcResource.type = datacoreModelSVE
-
-        dcResource.set("citizenreqsve:title", form.fields["civilite"].toString())
-        dcResource.set("citizenreqsve:familyName", form.fields["nom"].toString())
-        dcResource.set("citizenreqsve:firstName", form.fields["prenoms"].toString())
-        dcResource.set("citizenreqsve:email", form.fields["email"].toString())
-        dcResource.set("citizenreqsve:streetAddress", form.fields["voie"].toString())
-        dcResource.set("citizenreqsve:zipCode", form.fields["code_postal"].toString())
-        dcResource.set("citizenreqsve:city", form.fields["commune"].toString())
-        dcResource.set("citizenreqsve:entityType", form.fields["entite_raw"].toString())
-        dcResource.set("citizenreqsve:object", form.fields["objet"].toString())
-        dcResource.set("citizenreqsve:message", form.fields["message"].toString())
+        dcResource.setStringValue("citizenreqsve:title", form.fields["civilite"].toString())
+        dcResource.setStringValue("citizenreqsve:familyName", form.fields["nom"].toString())
+        dcResource.setStringValue("citizenreqsve:firstName", form.fields["prenoms"].toString())
+        dcResource.setStringValue("citizenreqsve:email", form.fields["email"].toString())
+        dcResource.setStringValue("citizenreqsve:streetAddress", form.fields["voie"].toString())
+        dcResource.setStringValue("citizenreqsve:zipCode", form.fields["code_postal"].toString())
+        dcResource.setStringValue("citizenreqsve:city", form.fields["commune"].toString())
+        dcResource.setStringValue("citizenreqsve:entityType", form.fields["entite_raw"].toString())
+        dcResource.setStringValue("citizenreqsve:object", form.fields["objet"].toString())
+        dcResource.setStringValue("citizenreqsve:message", form.fields["message"].toString())
 
         val doc = form.fields["doc"] as HashMap<String, String>
-        dcResource.set("citizenreqsve:docContent", doc["content"])
-        dcResource.set("citizenreqsve:docFieldId", doc["field_id"])
-        dcResource.set("citizenreqsve:docContentType", doc["content_type"])
-        dcResource.set("citizenreqsve:docFileName", doc["filename"])
+        dcResource.setStringValue("citizenreqsve:docContent", doc["content"].orEmpty())
+        dcResource.setStringValue("citizenreqsve:docFieldId", doc["field_id"].orEmpty())
+        dcResource.setStringValue("citizenreqsve:docContentType", doc["content_type"].orEmpty())
+        dcResource.setStringValue("citizenreqsve:docFileName", doc["filename"].orEmpty())
 
         if (form.fields["siret"] != null)
-            dcResource.set("citizenreqsve:siret", form.fields["siret"].toString())
+            dcResource.setStringValue("citizenreqsve:siret", form.fields["siret"].toString())
         if (form.fields["siret_entreprise"] != null)
-            dcResource.set("citizenreqsve:siret", form.fields["siret_entreprise"].toString())
+            dcResource.setStringValue("citizenreqsve:siret", form.fields["siret_entreprise"].toString())
         if (form.fields["rna"] != null)
-            dcResource.set("citizenreqsve:rna", form.fields["rna"].toString())
+            dcResource.setStringValue("citizenreqsve:rna", form.fields["rna"].toString())
         if (form.fields["nom_entite_entreprise"] != null)
-            dcResource.set("citizenreqsve:legalName", form.fields["nom_entite_entreprise"].toString())
+            dcResource.setStringValue("citizenreqsve:legalName", form.fields["nom_entite_entreprise"].toString())
         if (form.fields["nom_entite"] != null)
-            dcResource.set("citizenreqsve:entityName", form.fields["nom_entite"].toString())
+            dcResource.setStringValue("citizenreqsve:entityName", form.fields["nom_entite"].toString())
         return dcResource
     }
 
-    private fun createUserDCResource(form: FormModel): String {
+    private fun getOrCreateUser(form: FormModel): Mono<String> {
 
-        val dcResource = DCResource()
+        // for now, let's say agent_sictiam is the universal fallback user
+        val nameId = if (form.user == null) "5c977a7f1d444fa1ab0f777325fdda93" else form.user.nameID[0]
 
+        val queryParametersOrg = DCQueryParameters("citizenrequser:nameID", DCOperator.EQ, DCOrdering.DESCENDING,
+                nameId)
+        val listUsers = datacoreService.findResource(datacoreProject, datacoreModelUser, queryParametersOrg).block()!!
+
+        if (!listUsers.isEmpty())
+            return Mono.just(listUsers[0].getUri())
+        else
+            return createUser(form.user!!)
+    }
+
+    private fun createUser(user: User): Mono<String> {
+        val dcResource = DCResource(id = user.nameID[0], type = datacoreModelUser)
         dcResource.baseUri = datacoreBaseUri
-        dcResource.type = datacoreModelUser
-        dcResource.iri = form.user.nameID[0]
-
-        systemUserService.runAs( {
-            if (datacoreClient.getResourceFromURI(datacoreProject, dcResource.uri).resource == null) {
-
-                dcResource.set("citizenrequser:email", form.user.email)
-                dcResource.set("citizenrequser:nameID", form.user.nameID[0])
-                dcResource.set("citizenrequser:userId", form.user.id.toString())
-                dcResource.set("citizenrequser:name", form.user.name)
-                datacoreClient.saveResource(datacoreProject, dcResource)
-            } else {
-                DCResult(DCResultType.SUCCESS)
-            }
-        })
-
-        return dcResource.uri
+        dcResource.iri = user.nameID[0]
+        val dcUserResource = DCBusinessResourceLight(dcResource.getUri())
+        dcUserResource.setStringValue("citizenrequser:email", user.email)
+        dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
+        dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())
+        dcUserResource.setStringValue("citizenrequser:name", user.name)
+        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource).map { saveResult ->
+            (saveResult as DCResultSingle).resource.getUri()
+        }
     }
 
-    fun getDCOrganization(orgLegalName: String?): Optional<DCResource> {
-        val queryParametersOrg = DCQueryParameters("org:legalName", DCOperator.EQ, orgLegalName)
-        val resources = systemUserService.runAs( {
-            val results = datacoreClient
-                    .findResources(datacoreProject, datacoreModelORG, queryParametersOrg, 0, 1)
-            DCResult(DCResultType.SUCCESS, results)
-        }).resources
+    data class PublikStatusResponse(val url: String?, val err: Int?)
 
-        return if (resources.isEmpty()) Optional.empty() else Optional.of(resources[0])
-    }
+    fun changeStatus(publikId: String): PublikStatusResponse {
+        LOGGER.debug("Changing status of request $publikId")
 
-    /**
-     * Calculate a signature with sha256
-     *
-     * @return
-     */
-    private fun calculateSignature(message: String, key: String?): String? {
+        //val uri = URI(publikId)
+        //val publikConfiguration = publikConfigurationRepository.findByDomain(uri.host).block()!!
+
+        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", "aSYZexOBIzl8")
+        LOGGER.debug("Changing status of request at URL ${publikId}jump/trigger/close?$signedQuery")
+
+        val restTemplate = RestTemplate()
+        restTemplate.interceptors.add(FullLoggingInterceptor())
+        val headers = LinkedMultiValueMap<String, String>()
+        headers.set("Accept", "application/json")
+        val uri = "${publikId}jump/trigger/close?$signedQuery"
+        val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
 
         try {
-
-            val sha256_HMAC = Mac.getInstance("HmacSHA256")
-            val secret_key = SecretKeySpec(key!!.toByteArray(), "HmacSHA256")
-            sha256_HMAC.init(secret_key)
-
-            var hash = Base64.encodeBase64String(sha256_HMAC.doFinal(message.toByteArray()))
-            LOGGER.debug("Signature : " + hash)
-
-            hash = URLEncoder.encode(hash, "UTF-8")
-            LOGGER.debug("URL encoded hash : " + hash)
-
-            return hash
-        } catch (e: Exception) {
-            LOGGER.error("Exception when calculate the signature : " + e)
-            return null
+            val response = restTemplate.exchange(request, PublikStatusResponse::class.java)
+            LOGGER.debug("Got Publik response for status change $response")
+            return response.body!!
+        } catch (e: HttpClientErrorException) {
+            // TODO : temp hack while not handling existing resource yet
+            LOGGER.error("Publik returned an error", e)
+            return PublikStatusResponse(err = -1, url = "")
         }
-
     }
 
-    @Throws(URISyntaxException::class)
-    private fun sign_url(url: String): URI? {
+    private fun signQuery(query: String, secret: String): String {
 
         val tz = TimeZone.getTimeZone("UTC")
         val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
         df.timeZone = tz
         val thisMoment = df.format(Date())
 
-        val random = Random()
-        // create byte array
-        val nbyte = ByteArray(16)
-        // put the next byte in the array
-        random.nextBytes(nbyte)
-        val nonce = DatatypeConverter.printHexBinary(nbyte)
+        val nonce = RandomStringUtils.random(64, true, true)
 
-        try {
-            var newQuery = ""
-            val parsedUrl = URL(url)
-
-            if (parsedUrl.query != null)
-                newQuery = parsedUrl.query + "&"
-
-            newQuery += ("algo=" + this.algo + "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") + "&nonce=" + nonce
-                    + "&orig=" + URLEncoder.encode(this.orig!!, "UTF-8"))
-            val signature = calculateSignature(newQuery, this.secret)
-            newQuery += "&signature=" + signature!!
-
-            return URI(
-                    parsedUrl.protocol + "://" + parsedUrl.host + parsedUrl.path + "?" + newQuery)
-        } catch (e: MalformedURLException) {
-            LOGGER.error("MalformedURLException : " + e)
-            return null
-        } catch (e: UnsupportedEncodingException) {
-            LOGGER.error("Unsupported encoding exception !?")
-            return null
-        }
-
+        val fullEncodedQuery = query + "algo=" + this.algo +
+                "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") +
+                "&nonce=" + URLEncoder.encode(nonce, "UTF-8") +
+                "&orig=" + URLEncoder.encode(this.orig, "UTF-8")
+        val signature = fullEncodedQuery.hmac("HmacSHA256", secret)
+        return fullEncodedQuery + "&signature=" + URLEncoder.encode(signature, "UTF-8")
     }
 
     @Throws(MalformedURLException::class)
     private fun formatUrl(url_base: String): String {
 
+        LOGGER.debug("Formatting URL $url_base")
         val parsedUrl = URL(url_base)
         return "https://" + parsedUrl.host + "/api/forms" + parsedUrl.path
     }
@@ -301,6 +302,7 @@ class PublikService(private val datacoreClient: DatacoreClient,
     companion object {
 
         private val LOGGER = LoggerFactory.getLogger(PublikService::class.java)
+        const val name: String = "Publik"
     }
 
 }

@@ -7,18 +7,18 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class FormModel(
-    var display_id: String,
-    var last_update_time: String,
-    var display_name: String,
-    var submission: Submission,
-    var url: String,
-    @JsonProperty
-    var fields: HashMap<String, Any>,
-    var receipt_time: String,
-    var user: User,
-    var criticality_level: Int,
-    var id: String,
-    var workflowStatus: String) {
+        val display_id: String,
+        val last_update_time: String,
+        val display_name: String,
+        val submission: Submission,
+        val url: String,
+        @JsonProperty
+        val fields: HashMap<String, Any>,
+        val receipt_time: String,
+        val user: User?,
+        val criticality_level: Int,
+        val id: String,
+        var workflowStatus: String?) {
 
     @JsonProperty("workflow")
     private fun unpackNested(workflow: Map<String, Any>) {

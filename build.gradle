@@ -56,15 +56,15 @@ repositories {
 
 dependencies {
     compile('org.springframework.boot:spring-boot-starter-actuator')
-    compile('org.springframework.boot:spring-boot-starter-security')
-    compile('org.springframework.boot:spring-boot-starter-reactor-netty')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
     compile('org.springframework.boot:spring-boot-starter-webflux')
     compile('org.springframework.boot:spring-boot-configuration-processor')
-    compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
-    compile('com.ozwillo:ozwillo-java-spring-integration:2.0.0.SNAPSHOT')
     compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
     compile("org.jetbrains.kotlin:kotlin-reflect")
     compile('com.fasterxml.jackson.module:jackson-module-kotlin')
+    compile('org.apache.commons:commons-lang3:3.7')
+    compile('commons-codec:commons-codec:1.11')
+    compile('com.google.guava:guava:23.6-jre')
 
     runtime('org.springframework.boot:spring-boot-devtools')
     runtime('org.codehaus.groovy:groovy:2.4.7')

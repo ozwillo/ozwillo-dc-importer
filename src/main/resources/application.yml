@@ -16,12 +16,8 @@ application:
   syncDelay: 10000
   
 publik:
-  instance: 
-    - baseUrl: https://demarches-sve.test-demarches.sictiam.fr
-      organization: sictiam
-  formTypeEM: demande-de-rendez-vous-avec-un-elu
+  formTypeEM: demande-de-rendez-vous
   formTypeSVE: saisine-par-voie-electronique-new
-  secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
   datacore:

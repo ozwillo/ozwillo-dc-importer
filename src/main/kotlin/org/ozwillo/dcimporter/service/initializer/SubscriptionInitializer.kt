@@ -13,17 +13,19 @@ class SubscriptionInitializer(private val subscriptionRepository: SubscriptionRe
 
     @PostConstruct
     fun init() {
-        val subscriptions = Flux.just(
-                Subscription(model = "citizenreq:elecmeeting_0",
-                        organizationSiret = "25060187900043",
-                        additionalField = "workflowStatus", additionalValue = "Accepted",
-                        subscriberName = "Maarch GEC"),
-                Subscription(model = "citizenreq:elecmeeting_0",
-                        organizationSiret = "25060187900043",
-                        additionalField = "workflowStatus", additionalValue = "Sent Citizen",
-                        subscriberName = "Publik")
-        )
+        if (subscriptionRepository.count().block() == 0L) {
+            val subscriptions = Flux.just(
+                    Subscription(model = "citizenreq:elecmeeting_0",
+                            organizationSiret = "250601879",
+                            additionalField = "citizenreq:workflowStatus", additionalValue = "Terminé",
+                            subscriberName = "Maarch GEC"),
+                    Subscription(model = "citizenreq:elecmeeting_0",
+                            organizationSiret = "250601879",
+                            additionalField = "citizenreq:workflowStatus", additionalValue = "Sent Citizen",
+                            subscriberName = "Publik")
+            )
 
-        subscriptionRepository.insert(subscriptions).subscribe()
+            subscriptionRepository.saveAll(subscriptions).subscribe()
+        }
     }
 }
