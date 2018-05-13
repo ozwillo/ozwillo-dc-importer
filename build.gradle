@@ -1,7 +1,7 @@
 buildscript {
     ext {
-        springBootVersion = '2.0.0.RC2'
-        kotlinVersion = '1.2.21'
+        springBootVersion = '2.0.1.RELEASE'
+        kotlinVersion = '1.2.41'
     }
     repositories {
         mavenCentral()
@@ -14,10 +14,6 @@ buildscript {
         classpath("org.jetbrains.kotlin:kotlin-noarg:${kotlinVersion}")
         classpath('org.junit.platform:junit-platform-gradle-plugin:1.1.0')
     }
-}
-
-ext {
-    junitJupiterVersion = '5.1.0'
 }
 
 apply plugin: 'kotlin'
@@ -72,17 +68,20 @@ dependencies {
     testCompile("org.springframework.boot:spring-boot-starter-test") {
         exclude module: "junit"
     }
-    testCompile("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
-    testCompile("org.junit.jupiter:junit-jupiter-params:${junitJupiterVersion}")
+    testImplementation('org.junit.jupiter:junit-jupiter-api')
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
     testCompile("io.projectreactor:reactor-test")
-
-    testRuntime("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
 }
 
 bootRun {
     environment SPRING_PROFILES_ACTIVE: environment.SPRING_PROFILES_ACTIVE ?: "dev"
 }
 
+test {
+    useJUnitPlatform()
+}
+
 task wrapper(type: Wrapper) {
-    gradleVersion = '4.2.1'
+    // at least 4.6 for JUnit 5 support
+    gradleVersion = '4.7'
 }
