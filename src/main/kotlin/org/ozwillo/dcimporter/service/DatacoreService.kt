@@ -120,6 +120,7 @@ class DatacoreService {
 
         try {
             val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
+            LOGGER.debug("Got response : ${response.body}")
             val result: DCBusinessResourceLight = response.body!!
             return result
         } catch (e: HttpClientErrorException) {

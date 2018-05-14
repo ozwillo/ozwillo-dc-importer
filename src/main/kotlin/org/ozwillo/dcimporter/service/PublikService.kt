@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
@@ -27,6 +26,7 @@ import java.text.SimpleDateFormat
 import java.time.Duration
 import java.util.*
 
+// TODO : needs a lot of cleanup and refactoring !!!!
 @Service
 class PublikService(private val datacoreService: DatacoreService,
                     private val publikConfigurationRepository: PublikConfigurationRepository,
@@ -128,50 +128,61 @@ class PublikService(private val datacoreService: DatacoreService,
 
         val userUri = getOrCreateUser(form).block()!!
 
-            val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
-            val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
+        val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
+        val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
 
-            dcResource.baseUri = datacoreBaseUri
-            dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
+        dcResource.baseUri = datacoreBaseUri
+        dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
 
-            val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
+        val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
 
-            dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
-            dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
-            dcFormResource.setStringValue("citizenreq:displayName", form.display_name)
-            dcFormResource.setStringValue("citizenreq:submissionChannel", form.submission.channel)
-            dcFormResource.setStringValue("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
-            dcFormResource.setStringValue("citizenreq:url", form.url)
-            dcFormResource.setStringValue("citizenreq:receiptTime", form.receipt_time)
-            dcFormResource.setStringValue("citizenreq:workflowStatus", form.workflowStatus.orEmpty())
+        dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
+        dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
+        dcFormResource.setStringValue("citizenreq:displayName", form.display_name)
+        dcFormResource.setStringValue("citizenreq:submissionChannel", form.submission.channel)
+        dcFormResource.setStringValue("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
+        dcFormResource.setStringValue("citizenreq:url", form.url)
+        dcFormResource.setStringValue("citizenreq:receiptTime", form.receipt_time)
+        dcFormResource.setStringValue("citizenreq:workflowStatus", form.workflowStatus.orEmpty())
 
-            dcFormResource.setStringValue("citizenreq:criticalityLevel", form.criticality_level.toString())
-            dcFormResource.setStringValue("citizenreq:id", form.id)
-            dcFormResource.setStringValue("citizenreq:organization", dcOrganization.getUri())
+        dcFormResource.setStringValue("citizenreq:criticalityLevel", form.criticality_level.toString())
+        dcFormResource.setStringValue("citizenreq:id", form.id)
+        dcFormResource.setStringValue("citizenreq:organization", dcOrganization.getUri())
 
-            dcFormResource.setStringValue("citizenreq:user", userUri)
+        // TODO shouldn't user be instead the guy who issued the request ?
+        // Currently it is the agent who triggered the status change
+        dcFormResource.setStringValue("citizenreq:user", userUri)
 
-            if (isEMrequest(form)) {
-                convertToDCResourceEM(dcFormResource, form)
-            } else if (isSVErequest(form)) {
-                convertToDCResourceSVE(dcFormResource, form)
-            }
+        if (isEMrequest(form)) {
+            convertToDCResourceEM(dcFormResource, form)
+        } else if (isSVErequest(form)) {
+            convertToDCResourceSVE(dcFormResource, form)
+        }
 
-            return Pair(type, dcFormResource)
+        return Pair(type, dcFormResource)
     }
 
     private fun convertToDCResourceEM(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {
 
-        dcResource.setStringValue("citizenreqem:familyName", form.fields["nom_famille"].toString())
+        dcResource.setStringValue("citizenreqem:familyName", form.fields["nom"].toString())
         dcResource.setStringValue("citizenreqem:firstName", form.fields["prenom"].toString())
         dcResource.setStringValue("citizenreqem:phone", form.fields["telephone"].toString())
+        dcResource.setStringValue("citizenreqem:email", form.fields["email"].toString())
         if (form.fields["detail"] != null)
             dcResource.setStringValue("citizenreqem:detail", form.fields["detail"].toString())
-        dcResource.setStringValue("citizenreqem:objectSummary", form.fields["objet_rendez_vous_raw"].toString())
-        dcResource.setStringValue("citizenreqem:objectDetail", form.fields["objet_rendez_vous"].toString())
+        dcResource.setStringValue("citizenreqem:objectSummary", form.fields["objet_raw"].toString())
+        dcResource.setStringValue("citizenreqem:objectDetail", form.fields["objet"].toString())
         if (form.fields["date_souhaitee"] != null)
             dcResource.setStringValue("citizenreqem:desiredDate", form.fields["date_souhaitee"].toString())
-        dcResource.setStringValue("citizenreqem:email", form.fields["courriel"].toString())
+
+        if (form.fields["courrier"] != null) {
+            val courrierFieds: Map<String, Any> = form.fields["courrier"] as Map<String, Any>
+            val base64content = courrierFieds["content"].toString()
+            val contentType = courrierFieds["content_type"].toString()
+            val filename = courrierFieds["filename"].toString()
+            val resourceFile = DCBusinessResourceFile(base64content = base64content, contentType = contentType, filename = filename)
+            dcResource.addResourceFile(resourceFile)
+        }
 
         return dcResource
     }

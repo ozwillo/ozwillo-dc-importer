@@ -75,14 +75,7 @@
     "telephone": "0661444444"
   },
   "receipt_time": "2017-05-11T09:08:53Z",
-  "user": {
-    "email": "admin@ozwillo-dev.eu",
-    "NameID": [
-      "5c977a7f1d444fa1ab0f777325fdda93"
-    ],
-    "id": 3,
-    "name": "agent_sictiam agent_sictiam"
-  },
+  "user": null,
   "criticality_level": 0,
   "id": "demande-de-rendez-vous-avec-un-elu/4"
 }
