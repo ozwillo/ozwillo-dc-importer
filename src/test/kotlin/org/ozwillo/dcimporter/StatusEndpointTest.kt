@@ -2,21 +2,24 @@ package org.ozwillo.dcimporter
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.boot.test.web.client.getForEntity
 import org.springframework.http.HttpStatus
-import org.springframework.web.reactive.function.client.bodyToMono
-import reactor.test.test
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.junit.jupiter.SpringExtension
 
-class StatusEndpointTest : AbstractIntegrationTests() {
+@ExtendWith(SpringExtension::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
+class StatusEndpointTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
-    fun status() {
-        client.get().uri("/api/status").exchange().test()
-                .consumeNextWith {
-                    assertThat(it.statusCode()).isEqualTo(HttpStatus.OK)
-                    it.bodyToMono<String>().map {
-                        assertThat(it).isEqualTo("OK")
-                    }
-                }
-                .verifyComplete()
+    fun `Assert status page return code`() {
+        val result = restTemplate.getForEntity<String>("/api/status")
+        assertThat(result.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(result.body).isEqualTo("OK")
     }
 }
