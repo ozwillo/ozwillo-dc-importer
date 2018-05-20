@@ -62,7 +62,7 @@ class PostAndNotifyTest : AbstractIntegrationTests() {
                 Pair("citizenreq:elecmeeting_0", DCBusinessResourceLight("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4"))
         Mockito.`when`(datacoreService.saveResource("citizenreq_0", fakeToDcResource.first,
                     argThat(DCBusinessResourceLightMatcher(fakeToDcResource.second))))
-                .thenReturn(Mono.just(DCResult(HttpStatus.OK)))
+                .thenReturn(Mono.just(DCResultSingle(HttpStatus.OK, DCResourceLight("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4"))))
 
         val formModel = FormModel(display_id = "17-4", last_update_time = "2017-05-11T09:08:54Z",
                 display_name = "Demande de rendez-vous avec un élu - n°17-4",

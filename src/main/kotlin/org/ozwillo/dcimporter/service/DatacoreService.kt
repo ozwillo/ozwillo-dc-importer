@@ -53,7 +53,7 @@ class DatacoreService {
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
 
-    fun saveResource(project: String, type: String, resource: DCResourceLight): Mono<DCResult> {
+    fun saveResource(project: String, type: String, resource: DCResourceLight): Mono<DCResultSingle> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
                 .path("/dc/type/{type}")

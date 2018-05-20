@@ -8,7 +8,8 @@ import org.springframework.web.reactive.function.server.router
 @Configuration
 class Routes(private val statusHandler: StatusHandler,
              private val publikHandler: PublikHandler,
-             private val maarchHandler: MaarchHandler) {
+             private val maarchHandler: MaarchHandler,
+             private val marchePublicHandler: MarchePublicHandler) {
 
     @Bean
     fun router() = router {
@@ -21,6 +22,9 @@ class Routes(private val statusHandler: StatusHandler,
             }
             "/status".nest {
                 GET("/", statusHandler::status)
+            }
+            "/marche-public".nest {
+                POST("/consultation", marchePublicHandler::create)
             }
         }
     }
