@@ -6,6 +6,7 @@ import org.ozwillo.dcimporter.repository.SubscriptionRepository
 import org.springframework.context.ApplicationContext
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import javax.annotation.PostConstruct
 
 @Service
@@ -22,6 +23,11 @@ class SubscriptionService(private val subscriptionRepository: SubscriptionReposi
     }
 
     fun add(subscription: Subscription) = subscriptionRepository.save(subscription)
+
+    // TODO : replug a working notification mechanism
+    fun notifyMock(dcModelType: DCModelType, dcResource: DCBusinessResourceLight): Mono<String> {
+        return Mono.just("OK")
+    }
 
     fun notify(dcModelType: DCModelType, dcResource: DCBusinessResourceLight): Flux<String> {
         return subscriptionRepository.findByModel(dcModelType)

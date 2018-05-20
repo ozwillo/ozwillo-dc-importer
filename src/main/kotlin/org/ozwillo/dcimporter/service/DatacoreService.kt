@@ -16,7 +16,6 @@ import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.bodyToMono
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -71,36 +70,9 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        try {
-            val response = restTemplate.exchange(request, DCResourceLight::class.java)
-            val result: DCResourceLight = response.body!!
-            return Mono.just(DCResultSingle(HttpStatus.OK, result))
-        } catch (e: HttpClientErrorException) {
-            // TODO : temp hack while not handling existing resource yet
-            LOGGER.error("DC returned an error", e)
-            return Mono.just(DCResultSingle(HttpStatus.OK, resource))
-        }
-
-        // Unused for now, retry and make it clean later
-//        return try {
-//            val client: WebClient = WebClient.create(uri)
-//            getAccessToken().flatMap { accessToken ->
-//                client.post()
-//                        .header("X-Datacore-Project", project)
-//                        .header("Authorization", "Bearer $accessToken")
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .syncBody(json)
-//                        .exchange()
-////                        .onStatus(HttpStatus::is4xxClientError, {
-////                            response -> Mono.just(RuntimeException("Received ${response.statusCode()} from DC"))
-////                        })
-//                        .flatMap { clientResponse -> clientResponse.bodyToMono(DCResource::class.java) }
-//                        //.bodyToMono(DCResource::class.java)
-//                        .map { it -> DCResultSingle(HttpStatus.OK, it) }
-//            }
-//        } catch (e: HttpClientErrorException) {
-//            this.getDCResultFromHttpErrorException(e)
-//        }
+        val response = restTemplate.exchange(request, DCResourceLight::class.java)
+        val result: DCResourceLight = response.body!!
+        return Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
     fun getResourceFromURI(project: String, type: String, iri: String): DCBusinessResourceLight {
