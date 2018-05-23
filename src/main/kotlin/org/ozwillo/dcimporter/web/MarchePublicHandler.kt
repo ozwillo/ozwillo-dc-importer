@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.web
 
+import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResultSingle
@@ -23,14 +24,16 @@ import java.net.URI
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val kernelService: KernelService,
                           private val datacoreService: DatacoreService,
-                          private val subscriptionService: SubscriptionService) {
+                          private val subscriptionService: SubscriptionService,
+                          private val applicationProperties: ApplicationProperties) {
 
     fun create(req: ServerRequest): Mono<ServerResponse> {
         if (!kernelService.checkAuthorization(req.headers().header("Authorization")))
             return status(HttpStatus.UNAUTHORIZED).body(BodyInserters.empty<String>())
 
+        val siret = req.pathVariable("siret")
         val dcConsultation: Mono<DCBusinessResourceLight> = req.bodyToMono<Consultation>()
-                .map { consultation -> consultation.toDcObject(datacoreProperties.baseUri) }
+                .map { consultation -> consultation.toDcObject(datacoreProperties.baseUri, siret) }
 
         val dcAndNotifyResult: Mono<Tuple2<DCResultSingle, String>> = dcConsultation.flatMap {
             val dcResult: Mono<DCResultSingle> = datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0", it)
@@ -39,7 +42,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }
 
         return dcAndNotifyResult.flatMap { result ->
-            created(URI(result.t1.resource.getUri()))
+            val reference = result.t1.resource.getUri().substringAfterLast('/')
+            val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
+            created(URI(resourceUri))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(BodyInserters.empty<String>())
         }.onErrorResume { error ->

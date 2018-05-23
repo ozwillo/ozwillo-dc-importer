@@ -5,12 +5,10 @@ import org.ozwillo.dcimporter.util.DCUtils
 import java.time.LocalDateTime
 
 data class Consultation(
-        val idPouvoirAdjudicateur: String,
         val reference: String,
         val objet: String,
         val datePublication: LocalDateTime,
         val dateCloture: LocalDateTime,
-        val refInterne: String?, /* ensure it is needed */
         val finaliteMarche: FinaliteMarcheType,
         val typeMarche: TypeMarcheType,
         val typePrestation: TypePrestationType,
@@ -24,15 +22,15 @@ data class Consultation(
         val invisible: Boolean,
         val nbLots: Int
 ) {
-    fun toDcObject(baseUri: String): DCBusinessResourceLight {
+    fun toDcObject(baseUri: String, siret: String): DCBusinessResourceLight {
         val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "marchepublic:consultation_0",
-                "$idPouvoirAdjudicateur/$refInterne"))
-        resourceLight.setStringValue("mpconsultation:idPouvoirAdjudicateur", idPouvoirAdjudicateur)
+                "$siret/$reference"))
+        val organizationUri = DCUtils.getUri(baseUri, "org:Organization_0", "FR/$siret")
+        resourceLight.setStringValue("mpconsultation:organization", organizationUri)
         resourceLight.setStringValue("mpconsultation:reference", reference)
         resourceLight.setStringValue("mpconsultation:objet", objet)
         resourceLight.setDateTimeValue("mpconsultation:datePublication", datePublication)
         resourceLight.setDateTimeValue("mpconsultation:dateCloture", dateCloture)
-        refInterne?.let { resourceLight.setStringValue("mpconsultation:refInterne", refInterne) }
         resourceLight.setStringValue("mpconsultation:finaliteMarche", finaliteMarche.toString())
         resourceLight.setStringValue("mpconsultation:typeMarche", typeMarche.toString())
         resourceLight.setStringValue("mpconsultation:typePrestation", typePrestation.toString())

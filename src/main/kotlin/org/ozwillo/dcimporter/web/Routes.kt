@@ -24,7 +24,7 @@ class Routes(private val statusHandler: StatusHandler,
                 GET("/", statusHandler::status)
             }
             "/marche-public".nest {
-                POST("/consultation", marchePublicHandler::create)
+                POST("/{siret}/consultation", marchePublicHandler::create)
             }
         }
     }

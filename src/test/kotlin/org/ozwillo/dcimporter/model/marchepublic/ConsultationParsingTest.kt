@@ -24,7 +24,6 @@ class ConsultationParsingTest {
     fun `Test a consultation is correctly deserialized`() {
         val consultationJson = """
             {
-                "idPouvoirAdjudicateur": "123456",
                 "reference": "reference",
                 "objet": "mon marché public",
                 "datePublication": "2018-05-01T00:00:00",
@@ -44,7 +43,6 @@ class ConsultationParsingTest {
             """
         val consultation = jacksonTester.parseObject(consultationJson)
 
-        assertThat(consultation.idPouvoirAdjudicateur).isEqualTo("123456")
         assertThat(consultation.reference).isEqualTo("reference")
         assertThat(consultation.datePublication).isEqualTo(LocalDateTime.of(2018,5,1,0,0,0))
         assertThat(consultation.finaliteMarche).isEqualTo(FinaliteMarcheType.MARCHE)

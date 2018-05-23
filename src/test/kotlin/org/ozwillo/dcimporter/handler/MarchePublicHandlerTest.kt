@@ -29,6 +29,8 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     private lateinit var wireMockServer: WireMockServer
 
+    private val siret = "123456789"
+
     private val tokenInfoResponse = """
         {
             "active": "true"
@@ -59,24 +61,25 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
     fun `Test correct creation of a consultation`() {
+        val reference = "ref-consultation"
         val dcResponse = """
             {
-                "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/ref-interne"
+                "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/$reference"
             }
             """
         WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.okJson(dcResponse).withStatus(201)))
 
-        val consultation = Consultation(idPouvoirAdjudicateur = "123456", reference = "ref-consultation",
+        val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
-                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "passation", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
                 enLigne = false, alloti = false, invisible = false, nbLots = 1)
 
-        val entity = restTemplate.postForEntity<String>("/api/marche-public/consultation", consultation)
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/consultation", consultation)
         assertThat(entity.statusCode).isEqualTo(HttpStatus.CREATED)
-        assertThat(entity.headers["Location"]).isEqualTo(listOf("http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/ref-interne"))
+        assertThat(entity.headers["Location"]).isEqualTo(listOf("http://localhost:3000/api/marche-public/$siret/consultation/$reference"))
 
         WireMock.verify(WireMock.postRequestedFor(WireMock.urlEqualTo("/dc/type/marchepublic:consultation_0")))
     }
@@ -86,14 +89,14 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.aResponse().withStatus(400)))
 
-        val consultation = Consultation(idPouvoirAdjudicateur = "123456", reference = "ref-consultation",
+        val consultation = Consultation(reference = "ref-consultation",
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
-                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "passation", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
                 enLigne = false, alloti = false, invisible = false, nbLots = 1)
 
-        val entity = restTemplate.postForEntity<String>("/api/marche-public/consultation", consultation)
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/consultation", consultation)
         assertThat(entity.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
         assertThat(entity.headers["Location"]).isNull()
 
@@ -104,7 +107,6 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
     fun `Test illformed consultation payload`() {
         val consultationJson = """
             {
-                "idPouvoirAdjudicateur": "123456",
                 "reference": "reference",
                 "objet": "mon marché public",
                 "dateCloture": "2018-05-31T00:00:00",
@@ -124,7 +126,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         headers.contentType = MediaType.APPLICATION_JSON
         val entity = HttpEntity(consultationJson, headers)
 
-        val response = restTemplate.exchange("/api/marche-public/consultation", HttpMethod.POST, entity, String::class.java)
+        val response = restTemplate.exchange("/api/marche-public/$siret/consultation", HttpMethod.POST, entity, String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
         assertThat(response.body).startsWith("JSON decoding error")
     }
