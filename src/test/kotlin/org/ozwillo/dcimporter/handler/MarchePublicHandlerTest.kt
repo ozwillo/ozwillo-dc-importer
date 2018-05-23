@@ -3,9 +3,9 @@ package org.ozwillo.dcimporter.handler
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
+import com.github.tomakehurst.wiremock.matching.EqualToPattern
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.http.*
+import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 
@@ -28,15 +29,27 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     private lateinit var wireMockServer: WireMockServer
 
+    private val tokenInfoResponse = """
+        {
+            "active": "true"
+        }
+        """
+
     @BeforeAll
     fun beforeAll() {
         wireMockServer = WireMockServer(wireMockConfig().port(8089))
         wireMockServer.start()
-    }
 
-    @AfterEach
-    fun afterEach() {
-        wireMockServer.resetAll()
+        // we need a fake bearer to go through the verification chain
+        restTemplate.restTemplate.interceptors.add(ClientHttpRequestInterceptor { request, body, execution ->
+            request.headers["Authorization"] = "Bearer secrettoken"
+            execution.execute(request, body)
+        })
+
+        WireMock.configureFor(8089)
+        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/tokeninfo"))
+                .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpNa2xMcm94V1ZGKy9QRFNqazlONkcra29VZTV5T0ZhL1JodEhmVzg5YzZF"))
+                .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
     }
 
     @AfterAll
@@ -51,13 +64,12 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/ref-interne"
             }
             """
-        WireMock.configureFor(8089)
         WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.okJson(dcResponse).withStatus(201)))
 
         val consultation = Consultation(idPouvoirAdjudicateur = "123456", reference = "ref-consultation",
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
-                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIQUE,
+                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "passation", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
                 enLigne = false, alloti = false, invisible = false, nbLots = 1)
@@ -71,13 +83,12 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
     fun `Test bad request sent to the Datacore`() {
-        WireMock.configureFor(8089)
         WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.aResponse().withStatus(400)))
 
         val consultation = Consultation(idPouvoirAdjudicateur = "123456", reference = "ref-consultation",
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
-                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIQUE,
+                refInterne = "ref-interne", finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "passation", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
                 enLigne = false, alloti = false, invisible = false, nbLots = 1)

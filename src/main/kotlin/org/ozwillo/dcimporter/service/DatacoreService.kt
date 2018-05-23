@@ -43,10 +43,10 @@ class DatacoreService {
     @Value("\${kernel.auth.token_endpoint: http://localhost:8080}")
     private val tokenEndpoint: String = "http://localhost:8080/a/token"
 
-    @Value("\${kernel.client_id}")
+    @Value("\${kernel.clientId}")
     private val clientId: String = "client_id"
 
-    @Value("\${kernel.client_secret}")
+    @Value("\${kernel.clientSecret}")
     private val clientSecret: String = "client_secret"
 
     @Value("\${datacore.systemAdminUser.refreshToken}")

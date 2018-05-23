@@ -52,15 +52,16 @@ data class Consultation(
 
 enum class FinaliteMarcheType {
     MARCHE,
-    ACCORD_CADRE,
+    ACCORD,
     DSP,
     AUTRE
 }
 
 enum class TypeMarcheType {
-    PUBLIQUE,
-    ORDO_2005,
-    PRIVE
+    PUBLIC,
+    ORDONNANCE2005,
+    PRIVE,
+    AUTRE
 }
 
 enum class TypePrestationType {

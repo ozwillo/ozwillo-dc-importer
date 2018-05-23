@@ -37,7 +37,7 @@ maarch:
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
   base_uri: https://kernel.ozwillo-preprod.eu
-  account_uri: https://accounts.ozwillo-preprod.eu
+  accountUri: https://accounts.ozwillo-preprod.eu
   alt_uri: ${kernel.base_uri}
   auth:
     issuer: ${kernel.base_uri}/
@@ -55,8 +55,8 @@ kernel:
   organization_endpoint: ${kernel.base_uri}/d/org
   event_bus_endpoint: ${kernel.base_uri}/e
   notifications_endpoint: ${kernel.base_uri}/n
-  client_id: dcimporter
-  client_secret: secret
+  clientId: dcimporter
+  clientSecret: secret
   # NB. once Datacore cache is in place, move datacore scope to its dedicated system user
   scopes_to_require: openid profile email datacore
 
