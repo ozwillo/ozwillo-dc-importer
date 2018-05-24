@@ -93,7 +93,7 @@ class PublikService(private val datacoreService: DatacoreService,
                 .bodyToFlux(ListFormsModel::class.java)
                 .map { getForm(formatUrl(it.url), publikConfiguration.secret) }
                 .map { convertToDCResource(dcOrganization, it!!) }
-                .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second) }
+                .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
                 .count()
                 .map { DCResult(HttpStatus.OK) }
     }
@@ -243,7 +243,7 @@ class PublikService(private val datacoreService: DatacoreService,
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())
         dcUserResource.setStringValue("citizenrequser:name", user.name)
-        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource).map { saveResult ->
+        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, null).map { saveResult ->
             (saveResult as DCResultSingle).resource.getUri()
         }
     }

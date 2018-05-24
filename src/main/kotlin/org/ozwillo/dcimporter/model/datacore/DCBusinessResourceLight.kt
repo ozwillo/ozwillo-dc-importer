@@ -9,14 +9,22 @@ import java.util.HashMap
 
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(uri: String,
-                              @JsonAnySetter private var values: Map<String, String> = HashMap()) : DCResourceLight(uri) {
+                              @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
 
     @JsonAnyGetter
-    fun getValues(): Map<String, String> {
+    fun getValues(): Map<String, Any> {
         return values
     }
 
     fun setStringValue(key: String, value: String) {
+        this.values = this.values.plus(Pair(key, value))
+    }
+
+    fun setBooleanValue(key: String, value: Boolean) {
+        this.values = this.values.plus(Pair(key, value))
+    }
+
+    fun setIntegerValue(key: String, value: Int) {
         this.values = this.values.plus(Pair(key, value))
     }
 
@@ -25,7 +33,7 @@ class DCBusinessResourceLight(uri: String,
     }
 
     fun setListValue(key: String, values: List<Any>) {
-        this.values = this.values.plus(Pair(key, values.toString()))
+        this.values = this.values.plus(Pair(key, values))
     }
 
     @JsonIgnore

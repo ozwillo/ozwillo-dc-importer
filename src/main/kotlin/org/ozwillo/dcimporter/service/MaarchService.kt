@@ -34,7 +34,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
         LOGGER.debug("\tcontaining $dcResource")
         val maarchFileMetadataList = listOf(
-                MaarchArrayData(column = "subject", value = dcResource.getValues()["citizenreq:displayName"]!!),
+                MaarchArrayData(column = "subject", value = dcResource.getValues()["citizenreq:displayName"]!!.toString()),
                 MaarchArrayData(column = "type_id", value = "102"),
                 MaarchArrayData(column = "custom_t1", value = dcResource.getUri()))
         val maarchFile = MaarchFile(status = "COU", collId = "letterbox_coll", data = maarchFileMetadataList,
@@ -53,9 +53,9 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 dcId = dcResource.getUri())
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
 
-        val contact = MaarchContact(lastname = dcResource.getValues()["citizenreqem:familyName"]!!,
-                firstname = dcResource.getValues()["citizenreqem:firstName"]!!,
-                email = dcResource.getValues()["citizenreqem:email"]!!,
+        val contact = MaarchContact(lastname = dcResource.getValues()["citizenreqem:familyName"]!!.toString(),
+                firstname = dcResource.getValues()["citizenreqem:firstName"]!!.toString(),
+                email = dcResource.getValues()["citizenreqem:email"]!!.toString(),
                 isCorporatePerson = "N", contactType = 106, contactPurposeId = 3)
         val createContactResponse = restTemplate.postForObject("$url/rest/contacts", contact, CreateContactResponse::class.java)
         LOGGER.debug("Got create contact response $createContactResponse")

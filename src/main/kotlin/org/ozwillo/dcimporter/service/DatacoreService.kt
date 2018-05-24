@@ -52,7 +52,7 @@ class DatacoreService {
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
 
-    fun saveResource(project: String, type: String, resource: DCResourceLight): Mono<DCResultSingle> {
+    fun saveResource(project: String, type: String, resource: DCResourceLight, bearer: String?): Mono<DCResultSingle> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
                 .path("/dc/type/{type}")
@@ -62,7 +62,7 @@ class DatacoreService {
                 .toUriString()
         LOGGER.debug("Saving resource at URI $uri")
 
-        val accessToken = getSyncAccessToken()
+        val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
         restTemplate.interceptors.add(FullLoggingInterceptor())
         val headers = LinkedMultiValueMap<String, String>()
@@ -75,7 +75,52 @@ class DatacoreService {
         return Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
-    fun getResourceFromURI(project: String, type: String, iri: String): DCBusinessResourceLight {
+    fun updateResource(project: String, type: String, resource: DCBusinessResourceLight, bearer: String?): Mono<HttpStatus> {
+
+        val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
+                .path("/dc/type/{type}")
+                .build()
+                .expand(type)
+                .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
+                .toUriString()
+        LOGGER.debug("Updating resource at URI $uri")
+
+        val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
+        resource.setStringValue("o:version", dcCurrentResource.getValues()["o:version"]!!.toString())
+
+        val accessToken = bearer ?: getSyncAccessToken()
+        val restTemplate = RestTemplate()
+        restTemplate.interceptors.add(FullLoggingInterceptor())
+        val headers = LinkedMultiValueMap<String, String>()
+        headers.set("X-Datacore-Project", project)
+        headers.set("Authorization", "Bearer $accessToken")
+        val request = RequestEntity<Any>(resource, headers, HttpMethod.PUT, URI(uri))
+
+        restTemplate.put(uri, request)
+        return Mono.just(HttpStatus.OK)
+    }
+
+    fun deleteResource(project: String, type: String, iri: String, bearer: String?): Mono<HttpStatus> {
+
+        val uri = "$datacoreUrl/dc/type/$type/$iri"
+        LOGGER.debug("Deleting resource at URI $uri")
+
+        val dcCurrentResource = getResourceFromURI(project, type, iri, bearer)
+        val version = dcCurrentResource.getValues()["o:version"]!!.toString()
+
+        val accessToken = bearer ?: getSyncAccessToken()
+        val restTemplate = RestTemplate()
+        restTemplate.interceptors.add(FullLoggingInterceptor())
+        val headers = HttpHeaders()
+        headers.set("X-Datacore-Project", project)
+        headers.set("If-Match", version)
+        headers.set("Authorization", "Bearer $accessToken")
+
+        val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
+        return Mono.just(response.statusCode)
+    }
+
+    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
         val resourceUri = dcResourceUri(type, iri)
 
         val uri = UriComponentsBuilder.fromUriString(resourceUri.toString())
@@ -83,38 +128,24 @@ class DatacoreService {
 
         LOGGER.debug("Fetching resource from URI $uri")
 
-        val accessToken = getAccessToken().block()!!
+        val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
         val headers = LinkedMultiValueMap<String, String>()
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(uri))
 
-        try {
+        return try {
             val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
             LOGGER.debug("Got response : ${response.body}")
             val result: DCBusinessResourceLight = response.body!!
-            return result
+            result
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Error while retrieving resource", e)
-            return DCBusinessResourceLight(uri = resourceUri.toString(),
+            DCBusinessResourceLight(uri = resourceUri.toString(),
                     values = mapOf(Pair("citizenrequser:name", "John Doe"),
-                                    Pair("citizenrequser:email", "unknown@doe.fr")))
+                            Pair("citizenrequser:email", "unknown@doe.fr")))
         }
-
-//        return try {
-//            val client: WebClient = WebClient.create(uri)
-//            getAccessToken().flatMap { accessToken ->
-//                client.get()
-//                        .header("X-Datacore-Project", project)
-//                        .header("Authorization", "Bearer $accessToken")
-//                        .accept(MediaType.APPLICATION_JSON)
-//                        .retrieve()
-//                        .bodyToMono<DCBusinessResourceLight>()
-//            }
-//        } catch (e: HttpClientErrorException) {
-//            Mono.empty()
-//        }
     }
 
     fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
@@ -162,15 +193,6 @@ class DatacoreService {
         val response = restTemplate.exchange(request, respType)
         val results: List<DCResourceLight> = response.body!!
         return Mono.just(results)
-
-//        return getAccessToken().flatMap { accessToken ->
-//            client.get()
-//                    .header("X-Datacore-Project", project)
-//                    .header("Authorization", "Bearer $accessToken")
-//                    .accept(MediaType.APPLICATION_JSON)
-//                    .retrieve()
-//                    .bodyToMono<List<DCResourceLight>>()
-//        }
     }
 
     fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int, maxResult: Int): Flux<DCResource> {

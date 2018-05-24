@@ -25,6 +25,8 @@ class Routes(private val statusHandler: StatusHandler,
             }
             "/marche-public".nest {
                 POST("/{siret}/consultation", marchePublicHandler::create)
+                PUT("/{siret}/consultation/{reference}", marchePublicHandler::update)
+                DELETE("/{siret}/consultation/{reference}", marchePublicHandler::delete)
             }
         }
     }

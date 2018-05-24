@@ -35,7 +35,7 @@ class PublikHandler(private val datacoreService: DatacoreService,
             req.bodyToMono<FormModel>()
                     .map { formModel -> publikService.formToDCResource(formModel) }
                     .flatMap { dcResourceWithProject ->
-                        datacoreService.saveResource(datacoreProject, dcResourceWithProject.first, dcResourceWithProject.second)
+                        datacoreService.saveResource(datacoreProject, dcResourceWithProject.first, dcResourceWithProject.second, null)
                                 .map { _ -> dcResourceWithProject }
                     }
                     .flatMap { dcResourceWithProject ->
