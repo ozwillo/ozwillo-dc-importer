@@ -3,8 +3,8 @@ package org.ozwillo.dcimporter.web
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
+import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.service.DatacoreService
-import org.ozwillo.dcimporter.service.KernelService
 import org.ozwillo.dcimporter.service.SubscriptionService
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
@@ -78,6 +78,31 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
+    fun createLot(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        // TODO : check existence of both
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        return req.bodyToMono<Lot>()
+                .flatMap { lot ->
+                    val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
+                    datacoreService.saveResource("marchepublic_0", "marchepublic:lot_0",
+                            dcLot, bearer)
+                }
+                .flatMap { result ->
+                    val lot = result.resource.getUri().substringAfterLast('/')
+                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
+                    val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference/lot/$lot"
+                    created(URI(resourceUri))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    // TODO : inspect error message to know if conflict or bad request
+                    LOGGER.error("Creation failed with error $error")
                     badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
                 }
     }
