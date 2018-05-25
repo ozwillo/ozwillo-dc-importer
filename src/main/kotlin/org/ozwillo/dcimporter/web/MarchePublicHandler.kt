@@ -8,6 +8,7 @@ import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
 import org.slf4j.LoggerFactory
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
@@ -30,8 +31,11 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
     fun create(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence
+
         val siret = req.pathVariable("siret")
+        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
@@ -54,8 +58,11 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
     fun update(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence
+
         val siret = req.pathVariable("siret")
+        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"))
@@ -85,9 +92,15 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
     fun createLot(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence of both
+
         val siret = req.pathVariable("siret")
+        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+
         val reference = req.pathVariable("reference")
+        datacoreService.getResourceFromURI("marchepublic_0", "marchepublic:consultation_0", "FR/$siret/$reference", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Consultation with reference $reference does not exist"))
+
         return req.bodyToMono<Lot>()
                 .flatMap { lot ->
                     val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
@@ -110,9 +123,15 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
     fun updateLot(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence
+
         val siret = req.pathVariable("siret")
+        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+
         val reference = req.pathVariable("reference")
+        datacoreService.getResourceFromURI("marchepublic_0", "marchepublic:consultation_0", "FR/$siret/$reference", bearer)
+                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Consultation with reference $reference does not exist"))
+
         val uuid = req.pathVariable("uuid")
         return req.bodyToMono<Lot>()
                 .flatMap { lot ->

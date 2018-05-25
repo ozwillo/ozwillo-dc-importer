@@ -86,7 +86,7 @@ class DatacoreService {
         LOGGER.debug("Updating resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
-        resource.setStringValue("o:version", dcCurrentResource.getValues()["o:version"]!!.toString())
+        resource.setStringValue("o:version", dcCurrentResource?.let { dcCurrentResource.getValues()["o:version"]!!.toString() }.orEmpty())
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -106,7 +106,7 @@ class DatacoreService {
         LOGGER.debug("Deleting resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, iri, bearer)
-        val version = dcCurrentResource.getValues()["o:version"]!!.toString()
+        val version = dcCurrentResource?.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -120,7 +120,7 @@ class DatacoreService {
         return Mono.just(response.statusCode)
     }
 
-    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
+    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight? {
         val resourceUri = dcResourceUri(type, iri)
 
         val uri = UriComponentsBuilder.fromUriString(resourceUri.toString())
@@ -142,9 +142,7 @@ class DatacoreService {
             result
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Error while retrieving resource", e)
-            DCBusinessResourceLight(uri = resourceUri.toString(),
-                    values = mapOf(Pair("citizenrequser:name", "John Doe"),
-                            Pair("citizenrequser:email", "unknown@doe.fr")))
+            null
         }
     }
 
