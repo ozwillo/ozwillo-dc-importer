@@ -4,6 +4,7 @@ import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
+import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
 import org.slf4j.LoggerFactory
@@ -132,6 +133,64 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
         val iri = "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}/${req.pathVariable("uuid")}"
         return datacoreService.deleteResource("marchepublic_0", "marchepublic:lot_0", iri, bearer)
+                .flatMap { result ->
+                    ok().contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
+    fun createPiece(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        // TODO : check existence of both
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        return req.bodyToMono<Piece>()
+                .flatMap { piece ->
+                    val dcPiece = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
+                    datacoreService.saveResource("marchepublic_0", "marchepublic:piece_0",
+                            dcPiece, bearer)
+                }
+                .flatMap { result ->
+                    val pieceUuid = result.resource.getUri().substringAfterLast('/')
+                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
+                    val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference/piece/$pieceUuid"
+                    created(URI(resourceUri))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    // TODO : inspect error message to know if conflict or bad request
+                    LOGGER.error("Creation failed with error $error")
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
+    fun updatePiece(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        // TODO : check existence
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        val uuid = req.pathVariable("uuid")
+        return req.bodyToMono<Piece>()
+                .flatMap { piece ->
+                    val dcPiece = piece.toDcObject(datacoreProperties.baseUri, siret, reference, uuid)
+                    datacoreService.updateResource("marchepublic_0", "marchepublic:piece_0", dcPiece, bearer)
+                }
+                .flatMap { _ ->
+                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
+                    ok().contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    // TODO : inspect error message to know if conflict or bad request
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
+    fun deletePiece(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        val iri = "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}/${req.pathVariable("uuid")}"
+        return datacoreService.deleteResource("marchepublic_0", "marchepublic:piece_0", iri, bearer)
                 .flatMap { result ->
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
