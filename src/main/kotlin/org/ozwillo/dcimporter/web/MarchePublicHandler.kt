@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -27,14 +28,29 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
+
+        private val MP_PROJECT = "marchepublic_0"
+        private val ORG_TYPE = "orgfr:Organisation_0"
+        private val CONSULTATION_TYPE = "marchepublic:consultation_0"
+        private val LOT_TYPE = "marchepublic:lot_0"
+        private val PIECE_TYPE = "marchepublic:piece_0"
     }
 
     fun create(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
 
         val siret = req.pathVariable("siret")
-        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
@@ -50,9 +66,8 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
                     LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -60,8 +75,17 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
 
         val siret = req.pathVariable("siret")
-        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
@@ -73,8 +97,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -86,7 +109,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -94,18 +117,35 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
 
         val siret = req.pathVariable("siret")
-        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         val reference = req.pathVariable("reference")
-        datacoreService.getResourceFromURI("marchepublic_0", "marchepublic:consultation_0", "FR/$siret/$reference", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Consultation with reference $reference does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference $reference does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         return req.bodyToMono<Lot>()
                 .flatMap { lot ->
                     val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
-                    datacoreService.saveResource("marchepublic_0", "marchepublic:lot_0",
-                            dcLot, bearer)
+                    datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
                 }
                 .flatMap { result ->
                     val lot = result.resource.getUri().substringAfterLast('/')
@@ -115,9 +155,8 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
                     LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -125,12 +164,30 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
 
         val siret = req.pathVariable("siret")
-        datacoreService.getResourceFromURI("marchepublic_0", "orgfr:Organisation_0", "FR/$siret", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Organization with SIRET $siret does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         val reference = req.pathVariable("reference")
-        datacoreService.getResourceFromURI("marchepublic_0", "marchepublic:consultation_0", "FR/$siret/$reference", bearer)
-                ?: return status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject("Consultation with reference $reference does not exist"))
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference $reference does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
 
         val uuid = req.pathVariable("uuid")
         return req.bodyToMono<Lot>()
@@ -143,8 +200,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -156,15 +212,39 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
     fun createPiece(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence of both
+
         val siret = req.pathVariable("siret")
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
         val reference = req.pathVariable("reference")
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference $reference does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
         return req.bodyToMono<Piece>()
                 .flatMap { piece ->
                     val dcPiece = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
@@ -179,17 +259,40 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
                     LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
     fun updatePiece(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        // TODO : check existence
+
         val siret = req.pathVariable("siret")
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
         val reference = req.pathVariable("reference")
+        try {
+            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference $reference does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
         val uuid = req.pathVariable("uuid")
         return req.bodyToMono<Piece>()
                 .flatMap { piece ->
@@ -201,8 +304,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    // TODO : inspect error message to know if conflict or bad request
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 
@@ -214,7 +316,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
     }
 

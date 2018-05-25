@@ -70,9 +70,14 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        val response = restTemplate.exchange(request, DCResourceLight::class.java)
-        val result: DCResourceLight = response.body!!
-        return Mono.just(DCResultSingle(HttpStatus.OK, result))
+        try {
+            val response = restTemplate.exchange(request, DCResourceLight::class.java)
+            val result: DCResourceLight = response.body!!
+            return Mono.just(DCResultSingle(HttpStatus.OK, result))
+        } catch (e: HttpClientErrorException) {
+            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            throw e
+        }
     }
 
     fun updateResource(project: String, type: String, resource: DCBusinessResourceLight, bearer: String?): Mono<HttpStatus> {
@@ -96,8 +101,13 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.PUT, URI(uri))
 
-        restTemplate.put(uri, request)
-        return Mono.just(HttpStatus.OK)
+        try {
+            restTemplate.put(uri, request)
+            return Mono.just(HttpStatus.OK)
+        } catch (e: HttpClientErrorException) {
+            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            throw e
+        }
     }
 
     fun deleteResource(project: String, type: String, iri: String, bearer: String?): Mono<HttpStatus> {
@@ -116,11 +126,16 @@ class DatacoreService {
         headers.set("If-Match", version)
         headers.set("Authorization", "Bearer $accessToken")
 
-        val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
-        return Mono.just(response.statusCode)
+        try {
+            val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
+            return Mono.just(response.statusCode)
+        } catch (e: HttpClientErrorException) {
+            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            throw e
+        }
     }
 
-    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight? {
+    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
         val resourceUri = dcResourceUri(type, iri)
 
         val uri = UriComponentsBuilder.fromUriString(resourceUri.toString())
@@ -135,15 +150,10 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(uri))
 
-        return try {
-            val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
-            LOGGER.debug("Got response : ${response.body}")
-            val result: DCBusinessResourceLight = response.body!!
-            result
-        } catch (e: HttpClientErrorException) {
-            LOGGER.error("Error while retrieving resource", e)
-            null
-        }
+        val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
+        LOGGER.debug("Got response : ${response.body}")
+        val result: DCBusinessResourceLight = response.body!!
+        return result
     }
 
     fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
