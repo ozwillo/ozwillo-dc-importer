@@ -107,6 +107,39 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }
     }
 
+    fun updateLot(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        // TODO : check existence
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        val uuid = req.pathVariable("uuid")
+        return req.bodyToMono<Lot>()
+                .flatMap { lot ->
+                    val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference, uuid)
+                    datacoreService.updateResource("marchepublic_0", "marchepublic:lot_0", dcLot, bearer)
+                }
+                .flatMap { _ ->
+                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
+                    ok().contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    // TODO : inspect error message to know if conflict or bad request
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
+    fun deleteLot(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+        val iri = "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}/${req.pathVariable("uuid")}"
+        return datacoreService.deleteResource("marchepublic_0", "marchepublic:lot_0", iri, bearer)
+                .flatMap { result ->
+                    ok().contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume { error ->
+                    badRequest().body(BodyInserters.fromObject(error.message.orEmpty()))
+                }
+    }
+
     private fun extractBearer(headers: ServerRequest.Headers): String {
         val authorizationHeader = headers.header("Authorization")
         if (authorizationHeader.isEmpty() || authorizationHeader.size > 1)

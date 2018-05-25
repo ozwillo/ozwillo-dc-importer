@@ -28,6 +28,8 @@ class Routes(private val statusHandler: StatusHandler,
                 PUT("/{siret}/consultation/{reference}", marchePublicHandler::update)
                 DELETE("/{siret}/consultation/{reference}", marchePublicHandler::delete)
                 POST("/{siret}/consultation/{reference}/lot", marchePublicHandler::createLot)
+                PUT("/{siret}/consultation/{reference}/lot/{uuid}", marchePublicHandler::updateLot)
+                DELETE("/{siret}/consultation/{reference}/lot/{uuid}", marchePublicHandler::deleteLot)
             }
         }
     }
