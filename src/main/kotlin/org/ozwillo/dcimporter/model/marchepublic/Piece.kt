@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.model.marchepublic
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.util.DCUtils
+import java.nio.charset.Charset
 import java.util.*
 
 data class Piece(
@@ -34,4 +35,18 @@ data class Piece(
     }
 
     fun toDcObject(baseUri: String, siret: String, reference: String) = toDcObject(baseUri, siret, reference, uuid)
+
+    companion object {
+
+        fun toPiece(dcPiece: DCBusinessResourceLight): Piece =
+                Piece(uuid = dcPiece.getStringValue("mppiece:uuid"),
+                        uuidLot = dcPiece.getStringValue("mppiece:lot"),
+                        libelle = dcPiece.getStringValue("mppiece:libelle"),
+                        aapc = dcPiece.getBooleanValue("mppiece:aapc"),
+                        ordre = dcPiece.getIntValue("mppiece:ordre"),
+                        nom = dcPiece.getStringValue("mppiece:nom"),
+                        extension = dcPiece.getStringValue("mppiece:extension"),
+                        contenu = dcPiece.getStringValue("mppiece:contenu").toByteArray(Charset.defaultCharset()),
+                        poids = dcPiece.getIntValue("mppiece:poids"))
+    }
 }

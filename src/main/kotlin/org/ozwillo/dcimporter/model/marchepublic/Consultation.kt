@@ -48,6 +48,27 @@ data class Consultation(
     }
 
     fun toDcObject(baseUri: String, siret: String) = toDcObject(baseUri, siret, reference!!)
+
+    companion object {
+
+        fun toConsultation(dcConsultation: DCBusinessResourceLight): Consultation =
+                Consultation(reference = dcConsultation.getStringValue("mpconsultation:reference"),
+                        objet = dcConsultation.getStringValue("mpconsultation:objet"),
+                        datePublication = dcConsultation.getDateValue("mpconsultation:datePublication"),
+                        dateCloture = dcConsultation.getDateValue("mpconsultation:dateCloture"),
+                        finaliteMarche = FinaliteMarcheType.valueOf(dcConsultation.getStringValue("mpconsultation:finaliteMarche")),
+                        typeMarche = TypeMarcheType.valueOf(dcConsultation.getStringValue("mpconsultation:typeMarche")),
+                        typePrestation = TypePrestationType.valueOf(dcConsultation.getStringValue("mpconsultation:typePrestation")),
+                        departementsPrestation = dcConsultation.getIntListValue("mpconsultation:departementsPrestation"),
+                        passation = dcConsultation.getStringValue("mpconsultation:passation"),
+                        informatique = dcConsultation.getBooleanValue("mpconsultation:informatique"),
+                        passe = dcConsultation.getStringValue("mpconsultation:passe"),
+                        emails = dcConsultation.getStringListValue("mpconsultation:emails"),
+                        enLigne = dcConsultation.getBooleanValue("mpconsultation:enLigne"),
+                        alloti = dcConsultation.getBooleanValue("mpconsultation:alloti"),
+                        invisible = dcConsultation.getBooleanValue("mpconsultation:invisible"),
+                        nbLots = dcConsultation.getIntValue("mpconsultation:nbLots"))
+    }
 }
 
 enum class FinaliteMarcheType {

@@ -36,6 +36,24 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         private val PIECE_TYPE = "marchepublic:piece_0"
     }
 
+    fun get(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+
+        val siret = req.pathVariable("siret")
+        return try {
+            val dcConsultation = datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${req.pathVariable("reference")}", bearer)
+            ok().body(BodyInserters.fromObject(Consultation.toConsultation(dcConsultation)))
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference ${req.pathVariable("reference")} does not exist"
+                else -> "Unexpected error"
+            }
+
+            status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+    }
+
     fun create(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
 
@@ -111,6 +129,26 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }.onErrorResume { error ->
                     badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
+    }
+
+    fun getLot(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        val uuid = req.pathVariable("uuid")
+        return try {
+            val dcLot = datacoreService.getResourceFromURI(MP_PROJECT, LOT_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            ok().body(BodyInserters.fromObject(Lot.toLot(dcLot)))
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Lot with UUID $uuid does not exist"
+                else -> "Unexpected error"
+            }
+
+            status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
     }
 
     fun createLot(req: ServerRequest): Mono<ServerResponse> {
@@ -214,6 +252,26 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }.onErrorResume { error ->
                     badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
+    }
+
+    fun getPiece(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
+
+        val siret = req.pathVariable("siret")
+        val reference = req.pathVariable("reference")
+        val uuid = req.pathVariable("uuid")
+        return try {
+            val dcPiece = datacoreService.getResourceFromURI(MP_PROJECT, PIECE_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            ok().body(BodyInserters.fromObject(Piece.toPiece(dcPiece)))
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Piece with UUID $uuid does not exist"
+                else -> "Unexpected error"
+            }
+
+            status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
     }
 
     fun createPiece(req: ServerRequest): Mono<ServerResponse> {

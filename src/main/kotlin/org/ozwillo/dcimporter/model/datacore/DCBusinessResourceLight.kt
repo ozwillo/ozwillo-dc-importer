@@ -5,11 +5,14 @@ import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.HashMap
 
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(uri: String,
                               @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
+
+    val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
 
     @JsonAnyGetter
     fun getValues(): Map<String, Any> {
@@ -44,6 +47,18 @@ class DCBusinessResourceLight(uri: String,
     }
 
     fun gimmeResourceFile(): DCBusinessResourceFile = resourceFiles[0]
+
+    fun getStringValue(s: String): String = values[s]?.let { it as String }.orEmpty()
+
+    fun getIntValue(s: String): Int = values[s] as Int
+
+    fun getBooleanValue(s: String): Boolean = values[s] as Boolean
+
+    fun getDateValue(s: String): LocalDateTime = LocalDateTime.parse(values[s] as String, df)
+
+    fun getIntListValue(s: String): List<Int> = values[s] as List<Int>
+
+    fun getStringListValue(s: String): List<String> = values[s] as List<String>
 }
 
 data class DCBusinessResourceFile(

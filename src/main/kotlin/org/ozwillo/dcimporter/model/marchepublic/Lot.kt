@@ -24,4 +24,13 @@ data class Lot(
     }
 
     fun toDcObject(baseUri: String, siret: String, reference: String) = toDcObject(baseUri, siret, reference, uuid)
+
+    companion object {
+
+        fun toLot(dcLot: DCBusinessResourceLight): Lot =
+                Lot(libelle = dcLot.getStringValue("mplot:libelle"),
+                        ordre = dcLot.getIntValue("mplot:ordre"),
+                        numero = dcLot.getIntValue("mplot:numero"),
+                        uuid = dcLot.getStringValue("mplot:uuid"))
+    }
 }
