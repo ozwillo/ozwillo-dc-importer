@@ -86,3 +86,9 @@ task wrapper(type: Wrapper) {
     // at least 4.6 for JUnit 5 support
     gradleVersion = '4.7'
 }
+
+bootJar {
+    launchScript {
+        properties 'initInfoProvides': 'ozwillo-dc-importer'
+    }
+}
