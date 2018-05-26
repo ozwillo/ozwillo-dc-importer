@@ -12,6 +12,7 @@ import java.util.HashMap
 class DCBusinessResourceLight(uri: String,
                               @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
 
+    @JsonIgnore
     val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
 
     @JsonAnyGetter
