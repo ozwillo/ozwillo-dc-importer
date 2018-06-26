@@ -1,45 +1,3 @@
-configurations {
-    jaxb
-}
-
-task genJaxb {
-    ext.sourcesDir = "${buildDir}/generated-sources/jaxb"
-    ext.classesDir = "${buildDir}/classes/jaxb"
-    ext.schema = "https://www.marches-securises.fr/webserv/?module=dce|wsdl_crea_dce"
-
-    outputs.dir classesDir
-
-    doLast() {
-        project.ant {
-            taskdef name: "xjc", classname: "com.sun.tools.xjc.XJCTask",
-                    classpath: configurations.jaxb.asPath
-            mkdir(dir: sourcesDir)
-            mkdir(dir: classesDir)
-
-            xjc(destdir: sourcesDir, schema: schema,
-                    package: "org.ozwillo.dcimporter.wsdl") {
-                arg(value:"-verbose")
-                arg(value: "-wsdl")
-                produces(dir: sourcesDir, includes: "**/*.java")
-            }
-
-            javac(destdir: classesDir, source: 1.8, target: 1.8, debug: true,
-                    debugLevel: "lines,vars,source",
-                    classpath: configurations.jaxb.asPath) {
-                src(path: sourcesDir)
-                include(name: "**/*.java")
-                include(name: "*.java")
-            }
-
-            copy(todir: classesDir) {
-                fileset(dir: sourcesDir, erroronmissingdir: false) {
-                    exclude(name: "**/*.java")
-                }
-            }
-        }
-    }
-}
-
 buildscript {
     ext {
         springBootVersion = '2.0.1.RELEASE'
@@ -128,8 +86,6 @@ dependencies {
 
     compile("org.springframework.boot:spring-boot-starter")
     compile("org.springframework.ws:spring-ws-core")
-    compile(files(genJaxb.classesDir).builtBy(genJaxb))
-    jaxb "com.sun.xml.bind:jaxb-xjc:2.1.7"
 
 }
 
@@ -152,13 +108,4 @@ bootJar {
         properties 'initInfoProvides': 'ozwillo-dc-importer'
     }
 
-    baseName = 'gs-consuming-web-service'
-    version =  '0.1.0'
-
-    from genJaxb.classesDir
-
-}
-
-task afterEclipseImport {
-    dependsOn genJaxb
 }

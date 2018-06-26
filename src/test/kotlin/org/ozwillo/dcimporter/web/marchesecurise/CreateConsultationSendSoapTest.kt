@@ -34,8 +34,7 @@ class CreateConsultationSendSoapTest{
         print("$res \n")
         val dce:List<String> = res.split(("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;1530005251drf6k847vi9c&lt;/propriete&gt;").toRegex())
 
-        for (index in dce){
-            println("indice : $index, valeur ${dce[index]}")
-        }
+
+
     }
 }
