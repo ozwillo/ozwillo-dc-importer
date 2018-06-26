@@ -1,5 +1,9 @@
 package org.ozwillo.dcimporter.util
 
+import org.springframework.core.io.ClassPathResource
+import org.springframework.util.FileCopyUtils
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.UnsupportedEncodingException
 import java.net.URLEncoder
 
@@ -29,6 +33,19 @@ class DCUtils {
                 throw RuntimeException(e)
             }
             return sb.toString()
+        }
+
+        fun templateToString(templatePath:String):String {
+            val resource = ClassPathResource(templatePath)
+            val bos = ByteArrayOutputStream()
+
+            try {
+                FileCopyUtils.copy(resource.getInputStream(), bos)
+            }catch (e:IOException){
+                e.printStackTrace()
+            }
+
+            return bos.toString()
         }
     }
 }
