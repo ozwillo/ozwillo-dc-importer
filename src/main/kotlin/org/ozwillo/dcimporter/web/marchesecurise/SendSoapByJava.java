@@ -7,7 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
-public class CreateConsultationByJava {
+public class SendSoapByJava {
     public static String sendSOAPByJava(String SOAPUrl, String soapMessage)
             throws Exception {
         URL url = new URL(SOAPUrl);

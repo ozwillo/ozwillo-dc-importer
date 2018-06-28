@@ -7,7 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
 
-class CreateConsultation{
+class SendSoap{
     companion object {
         @Throws(Exception::class)
         fun sendSoap(soapUrl:String, soapMessage:String):String{

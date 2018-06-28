@@ -47,5 +47,34 @@ class DCUtils {
 
             return bos.toString()
         }
+
+        fun booleanToInt(bool:Boolean):Int{
+            return if(bool)
+                1
+            else
+                0
+        }
+
+        fun intToBoolean(i:Int):Boolean{
+            return i==1
+        }
+
+        fun intListToString(ints:List<Int>):String{
+            var result = ""
+            for (index in ints.indices){
+                result+="${ints[index]};"
+            }
+            result=result.substring(0,result.length-1)
+            return result
+        }
+
+        fun stringListToString(stringList:List<String>):String{
+            var result = ""
+            for (index in stringList.indices){
+                result+="${stringList[index]};"
+            }
+            result=result.substring(0,result.length-1)
+            return result
+        }
     }
 }
