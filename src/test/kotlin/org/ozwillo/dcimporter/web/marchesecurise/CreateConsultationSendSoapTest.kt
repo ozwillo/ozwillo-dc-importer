@@ -6,9 +6,7 @@ import org.junit.jupiter.api.Test
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
-import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.CreateConsultationSoapRequest
-import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.ModifyConsultationSoapRequest
-import org.ozwillo.dcimporter.service.marchesecurise.CreateConsultation
+import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
 import org.ozwillo.dcimporter.util.DCUtils
 import java.sql.Timestamp
 import java.time.LocalDateTime
@@ -74,15 +72,14 @@ class CreateConsultationSendSoapTest{
 
 
     private fun sendCreateConsultationRequest (url:String, login:String, password:String, pa:String):String{
-        val soapMessage = CreateConsultationSoapRequest.generateCreateConsultationLogRequest(login, password,pa)
+        val soapMessage = GenerateSoapRequest.generateCreateConsultationLogRequest(login, password,pa)
 
         return SendSoap.sendSoap(url, soapMessage)
     }
 
     private fun getDce(url:String, login: String, password: String, pa: String):String {
         val parseResponse: List<String> = sendCreateConsultationRequest(url, login, password, pa).split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
-        val dce = parseResponse[1]
-        return dce
+        return parseResponse[1]
     }
 
     @Test
@@ -90,7 +87,7 @@ class CreateConsultationSendSoapTest{
 
         val dce = getDce("https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce", login, password, pa)
         println(dce)
-        val soapMessage = ModifyConsultationSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
+        val soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
         println(soapMessage)
         val response = SendSoap.sendSoap("https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce", soapMessage)
         print(response)

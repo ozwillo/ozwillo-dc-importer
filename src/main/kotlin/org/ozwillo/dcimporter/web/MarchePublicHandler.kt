@@ -2,9 +2,11 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
+import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
+import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
 import org.slf4j.LoggerFactory
@@ -24,7 +26,9 @@ import java.net.URI
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val subscriptionService: SubscriptionService,
-                          private val applicationProperties: ApplicationProperties) {
+                          private val applicationProperties: ApplicationProperties,
+                          private val businessMapping: BusinessMapping,
+                          private val businessMappingRepository: BusinessMappingRepository) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -73,16 +77,22 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
+                    //TODO:verifier BusinessMapping (enregistrement de reference consultation - ne sert sans doute pas) :
+                    businessMappingRepository.save(BusinessMapping(applicationName = "AMELIO", businessId = dcConsultation.getStringValue("mpconsultation:reference"), dcId =  dcConsultation.getStringValue("mpconsultation:reference")))
+
                     datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0",
                             dcConsultation, bearer)
                 }
                 .flatMap { result ->
                     val reference = result.resource.getUri().substringAfterLast('/')
                     // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
+
+
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
+
                 }.onErrorResume { error ->
                     LOGGER.error("Creation failed with error $error")
                     badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
