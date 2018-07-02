@@ -19,10 +19,10 @@ class CreateLotSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "15301683035e5q3tg4ve86"
-        libelle = if("Un 7e test".length > 255) "Un 7e test".substring(0,255) else "Un 7e test"
-        ordre = 7.toString()
-        numero = 7.toString()
+        dce = "1530514543c6yt3jacnk6x"
+        libelle = if("Un second test".length > 255) "Un second test".substring(0,255) else "Un second test"
+        ordre = 1.toString()
+        numero = 1.toString()
     }
 
     @AfterAll

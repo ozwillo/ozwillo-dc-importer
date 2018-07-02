@@ -1,6 +1,5 @@
 package org.ozwillo.dcimporter.service.marchesecurise
 
-import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
@@ -8,6 +7,7 @@ import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.web.marchesecurise.SendSoap
 import org.springframework.stereotype.Service
 
+//TODO: Gestion des erreurs spécifiques aux requêtes
 @Service
 class CreateOrModifyLot(private val login:String,
                         private val password:String,

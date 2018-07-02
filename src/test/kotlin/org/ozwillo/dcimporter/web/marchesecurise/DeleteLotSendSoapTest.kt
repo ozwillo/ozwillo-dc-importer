@@ -17,8 +17,8 @@ class DeleteLotSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "15301683035e5q3tg4ve86"
-        uuid = "1530179688zxv2eaei95v1"
+        dce = "1530514543c6yt3jacnk6x"
+        uuid = "15305146545i8p34km21cr"
     }
 
     @AfterAll

@@ -10,6 +10,7 @@ import org.ozwillo.dcimporter.web.marchesecurise.SendSoap
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 
+//TODO: Gestion des erreurs spécifiques au requêtes ?
 @Service
 class CreateConsultation(private val login:String,
                          private val password:String,

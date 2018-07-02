@@ -7,6 +7,7 @@ import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.web.marchesecurise.SendSoap
 import org.springframework.stereotype.Service
 
+//TODO: Gestion des erreurs spécifiques aux requêtes ?
 @Service
 class DeleteConsultation(private val login:String,
                          private val password:String,

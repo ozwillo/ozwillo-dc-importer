@@ -7,6 +7,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
 
+//TODO: Gestion des erreurs ?
 class SendSoap{
     companion object {
         @Throws(Exception::class)

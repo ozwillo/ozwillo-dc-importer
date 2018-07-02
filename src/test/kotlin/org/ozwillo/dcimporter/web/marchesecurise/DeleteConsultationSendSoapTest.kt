@@ -18,7 +18,7 @@ class DeleteConsultationSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "1530278104ey4npfowam7j"
+        dce = "1530514543c6yt3jacnk6x"
     }
 
     @AfterAll

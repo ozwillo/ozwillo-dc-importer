@@ -20,11 +20,11 @@ class ModifyLotSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "15301683035e5q3tg4ve86"
-        uuid = "1530176380qfxy3oq5o2fw"
+        dce = "1530514543c6yt3jacnk6x"
+        uuid = "15305146545i8p34km21cr"
         libelle = if("Libellé modifié encore une fois".length > 255) "Libellé modifié encore une fois".substring(0,255) else "Libellé modifié encore une fois"
-        ordre = 2.toString()
-        numero = 6.toString()
+        ordre = 1.toString()
+        numero = 1.toString()
     }
 
     @AfterAll
