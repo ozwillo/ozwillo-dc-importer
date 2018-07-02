@@ -19,8 +19,8 @@ class CreateLotSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "1530514543c6yt3jacnk6x"
-        libelle = if("Un second test".length > 255) "Un second test".substring(0,255) else "Un second test"
+        dce = "15305239481wf6rjjzbrgy"
+        libelle = if("Un troisième test".length > 255) "Un troisième test".substring(0,255) else "Un troisième test"
         ordre = 1.toString()
         numero = 1.toString()
     }
@@ -42,5 +42,8 @@ class CreateLotSendSoapTest{
         println(soapMessage)
         val response = SendSoap.sendSoap("https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce",soapMessage)
         println(response)
+        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+        val cleLot = parseResponse[2]
+        println(cleLot)
     }
 }

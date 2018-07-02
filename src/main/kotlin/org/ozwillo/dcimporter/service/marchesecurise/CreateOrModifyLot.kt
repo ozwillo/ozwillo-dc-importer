@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service.marchesecurise
 
+import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
@@ -24,12 +25,21 @@ class CreateOrModifyLot(private val login:String,
         val ordre = lot.ordre.toString()
         val numero = lot.numero.toString()
 
-        val businessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-        val dce = businessMapping.block()!!.businessId
+        //find consultation dce (saved during consultation creation) from business mapping
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
+        //soap request and response
         val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
+        val response = SendSoap.sendSoap(url, soapMessage)
 
-        return SendSoap.sendSoap(url, soapMessage)
+        //cleLot parsed from response and saved in businessMapping
+        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+        val cleLot = parseResponse[2]
+
+        val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
+        businessMappingRepository.save(businessMappingLot)
+
+        return response
     }
 
     //TODO: Intégrer dans MarchePublicHandler.updateLot() - Param = dcLot + reference(req.pathVariable("reference"))
@@ -42,10 +52,14 @@ class CreateOrModifyLot(private val login:String,
         val ordre = lot.ordre.toString()
         val numero = lot.numero.toString()
 
-        val businessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-        val dce = businessMapping.block()!!.businessId
+        //find consultation dce (saved during consultation creation) from business mapping
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
-        val soapMessage = GenerateSoapRequest.generateModifyLotRequest(login, password, pa, dce, uuid, libelle, ordre, numero)
+        //find cleLot (saved during lot creation) from businessMapping
+        val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+
+        //soap request and response
+        val soapMessage = GenerateSoapRequest.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
 
         return SendSoap.sendSoap(url, soapMessage)
     }
@@ -56,17 +70,19 @@ class CreateOrModifyLot(private val login:String,
 
         val uuid = lot.uuid
 
-        val businessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-        val dce = businessMapping.block()!!.businessId
+        //find consultation dce (saved during consultation creation) from business mapping
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        //find cleLot (saved during lot creation) from businessMapping
+        val cleLot =(businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
 
-        val soapMessage = GenerateSoapRequest.generateDeleteLotRequest(login, password, pa, dce, uuid)
+        //soap request and response
+        val soapMessage = GenerateSoapRequest.generateDeleteLotRequest(login, password, pa, dce, cleLot)
 
         return SendSoap.sendSoap(url, soapMessage)
     }
 
     fun deleteAllLot(reference: String):String{
-        val businessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-        val dce = businessMapping.block()!!.businessId
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateDeleteAllLotRequest(login, password, pa, dce)
         return SendSoap.sendSoap(url, soapMessage)

@@ -22,8 +22,7 @@ class DeleteConsultation(private val login:String,
 
         val reference = consultation.reference.toString()
 
-        val businessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-        val dce = businessMapping.block()!!.businessId
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateDeleteConsultationLogRequest(login, password, pa, dce)
 
