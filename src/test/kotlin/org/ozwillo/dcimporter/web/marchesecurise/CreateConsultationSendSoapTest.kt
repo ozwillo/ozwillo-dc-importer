@@ -70,7 +70,7 @@ class CreateConsultationSendSoapTest{
     }
 
 
-    @Test
+
     private fun sendCreateConsultationRequest (url:String, login:String, password:String, pa:String):String{
         val soapMessage = GenerateSoapRequest.generateCreateConsultationLogRequest(login, password,pa)
 

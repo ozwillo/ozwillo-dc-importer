@@ -26,9 +26,7 @@ import java.net.URI
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val subscriptionService: SubscriptionService,
-                          private val applicationProperties: ApplicationProperties,
-                          private val businessMapping: BusinessMapping,
-                          private val businessMappingRepository: BusinessMappingRepository) {
+                          private val applicationProperties: ApplicationProperties) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -77,9 +75,6 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
-                    //TODO:verifier BusinessMapping (enregistrement de reference consultation - ne sert sans doute pas) :
-                    businessMappingRepository.save(BusinessMapping(applicationName = "AMELIO", businessId = dcConsultation.getStringValue("mpconsultation:reference"), dcId =  dcConsultation.getStringValue("mpconsultation:reference")))
-
                     datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0",
                             dcConsultation, bearer)
                 }

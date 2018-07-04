@@ -9,11 +9,12 @@ import org.springframework.stereotype.Service
 
 //TODO: Gestion des erreurs spécifiques aux requêtes ?
 @Service
-class DeleteConsultation(private val login:String,
-                         private val password:String,
-                         private val pa:String,
-                         private val url:String,
-                         private val businessMappingRepository: BusinessMappingRepository){
+class DeleteConsultation(){
+    private val login:String = ""
+    private val password:String = ""
+    private val pa:String = ""
+    private val url:String = ""
+    private val businessMappingRepository: BusinessMappingRepository? = null
 
     //TODO: Intégrer dans MarchePublicHandler.
     fun deleteConsultation(dcConsultation: DCBusinessResourceLight):String{
@@ -22,7 +23,7 @@ class DeleteConsultation(private val login:String,
 
         val reference = consultation.reference.toString()
 
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateDeleteConsultationLogRequest(login, password, pa, dce)
 

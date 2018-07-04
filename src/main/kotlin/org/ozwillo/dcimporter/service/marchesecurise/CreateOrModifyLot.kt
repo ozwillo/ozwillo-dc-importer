@@ -10,11 +10,13 @@ import org.springframework.stereotype.Service
 
 //TODO: Gestion des erreurs spécifiques aux requêtes
 @Service
-class CreateOrModifyLot(private val login:String,
-                        private val password:String,
-                        private val pa:String,
-                        private val url:String,
-                        private val businessMappingRepository: BusinessMappingRepository){
+class CreateOrModifyLot(){
+
+    private val login:String = ""
+    private val password:String = ""
+    private val pa:String = ""
+    private val url:String = ""
+    private val businessMappingRepository: BusinessMappingRepository? = null
 
     //TODO: Intégrer dans MarchePublicHandler.createLot - Param = dcLot + reference(req.pathVariable("reference"))
     fun createLot(reference:String, dcLot:DCBusinessResourceLight):String{
@@ -26,7 +28,7 @@ class CreateOrModifyLot(private val login:String,
         val numero = lot.numero.toString()
 
         //find consultation dce (saved during consultation creation) from business mapping
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //soap request and response
         val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
@@ -53,7 +55,7 @@ class CreateOrModifyLot(private val login:String,
         val numero = lot.numero.toString()
 
         //find consultation dce (saved during consultation creation) from business mapping
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //find cleLot (saved during lot creation) from businessMapping
         val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
@@ -71,7 +73,7 @@ class CreateOrModifyLot(private val login:String,
         val uuid = lot.uuid
 
         //find consultation dce (saved during consultation creation) from business mapping
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
         //find cleLot (saved during lot creation) from businessMapping
         val cleLot =(businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
 
@@ -82,7 +84,7 @@ class CreateOrModifyLot(private val login:String,
     }
 
     fun deleteAllLot(reference: String):String{
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateDeleteAllLotRequest(login, password, pa, dce)
         return SendSoap.sendSoap(url, soapMessage)

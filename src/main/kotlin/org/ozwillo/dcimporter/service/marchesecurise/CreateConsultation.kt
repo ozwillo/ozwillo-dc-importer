@@ -7,16 +7,19 @@ import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequ
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.web.marchesecurise.SendSoap
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
 
 //TODO: Gestion des erreurs spécifiques au requêtes ? => mauvais format (http 500)
 //TODO: Externalisation url ?
 @Service
-class CreateConsultation(private val login:String,
-                         private val password:String,
-                         private val pa:String,
-                         private val businessMappingRepository: BusinessMappingRepository){
+class CreateConsultation(){
+
+    private val login:String = ""
+    private val password:String = ""
+    private val pa:String = ""
+    private val businessMappingRepository: BusinessMappingRepository? = null
 
     private fun sendCreateConsultationRequest (url:String):String{
         val soapMessage = GenerateSoapRequest.generateCreateConsultationLogRequest(login, password,pa)
@@ -29,7 +32,7 @@ class CreateConsultation(private val login:String,
         val parseResponse:List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
         val dce = parseResponse[1]
         val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = dcConsultation.getStringValue("mpconsultation:reference"))
-        businessMappingRepository.save(businessMapping).block()!!
+        businessMappingRepository!!.save(businessMapping).block()!!
 
         return response
     }
@@ -54,7 +57,7 @@ class CreateConsultation(private val login:String,
 
         createConsultationAndSaveDce(url, dcConsultation)
 
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
 
@@ -79,7 +82,7 @@ class CreateConsultation(private val login:String,
         val departement = DCUtils.intListToString(consultation.departementsPrestation)
         val email = if((DCUtils.stringListToString(consultation.emails)).length > 255) (DCUtils.stringListToString(consultation.emails)).substring(0,255) else DCUtils.stringListToString(consultation.emails)
 
-        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
 
