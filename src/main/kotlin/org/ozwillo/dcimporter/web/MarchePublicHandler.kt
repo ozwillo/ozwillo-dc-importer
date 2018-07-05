@@ -82,6 +82,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     val reference = result.resource.getUri().substringAfterLast('/')
                     // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
 
+                    //TODO:Publisher RabbitMQ
 
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))

@@ -31,7 +31,7 @@ class CreateConsultation(){
         val response = sendCreateConsultationRequest(url)
         val parseResponse:List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
         val dce = parseResponse[1]
-        val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = dcConsultation.getStringValue("mpconsultation:reference"))
+        val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = dcConsultation.getUri())
         businessMappingRepository!!.save(businessMapping).block()!!
 
         return response
