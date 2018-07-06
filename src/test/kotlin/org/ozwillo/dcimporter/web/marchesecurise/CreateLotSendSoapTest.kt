@@ -19,8 +19,8 @@ class CreateLotSendSoapTest{
         login = "wsdev-sictiam"
         password = "WS*s1ctiam*"
         pa = "1267898337p8xft"
-        dce = "15305239481wf6rjjzbrgy"
-        libelle = if("Un troisième test".length > 255) "Un troisième test".substring(0,255) else "Un troisième test"
+        dce = "1530867066vp68t7r6j484"
+        libelle = if("Un premier test".length > 255) "Un premier test".substring(0,255) else "Un premier test"
         ordre = 1.toString()
         numero = 1.toString()
     }
@@ -40,7 +40,7 @@ class CreateLotSendSoapTest{
     fun createLot(){
         val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
         println(soapMessage)
-        val response = SendSoap.sendSoap("https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce",soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.getLotUrl(),soapMessage)
         println(response)
         val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
         val cleLot = parseResponse[2]

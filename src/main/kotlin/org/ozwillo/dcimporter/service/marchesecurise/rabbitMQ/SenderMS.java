@@ -17,10 +17,10 @@ public class SenderMS{
     @Autowired
     private TopicExchange topic;
 
-    public void send() throws InterruptedException, AmqpException {
+    public void send(Consultation consultation) throws InterruptedException, AmqpException {
 
         final String KEY = "consultation.20003019500115.create";
-        String message = "Message test d'envoi pour le groupe : '" + KEY + "'";
+        String message = JsonConverter.consultationToJson(consultation);
 
 
         template.convertAndSend(topic.getName(), KEY, message);

@@ -49,9 +49,8 @@ public class CreationConsultationSenderTest{
 
         Consultation consultation = new Consultation(reference, objet, datePublication, dateCloture, finaliteMarche, typeMarche, typePrestation, departementsPrestation, passation, informatique, passe, emails, enLigne, alloti, invisible, nbLots);
 
-        JsonConverter.consultationToJson(consultation);
         try {
-            sender.send();
+            sender.send(consultation);
         }catch (AmqpException e){
             e.getMessage();
         }

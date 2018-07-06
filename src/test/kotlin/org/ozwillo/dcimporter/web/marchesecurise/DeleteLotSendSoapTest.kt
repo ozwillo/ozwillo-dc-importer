@@ -34,7 +34,7 @@ class DeleteLotSendSoapTest{
     fun deleteLot(){
         val soapMessage = GenerateSoapRequest.generateDeleteLotRequest(login, password, pa, dce, uuid)
         println(soapMessage)
-        val response = SendSoap.sendSoap("https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce", soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.getLotUrl(), soapMessage)
         println(response)
     }
 }

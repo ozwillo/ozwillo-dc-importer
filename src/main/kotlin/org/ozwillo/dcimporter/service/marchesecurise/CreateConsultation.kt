@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service
 import java.sql.Timestamp
 
 //TODO: Gestion des erreurs spécifiques au requêtes ? => mauvais format (http 500)
-//TODO: Externalisation url ?
 @Service
 class CreateConsultation(){
 
@@ -20,6 +19,7 @@ class CreateConsultation(){
     private val password:String = ""
     private val pa:String = ""
     private val businessMappingRepository: BusinessMappingRepository? = null
+
 
     private fun sendCreateConsultationRequest (url:String):String{
         val soapMessage = GenerateSoapRequest.generateCreateConsultationLogRequest(login, password,pa)

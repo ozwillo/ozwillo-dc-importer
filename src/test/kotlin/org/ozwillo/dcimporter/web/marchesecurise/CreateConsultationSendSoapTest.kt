@@ -85,11 +85,11 @@ class CreateConsultationSendSoapTest{
     @Test
     fun sendCreateConsultationRequest (){
 
-        val dce = getDce("https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce", login, password, pa)
+        val dce = getDce(MarcheSecuriseURL.getCreateConsultationUrl(), login, password, pa)
         println(dce)
         val soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
         println(soapMessage)
-        val response = SendSoap.sendSoap("https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce", soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.getModifyConsultationUrl(), soapMessage)
         print(response)
     }
 }

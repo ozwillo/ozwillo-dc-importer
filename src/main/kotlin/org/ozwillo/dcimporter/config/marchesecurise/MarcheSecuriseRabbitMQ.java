@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.config;
+package org.ozwillo.dcimporter.config.marchesecurise;
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight;
 import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS;
@@ -22,11 +22,10 @@ public class MarcheSecuriseRabbitMQ {
     private static class ReceiverConfig{
 
         private final String QUEUE_MS_NAME = "marchesecurise";
-        private final String KEY = "consultation.20003019500115.create";
+        private final String KEY = "consultation.#";
 
-        public String getKey(DCBusinessResourceLight dcConsultation, String baseKey, String action){
-            String uri = dcConsultation.getUri().toString() ;   //TODO:Extraire siret de uri ?
-            return baseKey +"." + uri + "." + action;
+        public String getKey(String siret, String baseKey){
+            return baseKey +"." + siret + ".#";
         }
 
         @Bean

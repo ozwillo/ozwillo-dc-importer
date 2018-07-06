@@ -1,13 +1,24 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import org.ozwillo.dcimporter.config.marchesecurise.LocalDateTimeDeserializer
+import org.ozwillo.dcimporter.config.marchesecurise.LocalDateTimeSerializer
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.util.DCUtils
+import java.io.Serializable
 import java.time.LocalDateTime
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Consultation(
         val reference: String?,
         val objet: String,
+        @JsonSerialize(using = LocalDateTimeSerializer::class)
+        @JsonDeserialize(using = LocalDateTimeDeserializer::class)
         val datePublication: LocalDateTime,
+        @JsonSerialize(using = LocalDateTimeSerializer::class)
+        @JsonDeserialize(using = LocalDateTimeDeserializer::class)
         val dateCloture: LocalDateTime,
         val finaliteMarche: FinaliteMarcheType,
         val typeMarche: TypeMarcheType,
@@ -21,7 +32,7 @@ data class Consultation(
         val alloti: Boolean,
         val invisible: Boolean,
         val nbLots: Int
-) {
+):Serializable {
     fun toDcObject(baseUri: String, siret: String, reference: String): DCBusinessResourceLight {
         val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "marchepublic:consultation_0",
                 "FR/$siret/$reference"))
