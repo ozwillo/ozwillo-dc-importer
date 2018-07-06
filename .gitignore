@@ -23,6 +23,7 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+out/
 src/main/resources/application-dev\.yml
 
 src/test/resources/application-test\.yml
