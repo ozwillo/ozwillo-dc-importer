@@ -88,7 +88,6 @@ dependencies {
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
     testCompile("io.projectreactor:reactor-test")
 
-    compile("org.springframework.boot:spring-boot-starter")
     compile("org.springframework.ws:spring-ws-core")
 
 }

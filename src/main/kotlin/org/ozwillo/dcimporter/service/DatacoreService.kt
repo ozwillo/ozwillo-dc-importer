@@ -4,7 +4,9 @@ import com.google.common.io.BaseEncoding
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
+import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
@@ -26,6 +28,9 @@ import java.util.*
 
 @Service
 class DatacoreService {
+
+    @Autowired
+    private lateinit var sender: SenderMS
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
@@ -69,6 +74,9 @@ class DatacoreService {
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
+
+        //TODO:Envoi RabbitMQ
+        sender!!.send(resource, bearer!!, "action")
 
         try {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)

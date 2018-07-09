@@ -9,7 +9,9 @@ import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
+import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component

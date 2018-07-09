@@ -19,12 +19,14 @@ import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.http.*
 import org.springframework.http.client.ClientHttpRequestInterceptor
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     private lateinit var wireMockServer: WireMockServer
@@ -44,7 +46,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
         // we need a fake bearer to go through the verification chain
         restTemplate.restTemplate.interceptors.add(ClientHttpRequestInterceptor { request, body, execution ->
-            request.headers["Authorization"] = "Bearer secrettoken"
+            request.headers["Authorization"] = "eyJpZCI6IjE0MmQyNzI1LTI2NzMtNDRkNi04ZDBhLWYzNjZmNjE0YWQzYy95MXlyZ2VuTmhLSnpmNWktQmlyTWh3IiwiaWF0IjoxNTMxMTE5MzI0LjgwMjAwMDAwMCwiZXhwIjoxNTMxMTIyOTI0LjgwMjAwMDAwMH0"
             execution.execute(request, body)
         })
 
