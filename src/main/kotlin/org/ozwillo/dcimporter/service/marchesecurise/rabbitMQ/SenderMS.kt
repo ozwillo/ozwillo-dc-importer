@@ -15,10 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class SenderMS {
 
-    private val LOGGER:Logger = LoggerFactory.getLogger(ReceiverMS::class.java)
-
-    @Autowired
-    private lateinit var datacoreService:DatacoreService
+    private val LOGGER:Logger = LoggerFactory.getLogger(SenderMS::class.java)
 
     @Autowired
     private val template: RabbitTemplate? = null
@@ -27,21 +24,23 @@ class SenderMS {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(ressource: DCResourceLight, bearer: String, action: String) {
+    fun send(resource: DCResourceLight, type: String, action: String) {
 
-        val SIRET = "20003019500115"  //TODO: get siret from ressource
+        val URI = resource.getUri()
 
-        val KEY = getKey("consultation", SIRET, action)
+        val KEY = getKey(type, URI, action)
 
-        val consultation:Consultation = Consultation.toConsultation(datacoreService.getResourceFromURI("marchepublic_0", "marchepublic:consultation_0", ressource.getIri(), bearer))
+        val consultation:Consultation = Consultation.toConsultation(resource as DCBusinessResourceLight)
+
         val message = JsonConverter.consultationToJson(consultation)
+        LOGGER.debug("=======SENDER====== transformation consultation : {}", consultation)
 
         template!!.convertAndSend(topic!!.name, KEY, message)
 
-        LOGGER.debug("message envoyé vers {}", KEY)
+        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY)
     }
 
-    fun getKey(type: String, siret: String, action: String): String {
-        return "$type.$siret.$action"
+    private fun getKey(type: String, uri: String, action: String): String {
+        return "$type.$uri.$action"
     }
 }

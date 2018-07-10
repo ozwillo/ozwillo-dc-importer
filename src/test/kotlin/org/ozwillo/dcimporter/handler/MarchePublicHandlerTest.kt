@@ -46,7 +46,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
         // we need a fake bearer to go through the verification chain
         restTemplate.restTemplate.interceptors.add(ClientHttpRequestInterceptor { request, body, execution ->
-            request.headers["Authorization"] = "eyJpZCI6IjE0MmQyNzI1LTI2NzMtNDRkNi04ZDBhLWYzNjZmNjE0YWQzYy95MXlyZ2VuTmhLSnpmNWktQmlyTWh3IiwiaWF0IjoxNTMxMTE5MzI0LjgwMjAwMDAwMCwiZXhwIjoxNTMxMTIyOTI0LjgwMjAwMDAwMH0"
+            request.headers["Authorization"] = "Bearer eyJpZCI6IjVjNzVjMWY0LTMzMDQtNDBmZS1hNDZmLTdkOTI2YmRjOTAzZC84UURJb1BZazdGT3pSbngzVlB1cDFRIiwiaWF0IjoxNTMxMTQzOTEwLjg1NDAwMDAwMCwiZXhwIjoxNTMxMTQ3NTEwLjg1NDAwMDAwMH0"
             execution.execute(request, body)
         })
 
@@ -54,11 +54,6 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/tokeninfo"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpNa2xMcm94V1ZGKy9QRFNqazlONkcra29VZTV5T0ZhL1JodEhmVzg5YzZF"))
                 .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
-    }
-
-    @AfterAll
-    fun afterAll() {
-        wireMockServer.stop()
     }
 
     @Test

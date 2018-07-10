@@ -10,7 +10,7 @@ import org.ozwillo.dcimporter.util.DCUtils
 import java.io.Serializable
 import java.time.LocalDateTime
 
-//@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class Consultation(
         val reference: String?,
         val objet: String,
@@ -61,7 +61,6 @@ data class Consultation(
     fun toDcObject(baseUri: String, siret: String) = toDcObject(baseUri, siret, reference!!)
 
     companion object {
-        @JvmStatic
         fun toConsultation(dcConsultation: DCBusinessResourceLight): Consultation =
                 Consultation(reference = dcConsultation.getStringValue("mpconsultation:reference"),
                         objet = dcConsultation.getStringValue("mpconsultation:objet"),
