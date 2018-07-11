@@ -43,7 +43,7 @@ class ModifyLotSendSoapTest{
     fun modifyLot(){
         val soapMessage = GenerateSoapRequest.generateModifyLotRequest(login, password, pa, dce, uuid, libelle, ordre, numero)
         println(soapMessage)
-        val response = SendSoap.sendSoap(MarcheSecuriseURL.getLotUrl(), soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.LOTS_URL, soapMessage)
         println(response)
     }
 }

@@ -76,8 +76,7 @@ class DatacoreService {
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
         //TODO:Envoi RabbitMQ
-
-        sender!!.send(resource, "consultation", "action")
+        //sender!!.send(resource, "consultation", "action")
 
         try {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)

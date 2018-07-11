@@ -40,7 +40,7 @@ class CreateLotSendSoapTest{
     fun createLot(){
         val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
         println(soapMessage)
-        val response = SendSoap.sendSoap(MarcheSecuriseURL.getLotUrl(),soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.LOTS_URL,soapMessage)
         println(response)
         val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
         val cleLot = parseResponse[2]

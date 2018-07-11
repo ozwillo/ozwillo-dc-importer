@@ -34,7 +34,7 @@ class DeleteConsultationSendSoapTest{
 
         val soapMessage = GenerateSoapRequest.generateDeleteConsultationLogRequest(login, password, pa, dce)
         println(soapMessage)
-        val response = SendSoap.sendSoap(MarcheSecuriseURL.getDeleteConsultationUrl(), soapMessage)
+        val response = SendSoap.sendSoap(MarcheSecuriseURL.DELETE_CONSULTATION_URL, soapMessage)
         println(response)
     }
 }

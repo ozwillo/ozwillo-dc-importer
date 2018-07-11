@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
+import org.ozwillo.dcimporter.model.rabbitmq.marchesecurise.ConsultationMessage
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.web.MarchePublicHandler
 import org.slf4j.LoggerFactory
@@ -18,27 +19,27 @@ class JsonConverter{
 
         private val LOGGER = LoggerFactory.getLogger(JsonConverter::class.java)
 
-        fun consultationToJson(resource: Consultation):String{
+        fun consultationToJson(consultationMessage: ConsultationMessage):String{
 
             val mapper = jacksonObjectMapper()
 
-            var jsonStr = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
+            var jsonStr = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(consultationMessage)
             LOGGER.debug("===CONVERSION CONSULTATION VERS JSON=== \n {}", jsonStr)
 
             return jsonStr
         }
 
-        fun JsonToConsultation(input:String):Consultation{
+        fun JsonToConsultation(input:String):ConsultationMessage{
 
             val mapper = jacksonObjectMapper()
             mapper.findAndRegisterModules()
 
-            var resource:Consultation = mapper.readValue<Consultation>(input)
+            var consultationMessage:ConsultationMessage = mapper.readValue(input)
 
 
-            LOGGER.debug("===CONVERSION JSON VERS CONSULTATION=== \n {}", resource)
+            LOGGER.debug("===CONVERSION JSON VERS CONSULTATION=== \n {}", consultationMessage)
 
-            return resource
+            return consultationMessage
         }
     }
 
