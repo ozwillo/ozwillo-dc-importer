@@ -26,13 +26,13 @@ class SenderMS {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(consultation: Consultation, type: String, action: String) {
+    fun send(resource: DCResourceLight, type: String, action: String) {
 
         val URI = "Clef/Test/URI/001" //resource.getUri()
 
         val KEY = getKey(type, URI, action)
 
-        //val consultation:Consultation = Consultation.toConsultation(resource as DCBusinessResourceLight)
+        val consultation:Consultation = Consultation.toConsultation(resource as DCBusinessResourceLight)
 
         val consultationMessage = ConsultationMessage(URI, consultation)
 

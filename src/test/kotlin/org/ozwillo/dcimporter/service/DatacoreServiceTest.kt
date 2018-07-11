@@ -53,7 +53,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         }
         """
 
-    private val bearer = "eyJpZCI6IjNlMjgwMTc0LWU2NmItNGY2Ny1hZjc0LTZlMDMxYjFiMzllZi8wd3lTSTUtQmNsZTJqVWJNVlNXR2VnIiwiaWF0IjoxNTMxMjE0Mjc5Ljk1ODAwMDAwMCwiZXhwIjoxNTMxMjE3ODc5Ljk1ODAwMDAwMH0"
+    private val bearer = "eyJpZCI6ImFiZDUyY2Y5LTgyYjQtNDJiOC1iZGJmLTA5NmJlNTQyZTEyZC9pdHNmWTFxZWxUR3pScWFEZTkxR3lRIiwiaWF0IjoxNTMxMzE4MDAwLjcyMDAwMDAwMCwiZXhwIjoxNTMxMzIxNjAwLjcyMDAwMDAwMH0"
 
     @BeforeAll
     fun beforeAll() {
