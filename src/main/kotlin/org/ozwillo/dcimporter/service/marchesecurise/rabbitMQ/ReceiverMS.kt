@@ -27,9 +27,9 @@ class ReceiverMS (val businessMappingRepository: BusinessMappingRepository) {
     @RabbitListener(queues = arrayOf("marchesecurise"))
     @Throws(InterruptedException::class)
     fun receive(incoming: String) {
-        val consultationMessage = JsonConverter.JsonToConsultation(incoming)
-        val consultation:Consultation = consultationMessage.consultation
-        val uri:String = consultationMessage.uri
+        val resource = JsonConverter.JsonToConsultation(incoming)
+        val consultation:Consultation = Consultation.toConsultation(resource)
+        val uri:String = resource.getUri()
         LOGGER.debug("[Rabbit Listener] 'consultation.siret.#' received consultation {} with uri {}", consultation, uri)
 
         val response = CreateConsultation.createAndModifyConsultation(login, password, pa, consultation, uri, MarcheSecuriseURL.CREATE_CONSULTATION_URL, businessMappingRepository)

@@ -35,7 +35,7 @@ class CreateConsultation(){
             val parseResponse:List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
             val dce = parseResponse[1]
             val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = uri)
-            businessMappingRepository!!.save(businessMapping)
+            businessMappingRepository!!.save(businessMapping).block()
 
 
             return response
@@ -70,6 +70,7 @@ class CreateConsultation(){
                 LOGGER.debug("==== SAVED BUSINESSMAPPING : {} with dce {}", savedMonoBusinessMapping, dce)
             } catch (e: Exception) {
                 LOGGER.error("error mono business")
+                e.printStackTrace()
             }
             return SendSoap.sendSoap(MarcheSecuriseURL.MODIFY_CONSULTATION_URL, soapMessage)
         }

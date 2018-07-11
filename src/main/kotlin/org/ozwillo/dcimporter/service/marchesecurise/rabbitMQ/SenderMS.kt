@@ -1,11 +1,6 @@
 package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
 
-import javaslang.collection.List
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
-import org.ozwillo.dcimporter.model.marchepublic.Consultation
-import org.ozwillo.dcimporter.model.rabbitmq.marchesecurise.ConsultationMessage
-import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.AmqpException
@@ -28,16 +23,12 @@ class SenderMS {
     @Throws(InterruptedException::class, AmqpException::class)
     fun send(resource: DCResourceLight, type: String, action: String) {
 
-        val URI = "Clef/Test/URI/001" //resource.getUri()
+        val URI = resource.getUri()
 
         val KEY = getKey(type, URI, action)
 
-        val consultation:Consultation = Consultation.toConsultation(resource as DCBusinessResourceLight)
-
-        val consultationMessage = ConsultationMessage(URI, consultation)
-
-        val message = JsonConverter.consultationToJson(consultationMessage)
-        LOGGER.debug("=======SENDER====== transformation consultation : {}", consultationMessage)
+        val message = JsonConverter.consultationToJson(resource)
+        LOGGER.debug("=======SENDER====== transformation consultation : {}", resource)
 
         template!!.convertAndSend(topic!!.name, KEY, message)
 
