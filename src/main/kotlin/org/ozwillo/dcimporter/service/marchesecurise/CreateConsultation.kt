@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service.marchesecurise
 
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
@@ -30,11 +31,13 @@ class CreateConsultation(){
             return SendSoap.sendSoap(url, soapMessage)
         }
 
-        private fun createConsultationAndSaveDce(login:String, password:String, pa:String, url:String, uri:String, businessMappingRepository: BusinessMappingRepository):String{
+        private fun createConsultationAndSaveDce(login:String, password:String, pa:String, url:String, consultation:Consultation, businessMappingRepository: BusinessMappingRepository):String{
             val response = sendCreateConsultationRequest(login, password, pa, url)
+            val reference:String = consultation.reference!!
             val parseResponse:List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
             val dce = parseResponse[1]
-            val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = uri)
+            val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = reference)
+            LOGGER.debug("enregistrement BusinessMapping : {}", businessMapping)
             businessMappingRepository!!.save(businessMapping).block()
 
 
@@ -42,9 +45,7 @@ class CreateConsultation(){
         }
 
 
-        fun createAndModifyConsultation(login:String, password:String, pa:String, consultation: Consultation, uri:String, url:String, businessMappingRepository: BusinessMappingRepository):String{
-
-            //val consultation:Consultation = Consultation.toConsultation(dcConsultation)
+        fun createAndModifyConsultation(login:String, password:String, pa:String, consultation: Consultation, url:String, businessMappingRepository: BusinessMappingRepository):String{
 
             val objet = if((consultation.objet).length > 255) (consultation.objet).substring(0,255) else consultation.objet
             val enligne = DCUtils.booleanToInt(consultation.enLigne).toString()
@@ -59,17 +60,17 @@ class CreateConsultation(){
             val departement = DCUtils.intListToString(consultation.departementsPrestation)
             val email = if((DCUtils.stringListToString(consultation.emails)).length > 255) (DCUtils.stringListToString(consultation.emails)).substring(0,255) else DCUtils.stringListToString(consultation.emails)
 
-            val response = createConsultationAndSaveDce(login, password, pa, url, uri, businessMappingRepository)
+            val response = createConsultationAndSaveDce(login, password, pa, url, consultation, businessMappingRepository)
             var soapMessage = ""
             try {
-                val savedMonoBusinessMapping = businessMappingRepository.findFirstByDcIdAndApplicationName(uri, "MS")
+                val savedMonoBusinessMapping = businessMappingRepository.findFirstByDcIdAndApplicationName(reference, "MS")
                 var dce: String = savedMonoBusinessMapping.block()!!.businessId
                 soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
 
 
                 LOGGER.debug("==== SAVED BUSINESSMAPPING : {} with dce {}", savedMonoBusinessMapping, dce)
             } catch (e: Exception) {
-                LOGGER.error("error mono business")
+                LOGGER.error("error on finding dce from BusinessMapping")
                 e.printStackTrace()
             }
             return SendSoap.sendSoap(MarcheSecuriseURL.MODIFY_CONSULTATION_URL, soapMessage)

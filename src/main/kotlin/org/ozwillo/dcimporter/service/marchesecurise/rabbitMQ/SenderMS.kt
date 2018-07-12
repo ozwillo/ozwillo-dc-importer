@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
 
+import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -21,18 +22,23 @@ class SenderMS {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(resource: DCResourceLight, type: String, action: String) {
+    fun sendCreate(resource: DCResourceLight, type: String, action: String) {
 
         val URI = resource.getUri()
 
-        val KEY = getKey(type, URI, action)
+        val SIRET = URI.split("/").get(7)
+        if(SIRET.length != 9){
+            LOGGER.error("Siret {} non conforme", SIRET)
+        }
 
-        val message = JsonConverter.consultationToJson(resource)
+        val KEY = getKey(type, SIRET, action)
+
+        val message = JsonConverter.objectToJson(resource)
         LOGGER.debug("=======SENDER====== transformation consultation : {}", resource)
 
         template!!.convertAndSend(topic!!.name, KEY, message)
 
-        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY)
+        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY, SIRET.length)
     }
 
     private fun getKey(type: String, uri: String, action: String): String {

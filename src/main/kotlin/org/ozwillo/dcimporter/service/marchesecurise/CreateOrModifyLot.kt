@@ -5,7 +5,10 @@ import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
+import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS
 import org.ozwillo.dcimporter.web.marchesecurise.SendSoap
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 //TODO: Gestion des erreurs spécifiques aux requêtes
@@ -18,31 +21,42 @@ class CreateOrModifyLot(){
     private val url:String = ""
     private val businessMappingRepository: BusinessMappingRepository? = null
 
-    //TODO: Intégrer dans MarchePublicHandler.createLot - Param = dcLot + reference(req.pathVariable("reference"))
-    fun createLot(reference:String, dcLot:DCBusinessResourceLight):String{
 
-        val lot:Lot = Lot.toLot(dcLot)
 
-        val libelle = if(lot.libelle.length > 255) lot.libelle.substring(0,255) else lot.libelle
-        val ordre = lot.ordre.toString()
-        val numero = lot.numero.toString()
+    companion object {
 
-        //find consultation dce (saved during consultation creation) from business mapping
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        private val LOGGER: Logger = LoggerFactory.getLogger(ReceiverMS::class.java)
 
-        //soap request and response
-        val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
-        val response = SendSoap.sendSoap(url, soapMessage)
+        fun createLot(login:String, password:String, pa:String, lot:Lot, uri:String, url:String, businessMappingRepository:BusinessMappingRepository):String{
 
-        //cleLot parsed from response and saved in businessMapping
-        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
-        val cleLot = parseResponse[2]
+            val libelle = if(lot.libelle.length > 255) lot.libelle.substring(0,255) else lot.libelle
+            val ordre = lot.ordre.toString()
+            val numero = lot.numero.toString()
 
-        val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
-        businessMappingRepository.save(businessMappingLot)
+            val reference = uri.split("/")[8]
 
-        return response
+            //find consultation dce (saved during consultation creation) from business mapping
+            val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+            LOGGER.debug("=== FOUND DCE : {} === ", dce)
+
+
+            //soap request and response
+            val soapMessage = GenerateSoapRequest.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
+            val response = SendSoap.sendSoap(url, soapMessage)
+
+            //cleLot parsed from response and saved in businessMapping
+            val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+            val cleLot = parseResponse[2]
+
+            val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
+            businessMappingRepository.save(businessMappingLot).block()
+            LOGGER.debug(" === SAVED BUSINESS MAPPING : {} ", businessMappingLot)
+
+            return response
+        }
     }
+
+
 
     //TODO: Intégrer dans MarchePublicHandler.updateLot() - Param = dcLot + reference(req.pathVariable("reference"))
     fun modifyLot(reference:String, dcLot: DCBusinessResourceLight):String{

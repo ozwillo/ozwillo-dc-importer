@@ -12,7 +12,7 @@ class JsonConverter{
 
         private val LOGGER = LoggerFactory.getLogger(JsonConverter::class.java)
 
-        fun consultationToJson(resource: DCResourceLight):String{
+        fun objectToJson(resource: DCResourceLight):String{
 
             val mapper = jacksonObjectMapper()
 
@@ -22,7 +22,7 @@ class JsonConverter{
             return jsonStr
         }
 
-        fun JsonToConsultation(input:String):DCBusinessResourceLight{
+        fun jsonToobject(input:String):DCBusinessResourceLight{
 
             val mapper = jacksonObjectMapper()
             mapper.findAndRegisterModules()

@@ -10,10 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.model.marchepublic.Consultation
-import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
+import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.web.MarchePublicHandler
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,6 +22,7 @@ import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
+import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -79,9 +77,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation"
-        val date = LocalDateTime.now()
-        val consultation = Consultation(reference = "ref-consultation-$date",
+        val reference = "ref-consultation-04"
+        val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
@@ -90,5 +87,14 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
 
         datacoreService.saveResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultation, bearer)
+    }
+
+    @Test
+    fun saveLotResourceTest(){
+        val reference = "ref-consultation-04"
+        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Libellé Lot", ordre = 1, numero = 1)
+        val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
+
+        datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
     }
 }

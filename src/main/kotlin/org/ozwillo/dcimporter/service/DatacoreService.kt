@@ -75,8 +75,8 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        //TODO:Envoi RabbitMQ
-        sender!!.send(resource, "consultation", "action")
+        //Envoi RabbitMQ
+        sender!!.sendCreate(resource, "consultation.$type", "create")
 
         try {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)
@@ -96,6 +96,10 @@ class DatacoreService {
                 .expand(type)
                 .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
                 .toUriString()
+
+        //TODO:Envoi RabbitMQ
+        //sender!!.send(resource, "consultation.$type", "update")
+
         LOGGER.debug("Updating resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)

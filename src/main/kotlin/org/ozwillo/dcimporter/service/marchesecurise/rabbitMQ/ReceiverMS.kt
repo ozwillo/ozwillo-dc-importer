@@ -1,12 +1,10 @@
 package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
 
-import org.ozwillo.dcimporter.model.BusinessMapping
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
-import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
+import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.marchesecurise.CreateConsultation
+import org.ozwillo.dcimporter.service.marchesecurise.CreateOrModifyLot
 import org.ozwillo.dcimporter.web.marchesecurise.MarcheSecuriseURL
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -26,13 +24,26 @@ class ReceiverMS (val businessMappingRepository: BusinessMappingRepository) {
 
     @RabbitListener(queues = arrayOf("marchesecurise"))
     @Throws(InterruptedException::class)
-    fun receive(incoming: String) {
-        val resource = JsonConverter.JsonToConsultation(incoming)
-        val consultation:Consultation = Consultation.toConsultation(resource)
-        val uri:String = resource.getUri()
-        LOGGER.debug("[Rabbit Listener] 'consultation.siret.#' received consultation {} with uri {}", consultation, uri)
+    fun receive(incoming: Message) {
 
-        val response = CreateConsultation.createAndModifyConsultation(login, password, pa, consultation, uri, MarcheSecuriseURL.CREATE_CONSULTATION_URL, businessMappingRepository)
-        LOGGER.debug("=== REPONSE ENVOI SOAP : ==\n {}", response)
+        val message = String(incoming.body)
+        val routingKey = incoming.messageProperties.receivedRoutingKey
+
+        val resource = JsonConverter.jsonToobject(message)
+        val uri:String = resource.getUri()
+        if (routingKey.contains("marchepublic:consultation_0") && routingKey.contains("create")){
+            val consultation:Consultation = Consultation.toConsultation(resource)
+
+            LOGGER.debug("[Rabbit Listener] 'consultation.siret.#' received consultation {}", consultation)
+
+            val response = CreateConsultation.createAndModifyConsultation(login, password, pa, consultation, MarcheSecuriseURL.CREATE_CONSULTATION_URL, businessMappingRepository)
+            LOGGER.debug("=== REPONSE ENVOI SOAP : ==\n {}", response)
+
+        }else if (routingKey.contains("marchepublic:lot_0".toRegex())){
+            val lot: Lot = Lot.toLot(resource)
+            LOGGER.debug("[Rabbit Listener] 'consultation.siret.#' received lot {} with uri {}", lot, uri)
+            val response = CreateOrModifyLot.createLot(login, password, pa, lot, uri, MarcheSecuriseURL.LOTS_URL, businessMappingRepository)
+            LOGGER.debug("=== REPONSE ENVOI SOAP : ==\n {}", response)
+        }
     }
 }
