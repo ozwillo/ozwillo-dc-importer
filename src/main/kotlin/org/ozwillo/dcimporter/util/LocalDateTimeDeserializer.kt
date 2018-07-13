@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.config.marchesecurise
+package org.ozwillo.dcimporter.util
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonProcessingException

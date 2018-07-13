@@ -1,7 +1,7 @@
 package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
+import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.AmqpException
@@ -34,11 +34,11 @@ class SenderMS {
         val KEY = getKey(type, SIRET, action)
 
         val message = JsonConverter.objectToJson(resource)
-        LOGGER.debug("=======SENDER====== transformation consultation : {}", resource)
+        LOGGER.debug("conversion consultation : {}", resource)
 
         template!!.convertAndSend(topic!!.name, KEY, message)
 
-        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY, SIRET.length)
+        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY)
     }
 
     private fun getKey(type: String, uri: String, action: String): String {

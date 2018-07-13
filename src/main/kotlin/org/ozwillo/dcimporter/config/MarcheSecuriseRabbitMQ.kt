@@ -1,6 +1,7 @@
-package org.ozwillo.dcimporter.config.marchesecurise
+package org.ozwillo.dcimporter.config
 
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
+import org.ozwillo.dcimporter.service.marchesecurise.MarcheSecuriseService
 import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS
 import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
 import org.springframework.amqp.core.Binding
@@ -10,10 +11,13 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.amqp.core.TopicExchange
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 
 @Configuration
 class MarcheSecuriseRabbitMQ {
-    private val EXCHANGER_NAME = "dcimporter"
+
+    @Value("\${marchesecurise.config.amqp.exchangerName}")
+    private val EXCHANGER_NAME = ""
 
 
     @Bean
@@ -26,12 +30,17 @@ class MarcheSecuriseRabbitMQ {
         @Autowired
         private lateinit var businessMappingRepository: BusinessMappingRepository
 
-        private val QUEUE_MS_NAME = "marchesecurise"
-        private val KEY_CONSULTATION = "consultation.#"
+        @Autowired
+        private lateinit var marcheSecuriseService: MarcheSecuriseService
+
+        @Value("\${marchesecurise.config.amqp.queueName}")
+        private val QUEUE_MS_NAME = ""
+        @Value("\${marchesecurise.config.amqp.bindingKey}")
+        private val BINDING_KEY = ""
 
         @Bean
         fun receiver(): ReceiverMS {
-            return ReceiverMS(businessMappingRepository)
+            return ReceiverMS(businessMappingRepository, marcheSecuriseService)
         }
 
         @Bean
@@ -41,7 +50,7 @@ class MarcheSecuriseRabbitMQ {
 
         @Bean
         fun bindingConsultation(topic: TopicExchange, queueMS: Queue): Binding {
-            return BindingBuilder.bind(queueMS).to(topic).with(KEY_CONSULTATION)
+            return BindingBuilder.bind(queueMS).to(topic).with(BINDING_KEY)
         }
 
     }

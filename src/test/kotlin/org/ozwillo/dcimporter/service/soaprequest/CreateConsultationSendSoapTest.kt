@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.web.marchesecurise
+package org.ozwillo.dcimporter.service.soaprequest
 
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -6,17 +6,29 @@ import org.junit.jupiter.api.Test
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
-import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
 import org.ozwillo.dcimporter.util.DCUtils
+import org.ozwillo.dcimporter.util.MSUtils
+import org.springframework.beans.factory.annotation.Value
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.time.Month
 
 class CreateConsultationSendSoapTest{
 
-    private var login = ""
-    private var password = ""
-    private var pa = ""
+    @Value("\${marchesecurise.config.url.createConsultation}")
+    private val CREATE_CONSULTATION_URL = ""
+    @Value("\${marchesecurise.config.url.updateConsultation}")
+    private val UPDATE_CONSULTATION_URL = ""
+
+
+    @Value("\${marchesecurise.login}")
+    private var login: String = ""
+    @Value("\${marchesecurise.password}")
+    private var password: String = ""
+    @Value("\${marchesecurise.pa}")
+    private var pa: String = ""
+
+
     private var objet = ""
     private var enligne = ""
     private var datePublication = ""
@@ -33,9 +45,7 @@ class CreateConsultationSendSoapTest{
 
     @BeforeAll
     fun setup(){
-        login = "wsdev-sictiam"
-        password = "WS*s1ctiam*"
-        pa = "1267898337p8xft"
+
         objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"
         enligne = DCUtils.booleanToInt(true).toString()
         datePublication = ((Timestamp.valueOf(LocalDateTime.now()).time)/1000).toString()
@@ -52,9 +62,7 @@ class CreateConsultationSendSoapTest{
 
     @AfterAll
     fun tearDown(){
-        login = ""
-        password = ""
-        pa = ""
+
         objet = ""
         enligne = ""
         datePublication = ""
@@ -72,9 +80,9 @@ class CreateConsultationSendSoapTest{
 
 
     private fun sendCreateConsultationRequest (url:String, login:String, password:String, pa:String):String{
-        val soapMessage = GenerateSoapRequest.generateCreateConsultationLogRequest(login, password,pa)
+        val soapMessage = MSUtils.generateCreateConsultationLogRequest(login, password,pa)
 
-        return SendSoap.sendSoap(url, soapMessage)
+        return MSUtils.sendSoap(url, soapMessage)
     }
 
     private fun getDce(url:String, login: String, password: String, pa: String):String {
@@ -85,11 +93,11 @@ class CreateConsultationSendSoapTest{
     @Test
     fun sendCreateConsultationRequest (){
 
-        val dce = getDce(MarcheSecuriseURL.CREATE_CONSULTATION_URL, login, password, pa)
+        val dce = getDce(CREATE_CONSULTATION_URL, login, password, pa)
         println(dce)
-        val soapMessage = GenerateSoapRequest.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
+        val soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
         println(soapMessage)
-        val response = SendSoap.sendSoap(MarcheSecuriseURL.MODIFY_CONSULTATION_URL, soapMessage)
+        val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
         print(response)
     }
 }

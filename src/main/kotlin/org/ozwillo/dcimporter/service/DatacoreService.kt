@@ -75,12 +75,13 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        //Envoi RabbitMQ
+        //Envoi RabbitMQ TODO:Intégrer après test statut (ci dessous)
         sender!!.sendCreate(resource, "consultation.$type", "create")
 
         try {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)
             val result: DCResourceLight = response.body!!
+            //response.statusCode == HttpStatus.OK //TODO: Envoi vers RabbitMQ seulement si création ok -> intégrer un test
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")

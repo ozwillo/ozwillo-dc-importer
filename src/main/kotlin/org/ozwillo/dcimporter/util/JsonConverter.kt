@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
+package org.ozwillo.dcimporter.util
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -17,7 +17,7 @@ class JsonConverter{
             val mapper = jacksonObjectMapper()
 
             var jsonStr = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
-            LOGGER.debug("===CONVERSION CONSULTATION VERS JSON=== \n {}", jsonStr)
+            LOGGER.debug("conversion json : {}", jsonStr)
 
             return jsonStr
         }
@@ -30,7 +30,7 @@ class JsonConverter{
             var resource:DCBusinessResourceLight = mapper.readValue(input)
 
 
-            LOGGER.debug("===CONVERSION JSON VERS CONSULTATION=== \n {}", resource)
+            LOGGER.debug("Conversion vers objet {}", resource)
 
             return resource
         }

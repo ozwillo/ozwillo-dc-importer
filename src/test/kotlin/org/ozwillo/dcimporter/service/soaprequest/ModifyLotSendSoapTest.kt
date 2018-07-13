@@ -1,14 +1,23 @@
-package org.ozwillo.dcimporter.web.marchesecurise
+package org.ozwillo.dcimporter.service.soaprequest
 
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.ozwillo.dcimporter.model.wsdl.marchesecurise.request.GenerateSoapRequest
+import org.ozwillo.dcimporter.util.MSUtils
+import org.springframework.beans.factory.annotation.Value
 
 class ModifyLotSendSoapTest{
-    private var login = ""
-    private var password = ""
-    private var pa = ""
+
+    @Value("\${marchesecurise.config.url.lot}")
+    private val LOT_URL = ""
+
+
+    @Value("\${marchesecurise.login}")
+    private var login: String = ""
+    @Value("\${marchesecurise.password}")
+    private var password: String = ""
+    @Value("\${marchesecurise.pa}")
+    private var pa: String = ""
     private var dce = ""
     private var uuid = ""
     private var libelle = ""
@@ -17,9 +26,6 @@ class ModifyLotSendSoapTest{
 
     @BeforeAll
     fun setup(){
-        login = "wsdev-sictiam"
-        password = "WS*s1ctiam*"
-        pa = "1267898337p8xft"
         dce = "1530514543c6yt3jacnk6x"
         uuid = "15305146545i8p34km21cr"
         libelle = if("Libellé modifié encore une fois".length > 255) "Libellé modifié encore une fois".substring(0,255) else "Libellé modifié encore une fois"
@@ -29,9 +35,6 @@ class ModifyLotSendSoapTest{
 
     @AfterAll
     fun tearDown(){
-        login = ""
-        password = ""
-        pa = ""
         dce = ""
         uuid = ""
         libelle = ""
@@ -41,9 +44,9 @@ class ModifyLotSendSoapTest{
 
     @Test
     fun modifyLot(){
-        val soapMessage = GenerateSoapRequest.generateModifyLotRequest(login, password, pa, dce, uuid, libelle, ordre, numero)
+        val soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, uuid, libelle, ordre, numero)
         println(soapMessage)
-        val response = SendSoap.sendSoap(MarcheSecuriseURL.LOTS_URL, soapMessage)
+        val response = MSUtils.sendSoap(LOT_URL, soapMessage)
         println(response)
     }
 }

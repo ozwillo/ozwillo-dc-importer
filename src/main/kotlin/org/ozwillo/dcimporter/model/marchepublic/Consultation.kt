@@ -3,8 +3,8 @@ package org.ozwillo.dcimporter.model.marchepublic
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import org.ozwillo.dcimporter.config.marchesecurise.LocalDateTimeDeserializer
-import org.ozwillo.dcimporter.config.marchesecurise.LocalDateTimeSerializer
+import org.ozwillo.dcimporter.util.LocalDateTimeDeserializer
+import org.ozwillo.dcimporter.util.LocalDateTimeSerializer
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.util.DCUtils
 import java.io.Serializable
