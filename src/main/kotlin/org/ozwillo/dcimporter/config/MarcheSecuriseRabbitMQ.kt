@@ -1,9 +1,9 @@
 package org.ozwillo.dcimporter.config
 
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.marchesecurise.MarcheSecuriseService
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
+import org.ozwillo.dcimporter.service.MarcheSecuriseService
+import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
+import org.ozwillo.dcimporter.service.rabbitMQ.Sender
+import org.ozwillo.dcimporter.util.JsonConverter
 import org.springframework.amqp.core.Binding
 import org.springframework.amqp.core.BindingBuilder
 import org.springframework.amqp.core.Queue
@@ -25,10 +25,12 @@ class MarcheSecuriseRabbitMQ {
         return TopicExchange(EXCHANGER_NAME)
     }
 
-    private class ReceiverConfig {
+    @Bean
+    fun jsonConverter():JsonConverter{
+        return JsonConverter()
+    }
 
-        @Autowired
-        private lateinit var businessMappingRepository: BusinessMappingRepository
+    private class ReceiverConfig {
 
         @Autowired
         private lateinit var marcheSecuriseService: MarcheSecuriseService
@@ -39,8 +41,8 @@ class MarcheSecuriseRabbitMQ {
         private val BINDING_KEY = ""
 
         @Bean
-        fun receiver(): ReceiverMS {
-            return ReceiverMS(businessMappingRepository, marcheSecuriseService)
+        fun receiver(): Receiver {
+            return Receiver(marcheSecuriseService)
         }
 
         @Bean
@@ -56,8 +58,8 @@ class MarcheSecuriseRabbitMQ {
     }
 
     @Bean
-    fun sender(): SenderMS {
-        return SenderMS()
+    fun sender(): Sender {
+        return Sender()
     }
 
 }

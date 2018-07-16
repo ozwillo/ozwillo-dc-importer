@@ -1,13 +1,12 @@
 package org.ozwillo.dcimporter.util
 
 import groovy.text.SimpleTemplateEngine
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS
+import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStream
+import org.springframework.core.io.ClassPathResource
+import org.springframework.util.FileCopyUtils
+import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLConnection
@@ -15,7 +14,49 @@ import java.net.URLConnection
 class MSUtils{
     companion object {
 
-        private val LOGGER: Logger = LoggerFactory.getLogger(ReceiverMS::class.java)
+        private val LOGGER: Logger = LoggerFactory.getLogger(Receiver::class.java)
+
+        fun templateToString(templatePath:String):String {
+            val resource = ClassPathResource(templatePath)
+            val bos = ByteArrayOutputStream()
+
+            try {
+                FileCopyUtils.copy(resource.getInputStream(), bos)
+            }catch (e:IOException){
+                e.printStackTrace()
+            }
+
+            return bos.toString()
+        }
+
+        fun booleanToInt(bool:Boolean):Int{
+            return if(bool)
+                1
+            else
+                0
+        }
+
+        fun intToBoolean(i:Int):Boolean{
+            return i==1
+        }
+
+        fun intListToString(ints:List<Int>):String{
+            var result = ""
+            for (index in ints.indices){
+                result+="${ints[index]};"
+            }
+            result=result.substring(0,result.length-1)
+            return result
+        }
+
+        fun stringListToString(stringList:List<String>):String{
+            var result = ""
+            for (index in stringList.indices){
+                result+="${stringList[index]};"
+            }
+            result=result.substring(0,result.length-1)
+            return result
+        }
 
         @Throws(Exception::class)
         fun sendSoap(soapUrl:String, soapMessage:String):String{
@@ -66,7 +107,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateCreateConsultationLogRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateCreateConsultationLogRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -98,7 +139,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateModifyConsultationRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateModifyConsultationRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -117,7 +158,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateDeleteConsultation.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateDeleteConsultation.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -139,7 +180,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateCreateLotRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateCreateLotRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -162,7 +203,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateModifyLotRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateModifyLotRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -182,7 +223,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateDeleteLotRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateDeleteLotRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -201,7 +242,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(DCUtils.templateToString("template/templateDeleteAllLotRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateDeleteAllLotRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){

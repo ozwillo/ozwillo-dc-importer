@@ -1,4 +1,4 @@
-package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
+package org.ozwillo.dcimporter.service.rabbitMQ
 
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.ozwillo.dcimporter.util.JsonConverter
@@ -11,12 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class SenderMS {
+class Sender {
 
-    private val LOGGER:Logger = LoggerFactory.getLogger(SenderMS::class.java)
+    private val LOGGER:Logger = LoggerFactory.getLogger(Sender::class.java)
 
     @Autowired
     private val template: RabbitTemplate? = null
+
+    @Autowired
+    private val jsonConverter: JsonConverter? = null
 
     @Autowired
     private val topic: TopicExchange? = null
@@ -28,17 +31,17 @@ class SenderMS {
 
         val SIRET = URI.split("/").get(7)
         if(SIRET.length != 9){
-            LOGGER.error("Siret {} non conforme", SIRET)
+            LOGGER.error("Improper siret {}", SIRET)
         }
 
         val KEY = getKey(type, SIRET, action)
 
-        val message = JsonConverter.objectToJson(resource)
-        LOGGER.debug("conversion consultation : {}", resource)
+        val message = jsonConverter!!.objectToJson(resource)
+        LOGGER.debug("conversion : {}", resource)
 
         template!!.convertAndSend(topic!!.name, KEY, message)
 
-        LOGGER.debug("[RabbitMQ] message envoyé vers marchesecurise avec la clef : {}", KEY)
+        LOGGER.debug("message sent with routing key : {}", KEY)
     }
 
     private fun getKey(type: String, uri: String, action: String): String {

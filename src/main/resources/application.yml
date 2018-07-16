@@ -83,10 +83,6 @@ datacore:
     nonce: changeit      #Set it when getting the refreshToken
   baseUri: http://data.ozwillo.com/dc/type
 
-spring:
-  jackson:
-    serialization:
-      write_dates_as_timestamps: false
 
 spring:
   rabbitmq:

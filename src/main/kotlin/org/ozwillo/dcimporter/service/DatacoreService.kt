@@ -4,7 +4,7 @@ import com.google.common.io.BaseEncoding
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
+import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -30,7 +30,7 @@ import java.util.*
 class DatacoreService {
 
     @Autowired
-    private lateinit var sender: SenderMS
+    private lateinit var sender: Sender
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)

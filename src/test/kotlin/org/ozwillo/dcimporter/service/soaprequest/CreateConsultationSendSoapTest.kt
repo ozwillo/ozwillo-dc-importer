@@ -47,7 +47,7 @@ class CreateConsultationSendSoapTest{
     fun setup(){
 
         objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"
-        enligne = DCUtils.booleanToInt(true).toString()
+        enligne = MSUtils.booleanToInt(true).toString()
         datePublication = ((Timestamp.valueOf(LocalDateTime.now()).time)/1000).toString()
         dateCloture = ((Timestamp.valueOf(LocalDateTime.of(2018,Month.JULY,19,3,0,0,0)).time)/1000).toString()
         reference = if("F-SICTIAM_06_20180622W2_01".toString().length > 255) ("F-SICTIAM_06_20180622W2_01".toString()).substring(0,255) else "F-SICTIAM_06_20180622W2_01".toString()
@@ -55,9 +55,9 @@ class CreateConsultationSendSoapTest{
         typeMarche = TypeMarcheType.AUTRE.toString().toLowerCase()
         prestation = TypePrestationType.AUTRES.toString().toLowerCase()
         passation = "AORA"
-        alloti = DCUtils.booleanToInt(false).toString()
-        departement = DCUtils.intListToString(listOf(74, 38, 6))
-        email = if(DCUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com")).length > 255) (DCUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))).substring(0,255) else DCUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))
+        alloti = MSUtils.booleanToInt(false).toString()
+        departement = MSUtils.intListToString(listOf(74, 38, 6))
+        email = if(MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com")).length > 255) (MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))).substring(0,255) else MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))
     }
 
     @AfterAll

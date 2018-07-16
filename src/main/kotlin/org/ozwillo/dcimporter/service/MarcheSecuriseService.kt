@@ -1,14 +1,14 @@
-package org.ozwillo.dcimporter.service.marchesecurise
+package org.ozwillo.dcimporter.service
 
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.ReceiverMS
-import org.ozwillo.dcimporter.util.DCUtils
+import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
 import org.ozwillo.dcimporter.util.MSUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.sql.Timestamp
@@ -25,11 +25,16 @@ import java.sql.Timestamp
 class MarcheSecuriseService{
 
     companion object {
-        private val LOGGER: Logger = LoggerFactory.getLogger(ReceiverMS::class.java)
+        private val LOGGER: Logger = LoggerFactory.getLogger(Receiver::class.java)
+
     }
 
     @Value("\${marchesecurise.config.url.updateConsultation}")
     private val UPDATE_CONSULTATION_URL = ""
+
+
+    @Autowired
+    private lateinit var businessMappingRepository: BusinessMappingRepository
 
 /*
 **  Consultation **
@@ -41,7 +46,7 @@ class MarcheSecuriseService{
     }
 
     //  Default Consultation creation
-    private fun createConsultationAndSaveDce(login:String, password:String, pa:String, url:String, consultation: Consultation, businessMappingRepository: BusinessMappingRepository):String {
+    private fun createConsultationAndSaveDce(login:String, password:String, pa:String, url:String, consultation: Consultation):String {
         val response = sendCreateConsultationRequest(login, password, pa, url)
         val reference: String = consultation.reference!!
 
@@ -56,51 +61,31 @@ class MarcheSecuriseService{
     }
 
     //  Default Consultation creation and update with correct data
-    fun createAndUpdateConsultation(login:String, password:String, pa:String, consultation: Consultation, url:String, businessMappingRepository: BusinessMappingRepository):String{
+    fun createAndUpdateConsultation(login:String, password:String, pa:String, consultation: Consultation, url:String):String{
 
-        //  consultation data formatter
-        val objet = if((consultation.objet).length > 255) (consultation.objet).substring(0,255) else consultation.objet
-        val enligne = DCUtils.booleanToInt(consultation.enLigne).toString()
-        val datePublication = ((Timestamp.valueOf(consultation.datePublication).time)/1000).toString()
-        val dateCloture = ((Timestamp.valueOf(consultation.dateCloture).time)/1000).toString()
-        val reference = consultation.reference.toString()
-        val finaliteMarche = (consultation.finaliteMarche).toString().toLowerCase()
-        val typeMarche = (consultation.typeMarche).toString().toLowerCase()
-        val prestation = (consultation.typePrestation).toString().toLowerCase()
-        val passation = consultation.passation
-        val alloti = DCUtils.booleanToInt(consultation.alloti).toString()
-        val departement = DCUtils.intListToString(consultation.departementsPrestation)
-        val email = if((DCUtils.stringListToString(consultation.emails)).length > 255) (DCUtils.stringListToString(consultation.emails)).substring(0,255) else DCUtils.stringListToString(consultation.emails)
+        var response = ""
 
+        //control of already existing businessMapping with same dcId
+        val existingBusinessMappings:BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationName(consultation.reference!!, "MS").block()
 
-        createConsultationAndSaveDce(login, password, pa, url, consultation, businessMappingRepository)
-
-        //  get consultation dce from BusinessMappingRepository and generate SOAP request
-        var soapMessage = ""
-        try {
-            val savedMonoBusinessMapping = businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")
-            var dce: String = savedMonoBusinessMapping.block()!!.businessId
-            soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
-
-
-            LOGGER.debug("get dce {}", dce)
-        } catch (e: Exception) {
-            LOGGER.error("error on finding dce from BusinessMapping")
-            e.printStackTrace()
+        if(existingBusinessMappings == null){
+            createConsultationAndSaveDce(login, password, pa, url, consultation)
+            response = updateConsultation(login, password, pa, consultation, UPDATE_CONSULTATION_URL)
+        }else{
+            LOGGER.warn("Resource with ref '{}' already exists", consultation.reference)
+            response = "No consultation creation request sent to Marche Securise"
         }
-
-        //  SOAP request sending
-        return MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
+        return response
     }
 
 
     //  Current consultation updating only
-    //TODO:Intégrer la fonction dans ReceiverMS + sender dans DataCoreService update ()
-    fun updateConsultation(login:String, password:String, pa:String, consultation:Consultation, url: String, businessMappingRepository: BusinessMappingRepository):String{
+    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService update ()
+    fun updateConsultation(login:String, password:String, pa:String, consultation:Consultation, url: String):String{
 
         //  Consultation data formatter
         val objet = if((consultation.objet).length > 255) (consultation.objet).substring(0,255) else consultation.objet
-        val enligne = DCUtils.booleanToInt(consultation.enLigne).toString()
+        val enligne = MSUtils.booleanToInt(consultation.enLigne).toString()
         val datePublication = ((Timestamp.valueOf(consultation.datePublication).time)/1000).toString()
         val dateCloture = ((Timestamp.valueOf(consultation.dateCloture).time)/1000).toString()
         val reference = consultation.reference.toString()
@@ -108,37 +93,35 @@ class MarcheSecuriseService{
         val typeMarche = (consultation.typeMarche).toString().toLowerCase()
         val prestation = (consultation.typePrestation).toString().toLowerCase()
         val passation = consultation.passation
-        val alloti = DCUtils.booleanToInt(consultation.alloti).toString()
-        val departement = DCUtils.intListToString(consultation.departementsPrestation)
-        val email = if((DCUtils.stringListToString(consultation.emails)).length > 255) (DCUtils.stringListToString(consultation.emails)).substring(0,255) else DCUtils.stringListToString(consultation.emails)
-        val save = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
-        val dce = (save).block()!!.businessId
+        val alloti = MSUtils.booleanToInt(consultation.alloti).toString()
+        val departement = MSUtils.intListToString(consultation.departementsPrestation)
+        val email = if((MSUtils.stringListToString(consultation.emails)).length > 255) (MSUtils.stringListToString(consultation.emails)).substring(0,255) else MSUtils.stringListToString(consultation.emails)
 
         //  get consultation dce from BusinessMappingRepository and generate SOAP request
         var soapMessage = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findFirstByDcIdAndApplicationName(reference, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
             var dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
 
 
             LOGGER.debug("get dce {}", dce)
         } catch (e: Exception) {
-            LOGGER.error("error on finding dce from BusinessMapping")
+            LOGGER.warn("error on finding dce from BusinessMapping")
             e.printStackTrace()
         }
 
         //  SOAP request sending
-        return MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
+        return MSUtils.sendSoap(url, soapMessage)
     }
 
 
-    //TODO:Intégrer la fonction dans ReceiverMS + sender dans DataCoreService delete ()
-    fun deleteConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String, businessMappingRepository: BusinessMappingRepository):String{
+    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService delete ()
+    fun deleteConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String):String{
 
         val reference = consultation.reference.toString()
 
-        val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         val soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
 
@@ -150,7 +133,7 @@ class MarcheSecuriseService{
 **  Lot **
 */
 
-    fun createLot(login:String, password:String, pa:String, lot: Lot, uri:String, url:String, businessMappingRepository:BusinessMappingRepository):String{
+    fun createLot(login:String, password:String, pa:String, lot: Lot, uri:String, url:String):String{
 
         // Lot data formatter
         val libelle = if(lot.libelle.length > 255) lot.libelle.substring(0,255) else lot.libelle
@@ -161,7 +144,7 @@ class MarcheSecuriseService{
         val reference = uri.split("/")[8]
 
         //  get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
         LOGGER.debug("get dce {} ", dce)
 
         //  soap request and response
@@ -179,8 +162,8 @@ class MarcheSecuriseService{
         return response
     }
 
-    //TODO: Intégrer dans ReceiverMS
-    fun updateLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String, businessMappingRepository: BusinessMappingRepository):String{
+    //TODO: Intégrer dans Receiver
+    fun updateLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String):String{
 
         //  Lot data formatter
         val uuid = lot.uuid
@@ -192,10 +175,10 @@ class MarcheSecuriseService{
         val reference = uri.split("/")[8]
 
         //get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //  get cleLot (saved during lot creation) from businessMappingRepository
-        val cleLot = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+        val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
 
         //soap request and response
         val soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
@@ -203,8 +186,8 @@ class MarcheSecuriseService{
         return MSUtils.sendSoap(url, soapMessage)
     }
 
-    //TODO: Intégrer dans ReceiverMS
-    fun deleteLot(login:String, password: String, pa: String, lot: Lot, uri: String, url: String, businessMappingRepository: BusinessMappingRepository):String{
+    //TODO: Intégrer dans Receiver
+    fun deleteLot(login:String, password: String, pa: String, lot: Lot, uri: String, url: String):String{
 
         val uuid = lot.uuid
 
@@ -212,10 +195,10 @@ class MarcheSecuriseService{
         val reference = uri.split("/")[8]
 
         //  Get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //  Get cleLot (saved during lot creation) from businessMappingRepository
-        val cleLot =(businessMappingRepository!!.findFirstByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+        val cleLot =(businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
 
         //SOAP request and response
         val soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
@@ -224,12 +207,12 @@ class MarcheSecuriseService{
     }
 
     //TODO: Ou intégrer le service ?
-    fun deleteAllLot(login: String, password: String, pa: String, uri: String, url: String, businessMappingRepository: BusinessMappingRepository):String{
+    fun deleteAllLot(login: String, password: String, pa: String, uri: String, url: String):String{
 
         //  Get consultation reference from uri
         val reference = uri.split("/")[8]
 
-        val dce = (businessMappingRepository!!.findFirstByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //  SOAP request and response
         val soapMessage = MSUtils.generateDeleteAllLotRequest(login, password, pa, dce)

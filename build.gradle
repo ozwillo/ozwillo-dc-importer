@@ -66,8 +66,6 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
     compile("org.jetbrains.kotlin:kotlin-reflect")
     compile('com.fasterxml.jackson.module:jackson-module-kotlin')
-    compile("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.4.0")
-    compile('joda-time:joda-time:2.1')
     compile('org.apache.commons:commons-lang3:3.7')
     compile('commons-codec:commons-codec:1.11')
     compile('com.google.guava:guava:23.6-jre')

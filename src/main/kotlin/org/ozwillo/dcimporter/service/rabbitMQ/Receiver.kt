@@ -1,19 +1,22 @@
-package org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ
+package org.ozwillo.dcimporter.service.rabbitMQ
 
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.marchesecurise.MarcheSecuriseService
+import org.ozwillo.dcimporter.model.marchepublic.Lot
+import org.ozwillo.dcimporter.service.MarcheSecuriseService
 import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 
-class ReceiverMS (val businessMappingRepository: BusinessMappingRepository,
-                  val marcheSecuriseService: MarcheSecuriseService) {
+class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
-    private val LOGGER:Logger = LoggerFactory.getLogger(ReceiverMS::class.java)
+    @Autowired
+    private lateinit var jsonConverter: JsonConverter
+
+    private val LOGGER:Logger = LoggerFactory.getLogger(Receiver::class.java)
     @Value("\${marchesecurise.config.url.createConsultation}")
     private val CREATE_CONSULTATION_URL = ""
     @Value("\${marchesecurise.config.url.updateConsultation}")
@@ -39,24 +42,24 @@ class ReceiverMS (val businessMappingRepository: BusinessMappingRepository,
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
 
-        val resource = JsonConverter.jsonToobject(message)
+        val resource = jsonConverter.jsonToobject(message)
         val uri:String = resource.getUri()
         if (routingKey.contains("marchepublic:consultation_0") && routingKey.contains("create")){
             val consultation:Consultation = Consultation.toConsultation(resource)
 
-            LOGGER.debug("[Rabbit Listener] 'consultation.#' received consultation {}", consultation)
+            LOGGER.debug("binding 'consultation.#' received consultation {}", consultation)
 
-            val response = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, CREATE_CONSULTATION_URL, businessMappingRepository)
-            LOGGER.debug("envoi SOAP, réponse : {}", response)
+            val response = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, CREATE_CONSULTATION_URL)
+            LOGGER.debug("SOAP sending, response : {}", response)
 
-        }/*else if (routingKey.contains("marchepublic:lot_0") && routingKey.contains("create")){
+        }else if (routingKey.contains("marchepublic:lot_0") && routingKey.contains("create")){
             val lot: Lot = Lot.toLot(resource)
-            LOGGER.debug("[Rabbit Listener] 'consultation.#' received lot {} with uri {}", lot, uri)
-            val response = marcheSecuriseService.createLot(login, password, pa, lot, uri, MarcheSecuriseURL.LOTS_URL, businessMappingRepository)
-            LOGGER.debug("envoi SOAP, réponse : {}", response)
-        }*/
+            LOGGER.debug("binding 'consultation.#' received lot {}", lot)
+            val response = marcheSecuriseService.createLot(login, password, pa, lot, uri, LOT_URL)
+            LOGGER.debug("SOAP sending, response : {}", response)
+        }
         else{
-            LOGGER.error("Type non reconnu")
+            LOGGER.error("Unable to recognize type (consultation, lot or piece from routing key {}", routingKey)
         }
     }
 }

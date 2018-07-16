@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.HashMap
+import java.util.*
 
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(uri: String,

@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory
 
 class JsonConverter{
 
-    companion object {
-
         private val LOGGER = LoggerFactory.getLogger(JsonConverter::class.java)
 
         fun objectToJson(resource: DCResourceLight):String{
@@ -34,7 +32,6 @@ class JsonConverter{
 
             return resource
         }
-    }
 
 
 }

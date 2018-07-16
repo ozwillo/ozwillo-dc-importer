@@ -2,16 +2,12 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
-import org.ozwillo.dcimporter.service.marchesecurise.rabbitMQ.SenderMS
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -83,12 +79,10 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 .flatMap { result ->
                     val reference = result.resource.getUri().substringAfterLast('/')
                     // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
-
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-
                 }.onErrorResume { error ->
                     LOGGER.error("Creation failed with error $error")
                     badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
