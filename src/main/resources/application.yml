@@ -4,10 +4,6 @@ spring:
   data:
     mongodb:
       database: dcimporter
-  rabbitmq:
-      addresses: localhost
-      username: guest
-      password: guest
 
 server:
   compression.enabled: true
@@ -41,11 +37,8 @@ marchesecurise:
       updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
       deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
       lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
-
-amqp:
-  config:
-    exchangerName: dcimporter
-    marchesecurise:
+    amqp:
+      exchangerName: dcimporter
       queueName: marchesecurise
       bindingKey: consultation.#
 
@@ -89,3 +82,10 @@ datacore:
     refreshToken: refreshToken
     nonce: changeit      #Set it when getting the refreshToken
   baseUri: http://data.ozwillo.com/dc/type
+
+
+spring:
+  rabbitmq:
+    addresses: localhost
+    username: guest
+    password: guest

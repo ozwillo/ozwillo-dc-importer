@@ -16,7 +16,7 @@ import org.springframework.beans.factory.annotation.Value
 @Configuration
 class MarcheSecuriseRabbitMQ {
 
-    @Value("\${amqp.config.exchangerName}")
+    @Value("\${marchesecurise.config.amqp.exchangerName}")
     private val EXCHANGER_NAME = ""
 
 
@@ -30,9 +30,9 @@ class MarcheSecuriseRabbitMQ {
         @Autowired
         private lateinit var marcheSecuriseService: MarcheSecuriseService
 
-        @Value("\${amqp.config.marchesecurise.queueName}")
+        @Value("\${marchesecurise.config.amqp.queueName}")
         private val QUEUE_MS_NAME = ""
-        @Value("\${amqp.config.marchesecurise.bindingKey}")
+        @Value("\${marchesecurise.config.amqp.bindingKey}")
         private val BINDING_KEY = ""
 
         @Bean
