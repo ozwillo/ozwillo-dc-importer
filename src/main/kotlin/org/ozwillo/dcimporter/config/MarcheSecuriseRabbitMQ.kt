@@ -25,11 +25,6 @@ class MarcheSecuriseRabbitMQ {
         return TopicExchange(EXCHANGER_NAME)
     }
 
-    @Bean
-    fun jsonConverter():JsonConverter{
-        return JsonConverter()
-    }
-
     private class ReceiverConfig {
 
         @Autowired

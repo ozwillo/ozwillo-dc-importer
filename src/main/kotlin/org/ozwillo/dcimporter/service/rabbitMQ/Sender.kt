@@ -19,9 +19,6 @@ class Sender {
     private val template: RabbitTemplate? = null
 
     @Autowired
-    private val jsonConverter: JsonConverter? = null
-
-    @Autowired
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
@@ -36,7 +33,7 @@ class Sender {
 
         val KEY = getKey(type, SIRET, action)
 
-        val message = jsonConverter!!.objectToJson(resource)
+        val message = JsonConverter.objectToJson(resource)
         LOGGER.debug("conversion : {}", resource)
 
         template!!.convertAndSend(topic!!.name, KEY, message)

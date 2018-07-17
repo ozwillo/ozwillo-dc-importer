@@ -8,13 +8,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 
 class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
-
-    @Autowired
-    private lateinit var jsonConverter: JsonConverter
 
     private val LOGGER:Logger = LoggerFactory.getLogger(Receiver::class.java)
     @Value("\${marchesecurise.config.url.createConsultation}")
@@ -42,7 +38,7 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
 
-        val resource = jsonConverter.jsonToobject(message)
+        val resource = JsonConverter.jsonToobject(message)
         val uri:String = resource.getUri()
         if (routingKey.contains("marchepublic:consultation_0") && routingKey.contains("create")){
             val consultation:Consultation = Consultation.toConsultation(resource)

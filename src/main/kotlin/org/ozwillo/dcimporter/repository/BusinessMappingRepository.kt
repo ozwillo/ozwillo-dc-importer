@@ -9,6 +9,4 @@ import reactor.core.publisher.Mono
 interface BusinessMappingRepository : ReactiveMongoRepository<BusinessMapping, String> {
 
     fun findByDcIdAndApplicationName(dcId: String, applicationName: String): Mono<BusinessMapping>
-
-    fun findFirstByDcIdAndApplicationName(dcId: String, applicationName: String): Mono<BusinessMapping>
 }

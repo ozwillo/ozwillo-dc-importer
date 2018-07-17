@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.sql.Timestamp
+import java.time.ZoneId
 
 /*
 **      SOAP requests generation and sending to Web Service Marche Securise      **
@@ -86,8 +86,8 @@ class MarcheSecuriseService{
         //  Consultation data formatter
         val objet = if((consultation.objet).length > 255) (consultation.objet).substring(0,255) else consultation.objet
         val enligne = MSUtils.booleanToInt(consultation.enLigne).toString()
-        val datePublication = ((Timestamp.valueOf(consultation.datePublication).time)/1000).toString()
-        val dateCloture = ((Timestamp.valueOf(consultation.dateCloture).time)/1000).toString()
+        val datePublication = consultation.datePublication.atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+        val dateCloture = consultation.dateCloture.atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
         val reference = consultation.reference.toString()
         val finaliteMarche = (consultation.finaliteMarche).toString().toLowerCase()
         val typeMarche = (consultation.typeMarche).toString().toLowerCase()

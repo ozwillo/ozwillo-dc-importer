@@ -3,16 +3,23 @@ package org.ozwillo.dcimporter.service.soaprequest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.sql.Timestamp
 import java.time.LocalDateTime
 import java.time.Month
 
+@ExtendWith(SpringExtension::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class CreateConsultationSendSoapTest{
 
     @Value("\${marchesecurise.config.url.createConsultation}")
@@ -99,5 +106,76 @@ class CreateConsultationSendSoapTest{
         println(soapMessage)
         val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
         print(response)
+    }
+
+    @Test
+    fun badSoapEnvelopeTest(){
+
+        val dce = getDce(CREATE_CONSULTATION_URL, login, password, pa)
+
+        val soapMessage = "<soapenv:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"https://www.marches-securises.fr/webserv/\">\n" +
+                "    <soapenv:Header/>\n" +
+                "    <soapenv:Body>\n" +
+                "        <web:modifier_consultation_log soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "            <login xsi:type=\"xsd:string\">$login</login>\n" +
+                "            <password xsi:type=\"xsd:string\">$password</password>\n" +
+                "            <pa xsi:type=\"xsd:string\">$pa</pa>\n" +
+                "            <dce xsi:type=\"xsd:string\">$dce</dce>\n" +
+                "            <tableau xsi:type=\"Map\" xmlns=\"http://xml.apache.org/xml-soap\">\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">objet</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$objet</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">en_ligne</key>\n" +
+                "                    <value xsi:type=\"xsd:int\">$enligne</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">date_publication</key>\n" +
+                "                    <value xsi:type=\"xsd:timestamp\">$datePublication</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">date_cloture</key>\n" +
+                "                    <value xsi:type=\"xsd:timestamp\">$dateCloture</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">ref_interne</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$reference</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">finalite_marche</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$finaliteMarche</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">type_marche</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$typeMarche</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">type_prestation</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$prestation</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">passation</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$passation</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">a_lots</key>\n" +
+                "                    <value xsi:type=\"xsd:int\">$alloti</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">departements_prestation</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$departement</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">emails</key>\n" +
+                "                    <value xsi:type=\"xsd:int\">$email</value>\n" +
+                "                </item>\n" +
+                "            </tableau>     \n" +
+                "        </web:modifier_consultation_log>\n" +
+                "    </soapenv:Body>\n" +
+                "</soapenv:Envelope>"
+
+        val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
+        println(response)
     }
 }

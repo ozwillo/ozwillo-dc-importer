@@ -75,16 +75,16 @@ class DatacoreService {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        //Envoi RabbitMQ TODO:Intégrer après test statut (ci dessous)
-        sender!!.sendCreate(resource, "consultation.$type", "create")
-
         try {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)
             val result: DCResourceLight = response.body!!
-            //response.statusCode == HttpStatus.OK //TODO: Envoi vers RabbitMQ seulement si création ok -> intégrer un test
+
+            //Sending to MarcheSecurise throught rabbitmq
+            sender!!.sendCreate(resource, "consultation.$type", "create")
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
-            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
+            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise")
             throw e
         }
     }

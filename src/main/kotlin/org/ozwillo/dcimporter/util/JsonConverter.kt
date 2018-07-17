@@ -6,7 +6,7 @@ import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.slf4j.LoggerFactory
 
-class JsonConverter{
+object JsonConverter{
 
         private val LOGGER = LoggerFactory.getLogger(JsonConverter::class.java)
 
