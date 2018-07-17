@@ -26,7 +26,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     private val siret = "123456789"
 
-    private val bearer = "eyJpZCI6IjUyMjA3NWFlLWYzMjUtNGQ3NS04MzZmLTIyMzcxMzUyODRjOS9UYnpPT1pvZ3hPWmwzNzh5SUtJZzd3IiwiaWF0IjoxNTMxODQwMTg1Ljg2NDAwMDAwMCwiZXhwIjoxNTMxODQzNzg1Ljg2NDAwMDAwMH0"
+    private val bearer = "bearer"
 
 
     @Test
