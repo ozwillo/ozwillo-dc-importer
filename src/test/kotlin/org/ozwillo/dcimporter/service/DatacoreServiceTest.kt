@@ -26,12 +26,12 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     private val siret = "123456789"
 
-    private val bearer = "bearer"
+    private val bearer = "eyJpZCI6IjUyMjA3NWFlLWYzMjUtNGQ3NS04MzZmLTIyMzcxMzUyODRjOS9UYnpPT1pvZ3hPWmwzNzh5SUtJZzd3IiwiaWF0IjoxNTMxODQwMTg1Ljg2NDAwMDAwMCwiZXhwIjoxNTMxODQzNzg1Ljg2NDAwMDAwMH0"
 
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0003"
+        val reference = "ref-consultation-0005"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
