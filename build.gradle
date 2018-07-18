@@ -55,7 +55,6 @@ repositories {
 }
 
 dependencies {
-    compile('org.springframework.boot:spring-boot-starter-web-services')
     compile('org.springframework.boot:spring-boot-starter-actuator')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
     compile('org.springframework.boot:spring-boot-starter-webflux')
@@ -69,7 +68,6 @@ dependencies {
     compile('com.google.guava:guava:23.6-jre')
     compile('org.codehaus.groovy:groovy')
     compile('org.codehaus.groovy:groovy-templates')
-    compile('io.javaslang:javaslang:2.0.4')
 
 
 
