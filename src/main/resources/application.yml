@@ -4,6 +4,10 @@ spring:
   data:
     mongodb:
       database: dcimporter
+  rabbitmq:
+    addresses: localhost
+    username: guest
+    password: guest
 
 server:
   compression.enabled: true
@@ -31,16 +35,18 @@ marchesecurise:
   login: login
   password: password
   pa: pa
+  url:
+    createConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce
+    updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
+    deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
+    lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
+
+amqp:
   config:
-    url:
-      createConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce
-      updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
-      deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
-      lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
-    amqp:
       exchangerName: dcimporter
-      queueName: marchesecurise
-      bindingKey: consultation.#
+      marchesecurise:
+        queueName: marchesecurise
+        bindingKey: consultation.#
 
 maarch:
   instance:
@@ -83,9 +89,3 @@ datacore:
     nonce: changeit      #Set it when getting the refreshToken
   baseUri: http://data.ozwillo.com/dc/type
 
-
-spring:
-  rabbitmq:
-    addresses: localhost
-    username: guest
-    password: guest

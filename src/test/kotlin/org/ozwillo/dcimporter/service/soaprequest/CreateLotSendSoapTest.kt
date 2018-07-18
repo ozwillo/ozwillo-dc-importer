@@ -3,12 +3,19 @@ package org.ozwillo.dcimporter.service.soaprequest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.junit.jupiter.SpringExtension
 
+@ExtendWith(SpringExtension::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class CreateLotSendSoapTest{
 
-    @Value("\${marchesecurise.config.url.lot}")
+    @Value("\${marchesecurise.url.lot}")
     private val LOT_URL = ""
 
 
@@ -26,7 +33,7 @@ class CreateLotSendSoapTest{
 
     @BeforeAll
     fun setup(){
-        dce = "1530867066vp68t7r6j484"
+        dce = "1531898869ncvl4stchtz6"
         libelle = if("Un premier test".length > 255) "Un premier test".substring(0,255) else "Un premier test"
         ordre = 1.toString()
         numero = 1.toString()

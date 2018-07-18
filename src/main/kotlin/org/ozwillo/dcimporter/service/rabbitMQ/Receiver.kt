@@ -13,13 +13,13 @@ import org.springframework.beans.factory.annotation.Value
 class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
     private val LOGGER:Logger = LoggerFactory.getLogger(Receiver::class.java)
-    @Value("\${marchesecurise.config.url.createConsultation}")
+    @Value("\${marchesecurise.url.createConsultation}")
     private val CREATE_CONSULTATION_URL = ""
-    @Value("\${marchesecurise.config.url.updateConsultation}")
+    @Value("\${marchesecurise.url.updateConsultation}")
     private val UPDATE_CONSULTATION_URL = ""
-    @Value("\${marchesecurise.config.url.deleteConsultation}")
+    @Value("\${marchesecurise.url.deleteConsultation}")
     private val DELETE_CONSULTATION_URL = ""
-    @Value("\${marchesecurise.config.url.lot}")
+    @Value("\${marchesecurise.url.lot}")
     private val LOT_URL = ""
 
 

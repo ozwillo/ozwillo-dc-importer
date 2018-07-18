@@ -22,9 +22,9 @@ import java.time.Month
 @ActiveProfiles("test")
 class CreateConsultationSendSoapTest{
 
-    @Value("\${marchesecurise.config.url.createConsultation}")
+    @Value("\${marchesecurise.url.createConsultation}")
     private val CREATE_CONSULTATION_URL = ""
-    @Value("\${marchesecurise.config.url.updateConsultation}")
+    @Value("\${marchesecurise.url.updateConsultation}")
     private val UPDATE_CONSULTATION_URL = ""
 
 

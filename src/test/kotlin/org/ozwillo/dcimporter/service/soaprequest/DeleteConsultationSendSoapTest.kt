@@ -3,12 +3,19 @@ package org.ozwillo.dcimporter.service.soaprequest
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.junit.jupiter.SpringExtension
 
+@ExtendWith(SpringExtension::class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
 class DeleteConsultationSendSoapTest{
 
-    @Value("\${marchesecurise.config.url.deleteConsultation}")
+    @Value("\${marchesecurise.url.deleteConsultation}")
     private val DELETE_CONSULTATION_URL = ""
 
     @Value("\${marchesecurise.login}")
@@ -21,7 +28,7 @@ class DeleteConsultationSendSoapTest{
 
     @BeforeAll
     fun setup(){
-        dce = "1530514543c6yt3jacnk6x"
+        dce = "1531898869ncvl4stchtz6"
     }
 
     @AfterAll

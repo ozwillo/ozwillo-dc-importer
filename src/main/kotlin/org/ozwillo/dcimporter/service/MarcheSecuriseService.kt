@@ -29,7 +29,7 @@ class MarcheSecuriseService{
 
     }
 
-    @Value("\${marchesecurise.config.url.updateConsultation}")
+    @Value("\${marchesecurise.url.updateConsultation}")
     private val UPDATE_CONSULTATION_URL = ""
 
 
