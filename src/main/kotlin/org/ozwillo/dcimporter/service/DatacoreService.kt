@@ -80,7 +80,7 @@ class DatacoreService {
             val result: DCResourceLight = response.body!!
 
             //Sending to MarcheSecurise throught rabbitmq
-            sender!!.sendCreate(resource, "consultation.$type", "create")
+            sender!!.send(resource, project, type, "create")
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")

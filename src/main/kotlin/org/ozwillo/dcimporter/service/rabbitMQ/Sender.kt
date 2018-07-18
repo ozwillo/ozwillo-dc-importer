@@ -22,26 +22,21 @@ class Sender {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun sendCreate(resource: DCResourceLight, type: String, action: String) {
+    fun send(resource: DCResourceLight, project: String, type: String, action: String) {
 
-        val URI = resource.getUri()
-
-        val SIRET = URI.split("/").get(7)
-        if(SIRET.length != 9){
-            LOGGER.error("Improper siret {}", SIRET)
-        }
-
-        val KEY = getKey(type, SIRET, action)
-
+        val uri = resource.getUri()
+        val siret = uri.split("/").get(7)
+        val key = getKey(project, siret, type , action)
         val message = JsonConverter.objectToJson(resource)
-        LOGGER.debug("conversion : {}", resource)
 
-        template!!.convertAndSend(topic!!.name, KEY, message)
+        LOGGER.debug("Conversion : {}", resource)
 
-        LOGGER.debug("message sent with routing key : {}", KEY)
+        template!!.convertAndSend(topic!!.name, key, message)
+
+        LOGGER.debug("Message sent with routing key : {}", key)
     }
 
-    private fun getKey(type: String, uri: String, action: String): String {
-        return "$type.$uri.$action"
+    private fun getKey(project:String, type: String, siret: String, action: String): String {
+        return "$project.$siret.$type.$action"
     }
 }
