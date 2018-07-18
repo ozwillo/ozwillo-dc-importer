@@ -84,7 +84,7 @@ class DatacoreService {
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise")
+            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise for resource", resource)
             throw e
         }
     }
@@ -97,9 +97,6 @@ class DatacoreService {
                 .expand(type)
                 .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
                 .toUriString()
-
-        //TODO:Envoi RabbitMQ
-        //sender!!.send(resource, "consultation.$type", "update")
 
         LOGGER.debug("Updating resource at URI $uri")
 
@@ -116,9 +113,12 @@ class DatacoreService {
 
         try {
             restTemplate.put(uri, request)
+            //Sending to MarcheSecurise throught rabbitmq
+            sender!!.send(resource, project, type, "update")
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            LOGGER.error("[Marche Securise] : no update request sent to Marche Securise for resource", resource)
             throw e
         }
     }
@@ -141,9 +141,12 @@ class DatacoreService {
 
         try {
             val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
+            //Sending to MarcheSecurise throught rabbitmq
+            sender!!.send(dcCurrentResource, project, type, "delete")
             return Mono.just(response.statusCode)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
+            LOGGER.error("[Marche Securise] : no delete request sent to Marche Securise for resource {}", dcCurrentResource)
             throw e
         }
     }

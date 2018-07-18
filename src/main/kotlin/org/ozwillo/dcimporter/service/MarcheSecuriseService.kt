@@ -120,10 +120,18 @@ class MarcheSecuriseService{
     fun deleteConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String):String{
 
         val reference = consultation.reference.toString()
+        var soapMessage = ""
 
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        try {
+            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
+            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
 
-        val soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
+            LOGGER.debug("get dce {}", dce)
+        } catch (e: Exception) {
+            LOGGER.warn("error on finding dce from BusinessMapping")
+            e.printStackTrace()
+        }
 
         return MSUtils.sendSoap(url, soapMessage)
     }

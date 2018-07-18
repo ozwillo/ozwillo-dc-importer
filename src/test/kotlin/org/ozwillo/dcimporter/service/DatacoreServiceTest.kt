@@ -31,7 +31,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0007"
+        val reference = "ref-consultation-0011"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -41,6 +41,34 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
 
         datacoreService.saveResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultation, bearer)
+    }
+
+    @Test
+    fun  updateResourceTest(){
+        val reference = "ref-consultation-0010"
+        val consultation = Consultation(reference = reference,
+                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
+                passation = "passation modifiée", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
+                enLigne = false, alloti = false, invisible = false, nbLots = 1)
+        val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
+
+        datacoreService.updateResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultation, bearer)
+    }
+
+    @Test
+    fun deleteResourceTest(){
+        val reference = "ref-consultation-0010"
+        val consultation = Consultation(reference = reference,
+                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
+                passation = "passation modifiée", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
+                enLigne = false, alloti = false, invisible = false, nbLots = 1)
+        val dcConsultationIri = (consultation.toDcObject(datacoreProperties.baseUri, siret)).getIri()
+
+        datacoreService.deleteResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultationIri, bearer)
     }
 
     @Test

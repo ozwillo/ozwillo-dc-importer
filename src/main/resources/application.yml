@@ -46,7 +46,7 @@ amqp:
       exchangerName: dcimporter
       marchesecurise:
         queueName: marchesecurise
-        bindingKey: consultation.#
+        bindingKey: marchepublic_0.#
 
 maarch:
   instance:
