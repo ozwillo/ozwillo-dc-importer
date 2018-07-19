@@ -89,7 +89,8 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
             }
             // Update
             if(routingKey.contains("update")){
-                //TODO
+                val response = marcheSecuriseService.updatePiece(login, password, pa, piece, uri, PIECE_URL)
+                LOGGER.debug("SOAP sending, response : {}", response)
             }
         }
 

@@ -42,13 +42,13 @@ class CreatePieceSendSoapTest{
 
         val byteArrayContenu = "un contenu texte".toByteArray()
 
-        dce = "1530283595458byywtdzbk"
+        dce = "15320018624ocnidk7xjqm"
         cleLot = ""
-        clePiece = "1531923775pnou4h181yrs"
+        clePiece = "153200788997bc1fkfmi29"
         libelle = "Test modification pièce3"
         la = MSUtils.booleanToInt(false).toString()
         ordre = 1.toString()
-        nom = "NomDuFichierSansTiret5"
+        nom = "NomDuFichierSansTiret6"
         extension = "txt"
         contenu = Base64.getEncoder().encodeToString(byteArrayContenu)
         poids = 10.toString()
