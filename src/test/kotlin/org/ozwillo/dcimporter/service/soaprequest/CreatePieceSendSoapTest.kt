@@ -28,6 +28,7 @@ class CreatePieceSendSoapTest{
 
     private var dce = ""
     private var cleLot = ""
+    private var clePiece = ""
     private var libelle = ""
     private var la = ""
     private var ordre = ""
@@ -41,12 +42,13 @@ class CreatePieceSendSoapTest{
 
         val byteArrayContenu = "un contenu texte".toByteArray()
 
-        dce = "1531926376eixy7vk2brr4"
-        cleLot = "153192643272ixdf119vpn"
-        libelle = "Test création pièce"
+        dce = "1530283595458byywtdzbk"
+        cleLot = ""
+        clePiece = "1531923775pnou4h181yrs"
+        libelle = "Test modification pièce3"
         la = MSUtils.booleanToInt(false).toString()
         ordre = 1.toString()
-        nom = "nom-du-fichier"
+        nom = "NomDuFichierSansTiret5"
         extension = "txt"
         contenu = Base64.getEncoder().encodeToString(byteArrayContenu)
         poids = 10.toString()
@@ -70,6 +72,14 @@ class CreatePieceSendSoapTest{
         val soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
         println(soapMessage)
         val response = MSUtils.sendSoap(PIECE_URL, soapMessage)
-        print(response)
+        println(response)
+    }
+
+    @Test
+    fun updatePieceTest(){
+        val soapMessage = MSUtils.generateModifyPieceLogRequest(login, password, pa, dce, clePiece, cleLot, libelle, ordre, nom, extension, contenu, poids)
+        println(soapMessage)
+        val response = MSUtils.sendSoap(PIECE_URL, soapMessage)
+        println(response)
     }
 }

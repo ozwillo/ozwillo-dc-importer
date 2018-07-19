@@ -98,9 +98,6 @@ class DatacoreService {
                 .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
                 .toUriString()
 
-        //TODO:Envoi RabbitMQ
-        //sender!!.send(resource, "consultation.$type", "update")
-
         LOGGER.debug("Updating resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
@@ -116,6 +113,8 @@ class DatacoreService {
 
         try {
             restTemplate.put(uri, request)
+            //Sending to MarcheSecurise throught rabbitmq
+            sender!!.send(resource, project, type, "update")
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")

@@ -277,5 +277,32 @@ class MSUtils{
             }
             return result
         }
+
+        fun generateModifyPieceLogRequest(login: String, password: String, pa: String, dce: String, clePiece:String, cleLot: String, libelle :String, ordre:String, nom:String, extension:String, contenu:String, poids:String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+            model["clePiece"] = clePiece
+            model["cleLot"] = cleLot
+            model["libelle"] =libelle
+            model["ordre"] = ordre
+            model["nom"] = nom
+            model["extension"] = extension
+            model["contenu"] = contenu
+            model["poids"] = poids
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templateModifyPieceRequest.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
     }
 }
