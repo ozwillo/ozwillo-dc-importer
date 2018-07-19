@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.service
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
+import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
 import org.ozwillo.dcimporter.util.MSUtils
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.ZoneId
+import java.util.*
 
 /*
 **      SOAP requests generation and sending to Web Service Marche Securise      **
@@ -216,6 +218,41 @@ class MarcheSecuriseService{
 
         //  SOAP request and response
         val soapMessage = MSUtils.generateDeleteAllLotRequest(login, password, pa, dce)
+
+        return MSUtils.sendSoap(url, soapMessage)
+    }
+
+    fun createPiece(login:String, password: String, pa: String, piece: Piece, uri: String, url: String):String{
+
+        //Piece data formatter
+        val libelle = piece.libelle
+        val la = MSUtils.booleanToInt(piece.aapc).toString()
+        val ordre = piece.ordre.toString()
+        val nom = piece.nom
+        val extension = piece.extension
+        val contenu = Base64.getEncoder().encodeToString(piece.contenu)
+        val poids = piece.poids.toString()
+
+        //  Get consultation reference from uri
+        val reference = uri.split("/")[8]
+
+        //get cleLot and dce and generate soap request
+        val uuidLot = piece.uuidLot!!.substringAfterLast("/")
+        var cleLot = ""
+        var soapMessage = ""
+        try {
+            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
+            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            if (uuidLot != "") {
+                val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
+                cleLot = savedLotMonoBusinessMapping.block()!!.businessId
+            }
+            soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
+            LOGGER.debug("get dce {} and cleLot {}", dce, cleLot)
+        } catch (e: Exception) {
+            LOGGER.warn("error on finding dce and cleLot from BusinessMapping")
+            e.printStackTrace()
+        }
 
         return MSUtils.sendSoap(url, soapMessage)
     }

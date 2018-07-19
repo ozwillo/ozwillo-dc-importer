@@ -26,15 +26,15 @@ class ModifyLotSendSoapTest{
     @Value("\${marchesecurise.pa}")
     private var pa: String = ""
     private var dce = ""
-    private var uuid = ""
+    private var cleLot = ""
     private var libelle = ""
     private var ordre = ""
     private var numero = ""
 
     @BeforeAll
     fun setup(){
-        dce = "1531898869ncvl4stchtz6"
-        uuid = "153189951062tubkwpscox"
+        dce = "1531926376eixy7vk2brr4"
+        cleLot = "153192643272ixdf119vpn"
         libelle = if("Libellé modifié encore une fois".length > 255) "Libellé modifié encore une fois".substring(0,255) else "Libellé modifié encore une fois"
         ordre = 1.toString()
         numero = 1.toString()
@@ -43,7 +43,7 @@ class ModifyLotSendSoapTest{
     @AfterAll
     fun tearDown(){
         dce = ""
-        uuid = ""
+        cleLot = ""
         libelle = ""
         ordre = ""
         numero = ""
@@ -51,7 +51,7 @@ class ModifyLotSendSoapTest{
 
     @Test
     fun modifyLot(){
-        val soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, uuid, libelle, ordre, numero)
+        val soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
         println(soapMessage)
         val response = MSUtils.sendSoap(LOT_URL, soapMessage)
         println(response)

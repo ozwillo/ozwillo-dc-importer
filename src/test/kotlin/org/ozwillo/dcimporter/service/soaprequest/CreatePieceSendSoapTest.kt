@@ -9,15 +9,15 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class CreateLotSendSoapTest{
+class CreatePieceSendSoapTest{
 
-    @Value("\${marchesecurise.url.lot}")
-    private val LOT_URL = ""
-
+    @Value("\${marchesecurise.url.piece}")
+    private val PIECE_URL = ""
 
     @Value("\${marchesecurise.login}")
     private var login: String = ""
@@ -27,34 +27,49 @@ class CreateLotSendSoapTest{
     private var pa: String = ""
 
     private var dce = ""
+    private var cleLot = ""
     private var libelle = ""
+    private var la = ""
     private var ordre = ""
-    private var numero = ""
+    private var nom = ""
+    private var extension = ""
+    private var contenu = ""
+    private var poids = ""
 
     @BeforeAll
     fun setup(){
+
+        val byteArrayContenu = "un contenu texte".toByteArray()
+
         dce = "1531926376eixy7vk2brr4"
-        libelle = if("Un premier test".length > 255) "Un premier test".substring(0,255) else "Un premier test"
+        cleLot = "153192643272ixdf119vpn"
+        libelle = "Test création pièce"
+        la = MSUtils.booleanToInt(false).toString()
         ordre = 1.toString()
-        numero = 1.toString()
+        nom = "nom-du-fichier"
+        extension = "txt"
+        contenu = Base64.getEncoder().encodeToString(byteArrayContenu)
+        poids = 10.toString()
     }
 
     @AfterAll
-    fun tearDown(){
+    fun teardown(){
         dce = ""
+        cleLot = ""
         libelle = ""
+        la = ""
         ordre = ""
-        numero = ""
+        nom = ""
+        extension = ""
+        contenu = ""
+        poids = ""
     }
 
     @Test
-    fun createLot(){
-        val soapMessage = MSUtils.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
+    fun createPieceTest(){
+        val soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
         println(soapMessage)
-        val response = MSUtils.sendSoap(LOT_URL,soapMessage)
-        println(response)
-        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
-        val cleLot = parseResponse[2]
-        println(cleLot)
+        val response = MSUtils.sendSoap(PIECE_URL, soapMessage)
+        print(response)
     }
 }

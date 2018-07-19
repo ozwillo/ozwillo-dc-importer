@@ -189,14 +189,14 @@ class MSUtils{
             return result
         }
 
-        fun generateModifyLotRequest(login: String, password: String, pa: String, dce: String, uuid:String, libelle: String, ordre: String, numero: String):String{
+        fun generateModifyLotRequest(login: String, password: String, pa: String, dce: String, cleLot:String, libelle: String, ordre: String, numero: String):String{
             val model = HashMap<String, String>()
             model["login"] = login
             model["password"] = password
             model["pa"] = pa
             model["dce"] = dce
-            model["uuid"] = uuid
-            model["libelle"] =libelle
+            model["cleLot"] = cleLot
+            model["libelle"] = libelle
             model["ordre"] = ordre
             model["numero"] = numero
 
@@ -212,13 +212,13 @@ class MSUtils{
             return result
         }
 
-        fun generateDeleteLotRequest(login: String, password: String, pa: String, dce: String, uuid: String):String{
+        fun generateDeleteLotRequest(login: String, password: String, pa: String, dce: String, cleLot: String):String{
             val model = HashMap<String, String>()
             model["login"] = login
             model["password"] = password
             model["pa"] = pa
             model["dce"] = dce
-            model["uuid"] = uuid
+            model["cleLot"] = cleLot
 
             val engine = SimpleTemplateEngine()
             var result = ""
@@ -243,6 +243,33 @@ class MSUtils{
             var result = ""
             try {
                 result = engine.createTemplate(templateToString("template/templateDeleteAllLotRequest.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        fun generateCreatePieceLogRequest(login: String, password: String, pa: String, dce: String, cleLot:String, libelle:String, la:String, ordre:String, nom:String, extension:String, contenu:String, poids:String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+            model["cleLot"] = cleLot
+            model["libelle"] =libelle
+            model["la"] = la
+            model["ordre"] = ordre
+            model["nom"] = nom
+            model["extension"] = extension
+            model["contenu"] = contenu
+            model["poids"] = poids
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templateCreatePieceRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){

@@ -26,23 +26,23 @@ class DeleteLotSendSoapTest{
     @Value("\${marchesecurise.pa}")
     private var pa: String = ""
     private var dce = ""
-    private var uuid = ""
+    private var cleLot = ""
 
     @BeforeAll
     fun setup(){
         dce = "1531898869ncvl4stchtz6"
-        uuid = "1531899740ovpc2z7u5utz"
+        cleLot = "1531899740ovpc2z7u5utz"
     }
 
     @AfterAll
     fun tearDown(){
         dce = ""
-        uuid = ""
+        cleLot = ""
     }
 
     @Test
     fun deleteLot(){
-        val soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, uuid)
+        val soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
         println(soapMessage)
         val response = MSUtils.sendSoap(LOT_URL, soapMessage)
         println(response)

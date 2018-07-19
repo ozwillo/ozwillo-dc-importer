@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
+import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.MarcheSecuriseService
 import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
@@ -21,6 +22,8 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
     private val DELETE_CONSULTATION_URL = ""
     @Value("\${marchesecurise.url.lot}")
     private val LOT_URL = ""
+    @Value("\${marchesecurise.url.piece}")
+    private val PIECE_URL = ""
 
 
     @Value("\${marchesecurise.login}")
@@ -40,20 +43,53 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
         val resource = JsonConverter.jsonToobject(message)
         val uri:String = resource.getUri()
-        if (routingKey.contains("marchepublic:consultation_0") && routingKey.contains("create")){
+
+        // Consultation
+        if (routingKey.contains("marchepublic:consultation_0")){
             val consultation:Consultation = Consultation.toConsultation(resource)
+            LOGGER.debug("binding 'marchepublic_0.#' received consultation {}", consultation)
 
-            LOGGER.debug("binding 'consultation.#' received consultation {}", consultation)
+            // Creation
+            if(routingKey.contains("create")){
+                val response = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, CREATE_CONSULTATION_URL)
+                LOGGER.debug("SOAP sending, response : {}", response)
+            }
 
-            val response = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, CREATE_CONSULTATION_URL)
-            LOGGER.debug("SOAP sending, response : {}", response)
+            // Any of them
+            else{
+                LOGGER.debug("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
+            }
 
-        }else if (routingKey.contains("marchepublic:lot_0") && routingKey.contains("create")){
+        // Lot
+        }else if (routingKey.contains("marchepublic:lot_0")){
             val lot: Lot = Lot.toLot(resource)
-            LOGGER.debug("binding 'consultation.#' received lot {}", lot)
-            val response = marcheSecuriseService.createLot(login, password, pa, lot, uri, LOT_URL)
-            LOGGER.debug("SOAP sending, response : {}", response)
+            LOGGER.debug("binding 'marchepublic_0.#' received lot {}", lot)
+
+            //Create
+            if (routingKey.contains("create")){
+                val response = marcheSecuriseService.createLot(login, password, pa, lot, uri, LOT_URL)
+                LOGGER.debug("SOAP sending, response : {}", response)
+            }
+
+            //Any of them
+            else{
+                LOGGER.debug("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
+            }
         }
+
+        // Piece
+        else if (routingKey.contains("marchepublic:piece_0")){
+            val piece:Piece = Piece.toPiece(resource)
+            LOGGER.debug("binding 'marchepublic_0.#' received piece {}", piece)
+
+            // Create
+            if (routingKey.contains("create")){
+                val response = marcheSecuriseService.createPiece(login, password, pa, piece, uri, PIECE_URL)
+                LOGGER.debug("SOAP sending, response : {}", response)
+            }
+        }
+
+        //Any of them
         else{
             LOGGER.error("Unable to recognize type (consultation, lot or piece from routing key {}", routingKey)
         }

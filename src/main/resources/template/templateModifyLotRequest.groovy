@@ -6,7 +6,7 @@
             <password xsi:type="xsd:string">$password</password>
             <pa xsi:type="xsd:string">$pa</pa>
             <dce xsi:type="xsd:string">$dce</dce>
-            <clelot xsi:type="xsd:string">$uuid</clelot>
+            <clelot xsi:type="xsd:string">$cleLot</clelot>
             <libelle xsi:type="xsd:string">$libelle</libelle>
             <ordre xsi:type="xsd:string">$ordre</ordre>
             <numero xsi:type="xsd:string">$numero</numero>

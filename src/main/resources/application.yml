@@ -40,13 +40,14 @@ marchesecurise:
     updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
     deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
     lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
+    piece: https://www.marches-securises.fr/webserv/?module=dce|serveur_fichier_dce
 
 amqp:
   config:
       exchangerName: dcimporter
       marchesecurise:
         queueName: marchesecurise
-        bindingKey: consultation.#
+        bindingKey: marchepublic_0.#
 
 maarch:
   instance:

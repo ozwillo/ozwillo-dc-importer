@@ -6,7 +6,7 @@
             <password xsi:type="xsd:string">$password</password>
             <pa xsi:type="xsd:string">$pa</pa>
             <dce xsi:type="xsd:string">$dce</dce>
-            <clelot xsi:type="xsd:string">$uuid</clelot>
+            <clelot xsi:type="xsd:string">$cleLot</clelot>
       </web:supprimer_lot_consultation_log>
     </soapenv:Body>
 </soapenv:Envelope>

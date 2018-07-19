@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.service
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.config.DatacoreProperties
+import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,6 +23,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         private val MP_PROJECT = "marchepublic_0"
         private val CONSULTATION_TYPE = "marchepublic:consultation_0"
         private val LOT_TYPE = "marchepublic:lot_0"
+        private val PIECE_TYPE = "marchepublic:piece_0"
     }
 
     private val siret = "123456789"
@@ -31,7 +33,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0007"
+        val reference = "ref-consultation-00011"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -45,10 +47,19 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveLotResourceTest(){
-        val reference = "ref-consultation-001"
+        val reference = "ref-consultation-00011"
         val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Libellé Lot", ordre = 1, numero = 1)
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
+    }
+
+    @Test
+    fun savePieceResourceTest(){
+        val reference = "ref-consultation-00011"
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = "a8b57672-d6fd-4340-a68d-e73a9c1ac156", libelle = "Libellé Piece 2", aapc = false, ordre = 1, nom = "FichierTest2", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+        val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
+
+        datacoreService.saveResource(MP_PROJECT, PIECE_TYPE, dcPiece, bearer)
     }
 }
