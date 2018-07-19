@@ -253,8 +253,30 @@ class MarcheSecuriseService{
             LOGGER.warn("error on finding dce and cleLot from BusinessMapping")
             e.printStackTrace()
         }
+        val response = MSUtils.sendSoap(url, soapMessage)
 
-        return MSUtils.sendSoap(url, soapMessage)
+        //  clePiece parsed from response and saved in businessMapping
+        if(response.contains("objet type=\"error\"".toRegex())){
+            LOGGER.error("An error occurs preventing from saving piece in marchesecurise")
+        }else{
+            val pieceNumber = response.split("&lt;objet type=\"ms_v2__fullweb_piece\"&gt;|&lt;/objet&gt;".toRegex())
+            for (i in pieceNumber.indices){
+                if (pieceNumber[i].contains(piece.nom)){
+                    val parseResponse = pieceNumber[i].split( "&lt;propriete nom=\"cle_piece\"&gt;|&lt;/propriete&gt;".toRegex())
+                    if (parseResponse.size >= 2){
+                        val clePiece = parseResponse[1]
+                        LOGGER.debug("get clef Pièce {}", clePiece)
+                        val businessMappingLot = BusinessMapping(applicationName = "MSPiece", businessId = clePiece, dcId = piece.uuid)
+                        businessMappingRepository.save(businessMappingLot).block()
+                        LOGGER.debug("saved businessMapping {} ", businessMappingLot)
+                    }else{
+                        LOGGER.debug("unable to parse response on clePiece {}", parseResponse)
+                    }
+                    break
+                }
+            }
+        }
+        return response
     }
 
 }
