@@ -5,6 +5,7 @@ import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
+import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -80,7 +81,7 @@ class DatacoreService {
             val result: DCResourceLight = response.body!!
 
             //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(resource, project, type, "create")
+            sender!!.send(resource, project, type, BindingKeyAction.CREATE)
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
