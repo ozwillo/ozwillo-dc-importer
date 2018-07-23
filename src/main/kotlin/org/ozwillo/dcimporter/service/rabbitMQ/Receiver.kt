@@ -84,21 +84,21 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
             // Create
             if (routingKey.contains("create")){
-                if (piece.poids <= (7.14 * 1024 * 1024)){
+                if (piece.poids <= (7.15 * 1024 * 1024)){
                     val response = marcheSecuriseService.createPiece(login, password, pa, piece, uri, PIECE_URL)
                     LOGGER.debug("SOAP sending, response : {}", response)
                 }else{
-                    LOGGER.error("Unable to send piece to Marche Securise. File size {} exceeds size limit {}", piece.poids, (7.14*1024*1024))
+                    LOGGER.error("Unable to send piece to Marche Securise. File size {} exceeds size limit {}", piece.poids, (7.15*1024*1024))
                 }
 
             }
             // Update
             else if(routingKey.contains("update")){
-                if (piece.poids <= (7.14 * 1024 * 1024)) {
+                if (piece.poids <= (7.15 * 1024 * 1024)) {
                     val response = marcheSecuriseService.updatePiece(login, password, pa, piece, uri, PIECE_URL)
                     LOGGER.debug("SOAP sending, response : {}", response)
                 }else{
-                    LOGGER.error("Unable to update piece {} from Marche Securise. File size {} exceeds size limit {}", piece, piece.poids, (7.14*1024*1024))
+                    LOGGER.error("Unable to update piece {} from Marche Securise. File size {} exceeds size limit {}", piece, piece.poids, (7.15*1024*1024))
                 }
             }
             // Any of them
