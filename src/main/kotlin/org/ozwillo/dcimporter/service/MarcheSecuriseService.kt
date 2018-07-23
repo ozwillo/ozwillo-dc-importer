@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import reactor.core.publisher.toMono
 import java.time.ZoneId
 
 /*
@@ -80,7 +81,6 @@ class MarcheSecuriseService{
 
 
     //  Current consultation updating only
-    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService update ()
     fun updateConsultation(login:String, password:String, pa:String, consultation:Consultation, url: String):String{
 
         //  Consultation data formatter
@@ -115,19 +115,17 @@ class MarcheSecuriseService{
         return MSUtils.sendSoap(url, soapMessage)
     }
 
+    fun deleteConsultation(login: String, password: String, pa: String, iri:String, url: String):String{
 
-    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService delete ()
-    fun deleteConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String):String{
-
-        val reference = consultation.reference.toString()
+        val reference = iri.split("/")[2]
         var soapMessage = ""
 
         try {
             val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
             var dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
-
-            LOGGER.debug("get dce {}", dce)
+            val result = businessMappingRepository.deleteByDcIdAndApplicationName(reference, "MS").subscribe()
+            LOGGER.debug("get dce {}, result $result", dce)
         } catch (e: Exception) {
             LOGGER.warn("error on finding dce from BusinessMapping")
             e.printStackTrace()

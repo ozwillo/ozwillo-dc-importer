@@ -42,26 +42,29 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
         val resource = JsonConverter.jsonToobject(message)
         val uri:String = resource.getUri()
+        val iri:String = resource.getIri()
         var response = ""
 
      // Consultation
         if (routingKey.contains("marchepublic:consultation_0")){
-            val consultation:Consultation = Consultation.toConsultation(resource)
-            LOGGER.debug("Queue marchesecurise (binding key {}) received consultation {}", bindingKey, consultation)
 
          // Creation
             if (routingKey.contains("create")){
+                val consultation:Consultation = Consultation.toConsultation(resource)
+                LOGGER.debug("Queue marchesecurise (binding key {}) received consultation {}", bindingKey, consultation)
                 val soapResponse = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, CREATE_CONSULTATION_URL)
                 response = "SOAP sending, response : $soapResponse"
             }
          // Update
             else if (routingKey.contains("update")){
+                val consultation:Consultation = Consultation.toConsultation(resource)
+                LOGGER.debug("Queue marchesecurise (binding key {}) received consultation {}", bindingKey, consultation)
                 val soapResponse = marcheSecuriseService.updateConsultation(login, password, pa, consultation, UPDATE_CONSULTATION_URL)
                 response = "SOAP sending, response : $soapResponse"
             }
          // Delete
             else if (routingKey.contains("delete")){
-                val soapResponse = marcheSecuriseService.deleteConsultation(login, password, pa, consultation, DELETE_CONSULTATION_URL)
+                val soapResponse = marcheSecuriseService.deleteConsultation(login, password, pa, iri, DELETE_CONSULTATION_URL)
                 response = "SOAP sending, response : $soapResponse"
             }
          // Any of them
@@ -71,10 +74,10 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
         }
      // Lot
         else if (routingKey.contains("marchepublic:lot_0")){
-            val lot: Lot = Lot.toLot(resource)
-            LOGGER.debug("Queue marchesecurise (binding key {}) received lot {}", bindingKey, lot)
          // Create
             if(routingKey.contains("create")){
+                val lot: Lot = Lot.toLot(resource)
+                LOGGER.debug("Queue marchesecurise (binding key {}) received lot {}", bindingKey, lot)
                 val soapResponse = marcheSecuriseService.createLot(login, password, pa, lot, uri, LOT_URL)
                 response = "SOAP sending, response : $soapResponse"
             }
