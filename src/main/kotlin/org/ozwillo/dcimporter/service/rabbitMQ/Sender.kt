@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 @Service
 class Sender {
 
-    private val LOGGER:Logger = LoggerFactory.getLogger(Sender::class.java)
+    private val logger:Logger = LoggerFactory.getLogger(Sender::class.java)
 
     @Autowired
     private val template: RabbitTemplate? = null
@@ -29,11 +29,11 @@ class Sender {
         val key = getKey(project, siret, type , action)
         val message = JsonConverter.objectToJson(resource)
 
-        LOGGER.debug("Conversion : {}", resource)
+        logger.debug("Conversion : {}", resource)
 
         template!!.convertAndSend(topic!!.name, key, message)
 
-        LOGGER.debug("Message sent with routing key : {}", key)
+        logger.debug("Message sent with routing key : {}", key)
     }
 
     private fun getKey(project:String, type: String, siret: String, action: String): String {
