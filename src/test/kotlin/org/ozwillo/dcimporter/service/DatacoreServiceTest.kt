@@ -57,7 +57,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
     @Test
     fun savePieceResourceTest(){
         val reference = "ref-consultation-00012"
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 4", aapc = false, ordre = 2, nom = "FichierTest04", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 2000)
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 5", aapc = false, ordre = 2, nom = "FichierTest05", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 2000)
         val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, PIECE_TYPE, dcPiece, bearer)

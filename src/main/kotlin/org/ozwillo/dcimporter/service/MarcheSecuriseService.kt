@@ -27,12 +27,12 @@ import java.util.*
 class MarcheSecuriseService {
 
     companion object {
-        private val LOGGER: Logger = LoggerFactory.getLogger(Receiver::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(Receiver::class.java)
 
     }
 
     @Value("\${marchesecurise.url.updateConsultation}")
-    private val UPDATE_CONSULTATION_URL = ""
+    private val updateConsultationUrl = ""
 
 
     @Autowired
@@ -56,7 +56,7 @@ class MarcheSecuriseService {
         val parseResponse: List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
         val dce = parseResponse[1]
         val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = reference)
-        LOGGER.debug("saved BusinessMapping : {}", businessMapping)
+        logger.debug("saved BusinessMapping : {}", businessMapping)
         businessMappingRepository!!.save(businessMapping).block()
 
         return response
@@ -72,9 +72,9 @@ class MarcheSecuriseService {
 
         if (existingBusinessMappings == null) {
             createConsultationAndSaveDce(login, password, pa, url, consultation)
-            response = updateConsultation(login, password, pa, consultation, UPDATE_CONSULTATION_URL)
+            response = updateConsultation(login, password, pa, consultation, updateConsultationUrl)
         } else {
-            LOGGER.warn("Resource with ref '{}' already exists", consultation.reference)
+            logger.warn("Resource with ref '{}' already exists", consultation.reference)
             response = "No consultation creation request sent to Marche Securise"
         }
         return response
@@ -107,9 +107,9 @@ class MarcheSecuriseService {
             soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
 
 
-            LOGGER.debug("get dce {}", dce)
+            logger.debug("get dce {}", dce)
         } catch (e: Exception) {
-            LOGGER.warn("error on finding dce from BusinessMapping")
+            logger.warn("error on finding dce from BusinessMapping")
             e.printStackTrace()
         }
 
@@ -147,7 +147,7 @@ class MarcheSecuriseService {
 
         //  get consultation dce (saved during consultation creation) from businessMappingRepository
         val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
-        LOGGER.debug("get dce {} ", dce)
+        logger.debug("get dce {} ", dce)
 
         //  soap request and response
         val soapMessage = MSUtils.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
@@ -159,7 +159,7 @@ class MarcheSecuriseService {
 
         val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
         businessMappingRepository.save(businessMappingLot).block()
-        LOGGER.debug("saved businessMapping {} ", businessMappingLot)
+        logger.debug("saved businessMapping {} ", businessMappingLot)
 
         return response
     }
@@ -227,21 +227,17 @@ class MarcheSecuriseService {
  */
 
     fun saveClePiece(response: String, piece: Piece) {
-        val pieceNumber = response.split("&lt;objet type=\"ms_v2__fullweb_piece\"&gt;|&lt;/objet&gt;".toRegex())
-        for (i in pieceNumber.indices) {
-            if (pieceNumber[i].contains(piece.nom)) {
-                val parseResponse = pieceNumber[i].split("&lt;propriete nom=\"cle_piece\"&gt;|&lt;/propriete&gt;".toRegex())
-                if (parseResponse.size >= 2) {
-                    val clePiece = parseResponse[1]
-                    LOGGER.debug("get clef Pièce {}", clePiece)
-                    val businessMappingLot = BusinessMapping(applicationName = "MSPiece", businessId = clePiece, dcId = piece.uuid)
-                    businessMappingRepository.save(businessMappingLot).block()
-                    LOGGER.debug("saved businessMapping {} ", businessMappingLot)
-                } else {
-                    LOGGER.debug("unable to parse response on clePiece {}", parseResponse)
-                }
-                break
-            }
+        val piecesList = response.split("&lt;objet type=\"ms_v2__fullweb_piece\"&gt;|&lt;/objet&gt;".toRegex())
+        val targetPiece = piecesList.find { s -> s.contains(piece.nom) }
+        val parseResponse = targetPiece!!.split("&lt;propriete nom=\"cle_piece\"&gt;|&lt;/propriete&gt;".toRegex())
+        if (parseResponse.size >= 2){
+            val clePiece = parseResponse[1]
+            logger.debug("get clef Pièce {}", clePiece)
+            val businessMappingLot = BusinessMapping(applicationName = "MSPiece", businessId = clePiece, dcId = piece.uuid)
+            businessMappingRepository.save(businessMappingLot).block()
+            logger.debug("saved businessMapping {} ", businessMappingLot)
+        }else{
+            logger.debug("unable to parse response on clePiece {}", parseResponse)
         }
     }
 
@@ -271,7 +267,7 @@ class MarcheSecuriseService {
                 val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
                 cleLot = savedLotMonoBusinessMapping.block()!!.businessId
             }
-            LOGGER.debug("get dce {} and cleLot {}", dce, cleLot)
+            logger.debug("get dce {} and cleLot {}", dce, cleLot)
 
             //control if businessMapping with same dcId already exist and generate soap request
             val existingBusinessMappings: BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationName(piece.uuid!!, "MSPiece").block()
@@ -281,16 +277,16 @@ class MarcheSecuriseService {
 
                 //  check response and save clePiece
                 if (response.contains("objet type=\"error\"".toRegex())) {
-                    LOGGER.error("An error occurs preventing from saving piece in marchesecurise")
+                    logger.error("An error occurs preventing from saving piece in marchesecurise")
                 } else {
                     saveClePiece(response, piece)
                 }
             } else {
-                LOGGER.warn("Resource with ref '{}' already exists", piece.uuid)
+                logger.warn("Resource with ref '{}' already exists", piece.uuid)
                 response = "No consultation creation request sent to Marche Securise"
             }
         } catch (e: Exception) {
-            LOGGER.warn("error on finding dce and cleLot from BusinessMapping")
+            logger.warn("error on finding dce and cleLot from BusinessMapping")
             e.printStackTrace()
         }
         return response
@@ -323,13 +319,13 @@ class MarcheSecuriseService {
             }
             val savedPieceMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(piece.uuid, "MSPiece")
             val clePiece = savedPieceMonoBusinessMapping.block()!!.businessId
-            LOGGER.debug("get dce {}, clePiece {} and cleLot {}", dce, clePiece, cleLot)
+            logger.debug("get dce {}, clePiece {} and cleLot {}", dce, clePiece, cleLot)
 
             soapMessage = MSUtils.generateModifyPieceLogRequest(login, password, pa, dce, clePiece, cleLot, libelle, ordre, nom, extension, contenu, poids)
             response = MSUtils.sendSoap(url, soapMessage)
 
         } catch (e: Exception) {
-            LOGGER.warn("error on finding dce, clePiece or cleLot from BusinessMapping")
+            logger.warn("error on finding dce, clePiece or cleLot from BusinessMapping")
             e.printStackTrace()
         }
         return response
