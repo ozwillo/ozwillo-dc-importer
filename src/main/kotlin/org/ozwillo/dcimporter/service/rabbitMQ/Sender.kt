@@ -27,7 +27,7 @@ class Sender {
 
         val uri = resource.getUri()
         val siret = uri.split("/").get(7)
-        val key = getKey(project, siret, type , action)
+        val key = getKey(project, type, siret , action)
         val message = JsonConverter.objectToJson(resource)
 
         LOGGER.debug("Conversion : {}", resource)
@@ -37,7 +37,7 @@ class Sender {
         LOGGER.debug("Message sent with routing key : {}", key)
     }
 
-    private fun getKey(project:String, type: String, siret: String, action: BindingKeyAction): String {
+    fun getKey(project:String, type: String, siret: String, action: BindingKeyAction): String {
         return "$project.$siret.$type.${action.value}"
     }
 }
