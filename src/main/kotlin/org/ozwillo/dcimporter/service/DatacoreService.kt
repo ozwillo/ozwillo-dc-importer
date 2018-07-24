@@ -84,7 +84,7 @@ class DatacoreService {
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise for resource", resource)
+            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise for resource {}", resource)
             throw e
         }
     }
