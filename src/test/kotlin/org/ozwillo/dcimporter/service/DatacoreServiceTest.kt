@@ -28,12 +28,12 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     private val siret = "123456789"
 
-    private val bearer = "bearer"
+    private val bearer = "eyJpZCI6IjM0NDI1YzU4LTgxZmQtNDk5Mi1iNjE1LWJlMmRhNGIzOWRlNy8wZGFhRUt3TlVhVl9LUUNyLUxaeTNBIiwiaWF0IjoxNTMyNDQzOTk3LjQ3NTAwMDAwMCwiZXhwIjoxNTMyNDQ3NTk3LjQ3NTAwMDAwMH0"
 
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-00011"
+        val reference = "ref-consultation-00041"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -56,10 +56,21 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun savePieceResourceTest(){
-        val reference = "ref-consultation-00011"
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = "a8b57672-d6fd-4340-a68d-e73a9c1ac156", libelle = "Libellé Piece 7", aapc = false, ordre = 1, nom = "FichierTest7", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+        val reference = "ref-consultation-00041"
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 7", aapc = false, ordre = 1, nom = "FichierTest7", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+
         val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, PIECE_TYPE, dcPiece, bearer)
+    }
+
+    @Test
+    fun updatePieceResourceTest(){
+        val reference = "ref-consultation-00012"
+        val piece = Piece(uuid = "29fb5d86-eb4f-448e-87cd-e17273ffeeda", uuidLot = null, libelle = "Libellé modifié pour pièce 3", aapc = false, ordre = 4, nom = "FichierTest03", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+        val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
+
+        datacoreService.updateResource(MP_PROJECT, PIECE_TYPE, dcPiece, bearer)
+
     }
 }

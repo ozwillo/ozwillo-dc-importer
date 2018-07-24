@@ -7,7 +7,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
-import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest

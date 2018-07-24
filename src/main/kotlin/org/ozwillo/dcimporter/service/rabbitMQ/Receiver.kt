@@ -53,7 +53,7 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
             // Any of them
             else{
-                logger.debug("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
+                logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
             }
 
         // Lot
@@ -69,7 +69,7 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
             //Any of them
             else{
-                logger.debug("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
+                logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
             }
         }
 
@@ -82,6 +82,19 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
             if (routingKey.contains("create")){
                 val response = marcheSecuriseService.createPiece(login, password, pa, piece, uri, pieceUrl)
                 logger.debug("SOAP sending, response : {}", response)
+            }
+            // Update
+            else if(routingKey.contains("update")){
+                if (piece.poids <= (7.15 * 1024 * 1024)) {
+                    val response = marcheSecuriseService.updatePiece(login, password, pa, piece, uri, pieceUrl)
+                    logger.debug("SOAP sending, response : {}", response)
+                }else{
+                    logger.error("Unable to update piece {} from Marche Securise. File size {} exceeds size limit {}", piece, piece.poids, (7.15*1024*1024))
+                }
+            }
+            // Any of them
+            else{
+                logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
             }
         }
 

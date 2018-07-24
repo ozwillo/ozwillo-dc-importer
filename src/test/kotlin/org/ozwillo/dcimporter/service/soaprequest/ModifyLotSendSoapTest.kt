@@ -33,8 +33,8 @@ class ModifyLotSendSoapTest{
 
     @BeforeAll
     fun setup(){
-        dce = "1531926376eixy7vk2brr4"
-        cleLot = "153192643272ixdf119vpn"
+        dce = "15320018624ocnidk7xjqm"
+        cleLot = "15320084513j68bf85fmf5"
         libelle = if("Libellé modifié encore une fois".length > 255) "Libellé modifié encore une fois".substring(0,255) else "Libellé modifié encore une fois"
         ordre = 1.toString()
         numero = 1.toString()
