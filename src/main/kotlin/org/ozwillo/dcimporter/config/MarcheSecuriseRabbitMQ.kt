@@ -46,7 +46,7 @@ class MarcheSecuriseRabbitMQ {
         }
 
         @Bean
-        fun bindingMarcheSecurise(topic: TopicExchange, queueMS: Queue): Binding {
+        fun bindingToMarcheSecurise(topic: TopicExchange, queueMS: Queue): Binding {
             return BindingBuilder.bind(queueMS).to(topic).with(BINDING_KEY)
         }
 

@@ -82,8 +82,7 @@ class MarcheSecuriseService {
 
 
     //  Current consultation updating only
-    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService update ()
-    fun updateConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String): String {
+    fun updateConsultation(login:String, password:String, pa:String, consultation:Consultation, url: String):String{
 
         //  Consultation data formatter
         val objet = if ((consultation.objet).length > 255) (consultation.objet).substring(0, 255) else consultation.objet
@@ -117,15 +116,21 @@ class MarcheSecuriseService {
         return MSUtils.sendSoap(url, soapMessage)
     }
 
+    fun deleteConsultation(login: String, password: String, pa: String, iri:String, url: String):String{
 
-    //TODO:Intégrer la fonction dans Receiver + sender dans DataCoreService delete ()
-    fun deleteConsultation(login: String, password: String, pa: String, consultation: Consultation, url: String): String {
+        val reference = iri.split("/")[2]
+        var soapMessage = ""
 
-        val reference = consultation.reference.toString()
-
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
-
-        val soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
+        try {
+            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
+            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
+            val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(reference, "MS").subscribe()
+            logger.debug("get dce {}, result $deletedBusinessMapping", dce)
+        } catch (e: Exception) {
+            logger.warn("error on finding dce from BusinessMapping")
+            e.printStackTrace()
+        }
 
         return MSUtils.sendSoap(url, soapMessage)
     }
@@ -275,20 +280,9 @@ class MarcheSecuriseService {
 
         //  clePiece parsed from response and saved in businessMapping
         if(response.contains("objet type=\"error\"".toRegex())){
-            logger.error("An error occurs preventing from saving piece in marchesecurise")
+            logger.error("An error occurs preventing from saving piece in Marche Securise")
         }else{
-            val piecesList = response.split("&lt;objet type=\"ms_v2__fullweb_piece\"&gt;|&lt;/objet&gt;".toRegex())
-            val targetPiece = piecesList.find { s -> s.contains(piece.nom) }
-            val parseResponse = targetPiece!!.split("&lt;propriete nom=\"cle_piece\"&gt;|&lt;/propriete&gt;".toRegex())
-            if (parseResponse.size >= 2){
-                val clePiece = parseResponse[1]
-                logger.debug("get clef Pièce {}", clePiece)
-                val businessMappingLot = BusinessMapping(applicationName = "MSPiece", businessId = clePiece, dcId = piece.uuid)
-                businessMappingRepository.save(businessMappingLot).block()
-                logger.debug("saved businessMapping {} ", businessMappingLot)
-            }else{
-                logger.debug("unable to parse response on clePiece {}", parseResponse)
-            }
+            saveClePiece(response, piece)
         }
         return response
     }
@@ -314,7 +308,7 @@ class MarcheSecuriseService {
         try {
             val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
-            if (uuidLot != "") {
+            if (!uuidLot.isEmpty()) {
                 val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
                 cleLot = savedLotMonoBusinessMapping.block()!!.businessId
             }

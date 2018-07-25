@@ -22,7 +22,14 @@ class Sender {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(resource: DCResourceLight, project: String, type: String, action: String) {
+
+    fun send(resource: DCResourceLight, project:String, type: String, action: String) {
+
+        val URI = resource.getUri()
+
+        val SIRET = URI.split("/")[7]
+
+        val KEY = getKey(project, SIRET, type, action)
 
         val uri = resource.getUri()
         val siret = uri.split("/").get(7)

@@ -28,12 +28,12 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     private val siret = "123456789"
 
-    private val bearer = "eyJpZCI6IjM0NDI1YzU4LTgxZmQtNDk5Mi1iNjE1LWJlMmRhNGIzOWRlNy8wZGFhRUt3TlVhVl9LUUNyLUxaeTNBIiwiaWF0IjoxNTMyNDQzOTk3LjQ3NTAwMDAwMCwiZXhwIjoxNTMyNDQ3NTk3LjQ3NTAwMDAwMH0"
+    private val bearer = "bearer"
 
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-00041"
+        val reference = "ref-consultation-00048"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -43,6 +43,34 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
 
         datacoreService.saveResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultation, bearer)
+    }
+
+    @Test
+    fun  updateResourceTest(){
+        val reference = "ref-consultation-00048"
+        val consultation = Consultation(reference = reference,
+                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
+                passation = "passation modifiée", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
+                enLigne = false, alloti = false, invisible = false, nbLots = 1)
+        val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
+
+        datacoreService.updateResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultation, bearer)
+    }
+
+    @Test
+    fun deleteResourceTest(){
+        val reference = "ref-consultation-00048"
+        val consultation = Consultation(reference = reference,
+                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
+                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
+                passation = "passation modifiée", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
+                enLigne = false, alloti = false, invisible = false, nbLots = 1)
+        val dcConsultationIri = (consultation.toDcObject(datacoreProperties.baseUri, siret)).getIri()
+
+        datacoreService.deleteResource(MP_PROJECT, CONSULTATION_TYPE, dcConsultationIri, bearer)
     }
 
     @Test
@@ -56,8 +84,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun savePieceResourceTest(){
-        val reference = "ref-consultation-00041"
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 7", aapc = false, ordre = 1, nom = "FichierTest7", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+        val reference = "ref-consultation-00048"
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 1 bis", aapc = false, ordre = 2, nom = "FichierTest1bis", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10000)
 
         val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
 

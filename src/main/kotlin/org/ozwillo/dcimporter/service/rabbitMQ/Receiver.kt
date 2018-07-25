@@ -14,13 +14,20 @@ import org.springframework.beans.factory.annotation.Value
 class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
     private val logger:Logger = LoggerFactory.getLogger(Receiver::class.java)
+
     @Value("\${marchesecurise.url.createConsultation}")
     private val createConsultationUrl = ""
+    @Value("\${marchesecurise.url.updateConsultation}")
+    private val updateConsultationUrl = ""
+    @Value("\${marchesecurise.url.deleteConsultation}")
+    private val deleteConsultationUrl = ""
     @Value("\${marchesecurise.url.lot}")
     private val lotUrl = ""
     @Value("\${marchesecurise.url.piece}")
     private val pieceUrl = ""
 
+    @Value("\${amqp.config.marchesecurise.bindingKey}")
+    val bindingKey = ""
 
     @Value("\${marchesecurise.login}")
     private var login: String = ""
@@ -39,42 +46,53 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
         val resource = JsonConverter.jsonToobject(message)
         val uri:String = resource.getUri()
+        val iri:String = resource.getIri()
+
+        var response = ""
 
         // Consultation
         if (routingKey.contains("marchepublic:consultation_0")){
-            val consultation:Consultation = Consultation.toConsultation(resource)
-            logger.debug("binding 'marchepublic_0.#' received consultation {}", consultation)
 
             // Creation
-            if(routingKey.contains("create")){
-                val response = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, createConsultationUrl)
-                logger.debug("SOAP sending, response : {}", response)
+            if (routingKey.contains("create")){
+                val consultation:Consultation = Consultation.toConsultation(resource)
+                logger.debug("Queue marchesecurise (binding key {}) received consultation {}", bindingKey, consultation)
+                val soapResponse = marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, createConsultationUrl)
+                response = "SOAP sending, response : $soapResponse"
             }
-
+            // Update
+            else if (routingKey.contains("update")){
+                val consultation:Consultation = Consultation.toConsultation(resource)
+                logger.debug("Queue marchesecurise (binding key {}) received consultation {}", bindingKey, consultation)
+                val soapResponse = marcheSecuriseService.updateConsultation(login, password, pa, consultation, updateConsultationUrl)
+                response = "SOAP sending, response : $soapResponse"
+            }
+            // Delete
+            else if (routingKey.contains("delete")){
+                val soapResponse = marcheSecuriseService.deleteConsultation(login, password, pa, iri, deleteConsultationUrl)
+                response = "SOAP sending, response : $soapResponse"
+            }
             // Any of them
             else{
-                logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
+                logger.error("Unable to recognize requested action (create, update or delete) for type consultation from routing key {}", routingKey)
             }
 
         // Lot
-        }else if (routingKey.contains("marchepublic:lot_0")){
-            val lot: Lot = Lot.toLot(resource)
-            logger.debug("binding 'marchepublic_0.#' received lot {}", lot)
-
+        } else if(routingKey.contains("marchepublic:lot_0")) {
             //Create
-            if (routingKey.contains("create")){
+            if (routingKey.contains("create")) {
+                val lot: Lot = Lot.toLot(resource)
+                logger.debug("binding 'marchepublic_0.#' received lot {}", lot)
                 val response = marcheSecuriseService.createLot(login, password, pa, lot, uri, lotUrl)
                 logger.debug("SOAP sending, response : {}", response)
             }
-
             //Any of them
-            else{
+            else {
                 logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
             }
-        }
 
-        // Piece
-        else if (routingKey.contains("marchepublic:piece_0")){
+            // Piece
+        } else if (routingKey.contains("marchepublic:piece_0")){
             val piece:Piece = Piece.toPiece(resource)
             logger.debug("binding 'marchepublic_0.#' received piece {}", piece)
 
@@ -85,22 +103,14 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
             }
             // Update
             else if(routingKey.contains("update")){
-                if (piece.poids <= (7.15 * 1024 * 1024)) {
-                    val response = marcheSecuriseService.updatePiece(login, password, pa, piece, uri, pieceUrl)
-                    logger.debug("SOAP sending, response : {}", response)
-                }else{
-                    logger.error("Unable to update piece {} from Marche Securise. File size {} exceeds size limit {}", piece, piece.poids, (7.15*1024*1024))
-                }
+                val response = marcheSecuriseService.updatePiece(login, password, pa, piece, uri, pieceUrl)
+                logger.debug("SOAP sending, response : {}", response)
             }
             // Any of them
             else{
                 logger.error("Unable to recognize request (creation update or delete) from routing key{}", routingKey)
             }
         }
-
-        //Any of them
-        else{
-            logger.error("Unable to recognize type (consultation, lot or piece from routing key {}", routingKey)
-        }
+        logger.debug(response)
     }
 }
