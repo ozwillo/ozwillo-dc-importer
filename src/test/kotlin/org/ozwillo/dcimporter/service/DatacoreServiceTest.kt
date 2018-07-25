@@ -33,7 +33,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-00051"
+        val reference = "ref-consultation-00053"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -75,8 +75,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveLotResourceTest(){
-        val reference = "ref-consultation-00011"
-        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Libellé Lot", ordre = 1, numero = 1)
+        val reference = "ref-consultation-00053"
+        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Lot 4", ordre = 2, numero = 1)
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)

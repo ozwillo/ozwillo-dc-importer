@@ -104,8 +104,6 @@ class MarcheSecuriseService {
             val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
             var dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
-
-
             logger.debug("get dce {}", dce)
         } catch (e: Exception) {
             logger.warn("error on finding dce from BusinessMapping")
@@ -140,6 +138,20 @@ class MarcheSecuriseService {
 **  Lot **
 */
 
+    fun saveCleLot(response: String, lot: Lot){
+        val lotList = response.split("&lt;objet type=\"ms_v2__fullweb_lot\"&gt;|&lt;/objet&gt;".toRegex())
+        val targetLot = lotList.find { s -> s.contains("&lt;propriete nom=\"ordre\"&gt;${lot.ordre}&lt;/propriete&gt;")}
+        val parseResponse = targetLot!!.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+        if(parseResponse.size >= 3){
+            val cleLot = parseResponse[2]
+            val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
+            businessMappingRepository.save(businessMappingLot).block()
+            logger.debug("saved businessMapping {} ", businessMappingLot)
+        }else{
+            logger.warn("unable to parse response in cleLot for response {}", parseResponse)
+        }
+    }
+
     fun createLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String): String {
 
         // Lot data formatter
@@ -149,27 +161,31 @@ class MarcheSecuriseService {
 
         //  Get consultation reference from uri
         val reference = uri.split("/")[8]
+        var soapMessage = ""
 
         //  get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
-        logger.debug("get dce {} ", dce)
-
-        //  soap request and response
-        val soapMessage = MSUtils.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
+        try {
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
+            val dce = savedMonoBusinessMapping.block()!!.businessId
+            logger.debug("get dce {} ", dce)
+            //  SOAP request
+            soapMessage = MSUtils.generateCreateLotLogRequest(login, password, pa, dce, libelle, ordre, numero)
+        }catch (e:IllegalArgumentException){
+            logger.warn("error on finding dce from businessMapping, ${e.message}")
+        }
+        // SOAP sending and response
         val response = MSUtils.sendSoap(url, soapMessage)
 
+
         //  cleLot parsed from response and saved in businessMapping
-        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
-        val cleLot = parseResponse[2]
-
-        val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
-        businessMappingRepository.save(businessMappingLot).block()
-        logger.debug("saved businessMapping {} ", businessMappingLot)
-
+        if(response.contains("objet type=\"error\"".toRegex()) || response.contains("SOAP-ERROR")){
+            logger.error("An error occurs preventing from saving lot in Marche Securise")
+        }else{
+            saveCleLot(response, lot)
+        }
         return response
     }
 
-    //TODO: Intégrer dans Receiver
     fun updateLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String): String {
 
         //  Lot data formatter
@@ -180,15 +196,19 @@ class MarcheSecuriseService {
 
         //  Get consultation reference from uri
         val reference = uri.split("/")[8]
+        var soapMessage = ""
 
-        //get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
-
-        //  get cleLot (saved during lot creation) from businessMappingRepository
-        val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
-
-        //soap request and response
-        val soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
+        try {
+            //get consultation dce (saved during consultation creation) from businessMappingRepository
+            val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+            //  get cleLot (saved during lot creation) from businessMappingRepository
+            val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+            logger.debug("get dce {} and cleLot ", dce, cleLot)
+            //soap request and response
+            soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
+        }catch (e:IllegalArgumentException){
+            logger.warn("error on finding dce and cleLot from businessMapping, ${e.message}")
+        }
 
         return MSUtils.sendSoap(url, soapMessage)
     }
@@ -319,9 +339,8 @@ class MarcheSecuriseService {
             soapMessage = MSUtils.generateModifyPieceLogRequest(login, password, pa, dce, clePiece, cleLot, libelle, ordre, nom, extension, contenu, poids)
             response = MSUtils.sendSoap(url, soapMessage)
 
-        } catch (e: Exception) {
-            logger.warn("error on finding dce, clePiece or cleLot from BusinessMapping")
-            e.printStackTrace()
+        } catch (e: IllegalArgumentException) {
+            logger.warn("error on finding dce, clePiece or cleLot from BusinessMapping, ${e.message}")
         }
         return response
     }
