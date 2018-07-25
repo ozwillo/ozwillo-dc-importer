@@ -14,7 +14,7 @@ import java.net.URLConnection
 class MSUtils{
     companion object {
 
-        private val LOGGER: Logger = LoggerFactory.getLogger(Receiver::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(Receiver::class.java)
 
         fun templateToString(templatePath:String):String {
             val resource = ClassPathResource(templatePath)
@@ -34,10 +34,6 @@ class MSUtils{
                 1
             else
                 0
-        }
-
-        fun intToBoolean(i:Int):Boolean{
-            return i==1
         }
 
         fun intListToString(ints:List<Int>):String{
@@ -91,11 +87,13 @@ class MSUtils{
                     it.close()
                 }
             }catch (e:Exception){
-                LOGGER.error(e.message)
+                logger.error(e.message)
             }finally {
                 input?.close()
             }
-            return resultMessage.toString()
+            val response = resultMessage.toString()
+            logger.debug("SOAP sending, response : {}", response)
+            return response
         }
 
         fun generateCreateConsultationLogRequest(login:String, password:String, pa:String):String{

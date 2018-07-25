@@ -115,7 +115,7 @@ class DatacoreService {
         try {
             restTemplate.put(uri, request)
             //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(resource, project, type, "update")
+            sender!!.send(resource, project, type, BindingKeyAction.UPDATE)
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
@@ -143,7 +143,7 @@ class DatacoreService {
         try {
             val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
             //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(dcCurrentResource, project, type, "delete")
+            sender!!.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
             return Mono.just(response.statusCode)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
