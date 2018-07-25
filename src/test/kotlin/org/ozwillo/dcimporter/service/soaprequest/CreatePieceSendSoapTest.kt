@@ -42,9 +42,9 @@ class CreatePieceSendSoapTest{
 
         val byteArrayContenu = "un contenu texte".toByteArray()
 
-        dce = "15320018624ocnidk7xjqm"
+        dce = "1532504270xumommlepu8i"
         cleLot = ""
-        clePiece = "153200788997bc1fkfmi29"
+        clePiece = "1532504326yqgjft2lti7x"
         libelle = "Test modification pièce3"
         la = MSUtils.booleanToInt(false).toString()
         ordre = 1.toString()
@@ -78,6 +78,14 @@ class CreatePieceSendSoapTest{
     @Test
     fun updatePieceTest(){
         val soapMessage = MSUtils.generateModifyPieceLogRequest(login, password, pa, dce, clePiece, cleLot, libelle, ordre, nom, extension, contenu, poids)
+        println(soapMessage)
+        val response = MSUtils.sendSoap(PIECE_URL, soapMessage)
+        println(response)
+    }
+
+    @Test
+    fun deletePieceTest(){
+        val soapMessage = MSUtils.generateDeletePieceRequest(login, password, pa, dce, clePiece)
         println(soapMessage)
         val response = MSUtils.sendSoap(PIECE_URL, soapMessage)
         println(response)
