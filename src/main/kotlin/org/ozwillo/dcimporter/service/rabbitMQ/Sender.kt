@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
+import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -22,18 +23,11 @@ class Sender {
     private val topic: TopicExchange? = null
 
     @Throws(InterruptedException::class, AmqpException::class)
-
-    fun send(resource: DCResourceLight, project:String, type: String, action: String) {
-
-        val URI = resource.getUri()
-
-        val SIRET = URI.split("/")[7]
-
-        val KEY = getKey(project, SIRET, type, action)
+    fun send(resource: DCResourceLight, project: String, type: String, action: BindingKeyAction) {
 
         val uri = resource.getUri()
         val siret = uri.split("/").get(7)
-        val key = getKey(project, siret, type , action)
+        val key = getKey(project, type, siret , action)
         val message = JsonConverter.objectToJson(resource)
 
         logger.debug("Conversion : {}", resource)
@@ -43,7 +37,7 @@ class Sender {
         logger.debug("Message sent with routing key : {}", key)
     }
 
-    private fun getKey(project:String, type: String, siret: String, action: String): String {
-        return "$project.$siret.$type.$action"
+    fun getKey(project:String, type: String, siret: String, action: BindingKeyAction): String {
+        return "$project.$siret.$type.${action.value}"
     }
 }
