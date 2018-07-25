@@ -76,7 +76,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
     @Test
     fun saveLotResourceTest(){
         val reference = "ref-consultation-00053"
-        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Lot 4", ordre = 2, numero = 1)
+        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Lot 6", ordre = 2, numero = 1)
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
@@ -89,6 +89,15 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.updateResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
+    }
+
+    @Test
+    fun deleteLotResourceTest(){
+        val reference = "ref-consultation-00053"
+        val lot = Lot(uuid = "941afb09-a28e-45a5-bf5e-7c610e2a8e84", libelle = "Lot modifié", ordre = 3, numero = 3)
+        val dcLotIri = lot.toDcObject(datacoreProperties.baseUri, siret, reference).getIri()
+
+        datacoreService.deleteResource(MP_PROJECT, LOT_TYPE, dcLotIri, bearer)
     }
 
     @Test

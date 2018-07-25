@@ -213,23 +213,25 @@ class MarcheSecuriseService {
         return MSUtils.sendSoap(url, soapMessage)
     }
 
-    //TODO: Intégrer dans Receiver
-    fun deleteLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String): String {
+    fun deleteLot(login: String, password: String, pa: String, iri:String, url: String): String {
 
-        val uuid = lot.uuid
+        val uuid = iri.substringAfterLast("/")
 
         //  Get consultation reference from uri
-        val reference = uri.split("/")[8]
+        val reference = iri.split("/")[2]
+        var soapMessage = ""
 
-        //  Get consultation dce (saved during consultation creation) from businessMappingRepository
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
-
-        //  Get cleLot (saved during lot creation) from businessMappingRepository
-        val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
-
-        //SOAP request and response
-        val soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
-
+        try {
+            //  Get consultation dce (saved during consultation creation) from businessMappingRepository
+            val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+            //  Get cleLot (saved during lot creation) from businessMappingRepository
+            val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+            logger.debug("get dce {} and cleLot {} ", dce, cleLot)
+            //SOAP request and response
+            soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
+        }catch (e:IllegalArgumentException){
+            logger.warn("error on finding dce and cleLot from businessMapping, ${e.message}")
+        }
         return MSUtils.sendSoap(url, soapMessage)
     }
 
