@@ -68,6 +68,12 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
                         marcheSecuriseService.createLot(login, password, pa, lot, resource.getUri(), lotUrl)
                     }
 
+                    routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
+                        val piece:Piece = Piece.toPiece(resource)
+                        logger.debug("Binding $routingKey received piece ${piece.libelle}")
+                        marcheSecuriseService.createPiece(login, password, pa, piece, resource.getUri(), pieceUrl)
+                    }
+
                     else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                 }
 
@@ -87,6 +93,17 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
 
                     else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                 }
+
+            routingBindingKeyOfAction(routingKey, BindingKeyAction.DELETE) ->
+                    when {
+                        routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
+                            val iri = resource.getIri()
+                            logger.debug("Binding $routingKey received deletion order for consultation $iri")
+                            marcheSecuriseService.deleteConsultation(login, password, pa, iri, deleteConsultationUrl)
+                        }
+
+                        else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                    }
 
             else -> logger.warn("Unable to recognize action (create, update, delete) from routing key $routingKey")
         }
