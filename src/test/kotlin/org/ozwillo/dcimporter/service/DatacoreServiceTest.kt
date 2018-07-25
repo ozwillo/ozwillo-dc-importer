@@ -83,6 +83,15 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
     }
 
     @Test
+    fun updateLotResourceTest(){
+        val reference = "ref-consultation-00053"
+        val lot = Lot(uuid = "92523230-658e-4a60-9f8b-3faf9a7d93c3", libelle = "Lot modifié", ordre = 3, numero = 3)
+        val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
+
+        datacoreService.updateResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
+    }
+
+    @Test
     fun savePieceResourceTest(){
         val reference = "ref-consultation-00051"
         val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 1 bis", aapc = false, ordre = 3, nom = "FichierTest1bis", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 60000)

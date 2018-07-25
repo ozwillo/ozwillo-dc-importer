@@ -203,7 +203,7 @@ class MarcheSecuriseService {
             val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
             //  get cleLot (saved during lot creation) from businessMappingRepository
             val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
-            logger.debug("get dce {} and cleLot ", dce, cleLot)
+            logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //soap request and response
             soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
         }catch (e:IllegalArgumentException){
