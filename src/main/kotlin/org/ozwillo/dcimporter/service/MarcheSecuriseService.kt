@@ -5,11 +5,9 @@ import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
 import org.ozwillo.dcimporter.util.MSUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.ZoneId
@@ -24,19 +22,14 @@ import java.util.*
 
 
 @Service
-class MarcheSecuriseService {
+class MarcheSecuriseService(private val businessMappingRepository: BusinessMappingRepository) {
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(Receiver::class.java)
-
+        private val logger: Logger = LoggerFactory.getLogger(MarcheSecuriseService::class.java)
     }
 
     @Value("\${marchesecurise.url.updateConsultation}")
     private val updateConsultationUrl = ""
-
-
-    @Autowired
-    private lateinit var businessMappingRepository: BusinessMappingRepository
 
 /*
 **  Consultation **
@@ -57,7 +50,7 @@ class MarcheSecuriseService {
         val dce = parseResponse[1]
         val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = reference)
         logger.debug("saved BusinessMapping : {}", businessMapping)
-        businessMappingRepository!!.save(businessMapping).block()
+        businessMappingRepository.save(businessMapping).block()
 
         return response
     }
@@ -101,8 +94,8 @@ class MarcheSecuriseService {
         //  get consultation dce from BusinessMappingRepository and generate SOAP request
         var soapMessage = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
-            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
+            val dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
             logger.debug("get dce {}", dce)
         } catch (e: Exception) {
@@ -120,8 +113,8 @@ class MarcheSecuriseService {
         var soapMessage = ""
 
         try {
-            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
-            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
+            val dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
             val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(reference, "MS").subscribe()
             logger.debug("get dce {}, result $deletedBusinessMapping", dce)
@@ -200,9 +193,9 @@ class MarcheSecuriseService {
 
         try {
             //get consultation dce (saved during consultation creation) from businessMappingRepository
-            val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+            val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
             //  get cleLot (saved during lot creation) from businessMappingRepository
-            val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+            val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //soap request and response
             soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
@@ -224,9 +217,9 @@ class MarcheSecuriseService {
 
         try {
             //  Get consultation dce (saved during consultation creation) from businessMappingRepository
-            val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+            val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
             //  Get cleLot (saved during lot creation) from businessMappingRepository
-            val cleLot = (businessMappingRepository!!.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
+            val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSLot")).block()!!.businessId
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //SOAP request and response
             soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
@@ -246,7 +239,7 @@ class MarcheSecuriseService {
         //  Get consultation reference from uri
         val reference = uri.split("/")[8]
 
-        val dce = (businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
+        val dce = (businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")).block()!!.businessId
 
         //  SOAP request and response
         val soapMessage = MSUtils.generateDeleteAllLotRequest(login, password, pa, dce)
@@ -292,10 +285,10 @@ class MarcheSecuriseService {
         var cleLot = ""
         var soapMessage = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
-            var dce: String = savedMonoBusinessMapping.block()!!.businessId
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
+            val dce: String = savedMonoBusinessMapping.block()!!.businessId
             if (!uuidLot.isEmpty()) {
-                val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
+                val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uuidLot, "MSLot")
                 cleLot = savedLotMonoBusinessMapping.block()!!.businessId
             }
             soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
@@ -329,17 +322,17 @@ class MarcheSecuriseService {
 
         //get cleLot, clePiece and dce from businessMapping
         val uuidLot = piece.uuidLot!!.substringAfterLast("/")
-        var soapMessage = ""
+        val soapMessage: String
         var response = ""
         var cleLot = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
             if (!uuidLot.isEmpty()) {
-                val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
+                val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uuidLot, "MSLot")
                 cleLot = savedLotMonoBusinessMapping.block()!!.businessId
             }
-            val savedPieceMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(piece.uuid, "MSPiece")
+            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(piece.uuid, "MSPiece")
             val clePiece = savedPieceMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {}, clePiece {} and cleLot {}", dce, clePiece, cleLot)
 
