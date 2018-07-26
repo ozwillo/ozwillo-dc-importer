@@ -22,7 +22,7 @@ import java.util.*
 
 
 @Service
-class MarcheSecuriseService(private val businessMappingRepository: BusinessMappingRepository) {
+class MarcheSecuriseService (private val businessMappingRepository: BusinessMappingRepository) {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MarcheSecuriseService::class.java)
