@@ -220,6 +220,7 @@ class MarcheSecuriseService {
         //  Get consultation reference from uri
         val reference = iri.split("/")[2]
         var soapMessage = ""
+        var response = ""
 
         try {
             //  Get consultation dce (saved during consultation creation) from businessMappingRepository
@@ -229,10 +230,14 @@ class MarcheSecuriseService {
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //SOAP request and response
             soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
+            response = MSUtils.sendSoap(url, soapMessage)
+            //Delete businessMapping
+            val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(uuid, "MSLot").subscribe()
+            logger.debug("deletion of $deletedBusinessMapping")
         }catch (e:IllegalArgumentException){
             logger.warn("error on finding dce and cleLot from businessMapping, ${e.message}")
         }
-        return MSUtils.sendSoap(url, soapMessage)
+        return response
     }
 
     //TODO: Ou intégrer le service ?
