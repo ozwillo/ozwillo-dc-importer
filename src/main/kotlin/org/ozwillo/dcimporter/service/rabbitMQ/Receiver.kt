@@ -106,7 +106,13 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
                             val iri = resource.getIri()
                             logger.debug("Binding $routingKey received deletion order for lot $iri")
                             marcheSecuriseService.deleteLot(login, password, pa, iri, lotUrl)
-                    }
+                        }
+
+                        routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
+                            val iri = resource.getIri()
+                            logger.debug("Binding $routingKey received deletion order for piece $iri")
+                            marcheSecuriseService.deletePiece(login, password, pa, iri, pieceUrl)
+                        }
 
                         else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                     }

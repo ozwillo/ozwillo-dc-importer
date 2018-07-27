@@ -302,5 +302,25 @@ class MSUtils{
             }
             return result
         }
+
+        fun generateDeletePieceRequest(login: String, password: String, pa: String, dce: String, clePiece:String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+            model["clePiece"] = clePiece
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templateDeletePieceRequest.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
     }
 }

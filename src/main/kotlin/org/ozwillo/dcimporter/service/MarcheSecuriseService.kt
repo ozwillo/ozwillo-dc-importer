@@ -344,4 +344,31 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         }
         return response
     }
+
+    fun deletePiece(login: String, password: String, pa: String, iri: String, url: String):String{
+        val uuid = iri.substringAfterLast("/")
+
+        //Get consultation reference from iri
+        val reference = iri.split("/")[2]
+        var soapMessage = ""
+        var response = ""
+
+        try {
+            //Get consultation dce from businessMapping
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
+            val dce = savedMonoBusinessMapping.block()!!.businessId
+            //Get piece clePiece from businessMapping
+            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uuid, "MSPiece")
+            val clePiece = savedPieceMonoBusinessMapping.block()!!.businessId
+            logger.debug("get dce {} and clePiece {}", dce, clePiece)
+            soapMessage = MSUtils.generateDeletePieceRequest(login, password, pa, dce, clePiece)
+            response = MSUtils.sendSoap(url, soapMessage)
+            //Delete businessMapping
+            val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(uuid, "MSPiece").subscribe()
+            logger.debug("deletion of $deletedBusinessMapping")
+        }catch (e:IllegalArgumentException){
+            logger.warn("error on finding dce and clePiece from businessMapping, ${e.message}")
+        }
+        return response
+    }
 }
