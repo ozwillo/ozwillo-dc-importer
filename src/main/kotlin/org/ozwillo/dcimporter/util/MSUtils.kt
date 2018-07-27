@@ -95,7 +95,7 @@ class MSUtils{
             }finally {
                 input?.close()
             }
-            val response = resultMessage.toString()
+            val response = resultMessage.toString().replace("&lt;", "<").replace("&gt;", ">")
             logger.debug("SOAP sending, response : {}", response)
             return response
         }
@@ -118,7 +118,7 @@ class MSUtils{
             return result
         }
 
-        fun generateModifyConsultationLogRequest(login:String, password:String, pa:String, dce:String, objet:String, enligne:String, datePublication:String, dateCloture:String, reference:String, finaliteMarche:String, typeMarche:String, prestation:String, passation:String, alloti:String, departement:String, email:String):String{
+        fun generateModifyConsultationLogRequest(login:String, password:String, pa:String, dce:String, objet:String, enligne:String, datePublication:String, dateCloture:String, reference:String, finaliteMarche:String, typeMarche:String, prestation:String, passation:String, informatique:String, alloti:String, departement:String, email:String):String{
             val model = HashMap<String, String>()
             model["login"] = login
             model["password"] = password
@@ -133,6 +133,7 @@ class MSUtils{
             model["typeMarche"] = typeMarche
             model["prestation"] = prestation
             model["passation"] = passation
+            model["informatique"] = informatique
             model["alloti"] = alloti
             model["departement"] = departement
             model["email"] = email

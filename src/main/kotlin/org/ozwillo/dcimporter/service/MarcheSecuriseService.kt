@@ -46,7 +46,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val reference: String = consultation.reference!!
 
         //saving dce (=consultation id in MS)
-        val parseResponse: List<String> = response.split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
+        val parseResponse: List<String> = response.split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
         val dce = parseResponse[1]
         val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = reference)
         logger.debug("saved BusinessMapping : {}", businessMapping)
@@ -87,6 +87,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val typeMarche = (consultation.typeMarche).toString().toLowerCase()
         val prestation = (consultation.typePrestation).toString().toLowerCase()
         val passation = consultation.passation
+        val informatique = MSUtils.booleanToInt(consultation.informatique).toString()
         val alloti = MSUtils.booleanToInt(consultation.alloti).toString()
         val departement = MSUtils.intListToString(consultation.departementsPrestation)
         val email = if ((MSUtils.stringListToString(consultation.emails)).length > 255) (MSUtils.stringListToString(consultation.emails)).substring(0, 255) else MSUtils.stringListToString(consultation.emails)
@@ -96,7 +97,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         try {
             val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
-            soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
+            soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
             logger.debug("get dce {}", dce)
         } catch (e: Exception) {
             logger.warn("error on finding dce from BusinessMapping")
@@ -132,9 +133,9 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 */
 
     fun saveCleLot(response: String, lot: Lot){
-        val lotList = response.split("&lt;objet type=\"ms_v2__fullweb_lot\"&gt;|&lt;/objet&gt;".toRegex())
-        val targetLot = lotList.find { s -> s.contains("&lt;propriete nom=\"ordre\"&gt;${lot.ordre}&lt;/propriete&gt;")}
-        val parseResponse = targetLot!!.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+        val lotList = response.split("<objet type=\"ms_v2__fullweb_lot\">|</objet>".toRegex())
+        val targetLot = lotList.find { s -> s.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>")}
+        val parseResponse = targetLot!!.split("<propriete nom=\"cle_lot\">|</propriete>".toRegex())
         if(parseResponse.size >= 3){
             val cleLot = parseResponse[2]
             val businessMappingLot = BusinessMapping(applicationName = "MSLot", businessId = cleLot, dcId = lot.uuid)
@@ -252,9 +253,9 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
  */
 
     fun saveClePiece(response: String, piece: Piece) {
-        val piecesList = response.split("&lt;objet type=\"ms_v2__fullweb_piece\"&gt;|&lt;/objet&gt;".toRegex())
-        val targetPiece = piecesList.find { s -> s.contains(piece.nom) }
-        val parseResponse = targetPiece!!.split("&lt;propriete nom=\"cle_piece\"&gt;|&lt;/propriete&gt;".toRegex())
+        val piecesList = response.split("<objet type=\"ms_v2__fullweb_piece\">|</objet>".toRegex())
+        val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.txt</propriete>") }
+        val parseResponse = targetPiece!!.split("<propriete nom=\"cle_piece\">|</propriete>".toRegex())
         if (parseResponse.size >= 2){
             val clePiece = parseResponse[1]
             logger.debug("get clef Pièce {}", clePiece)
