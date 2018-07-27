@@ -258,9 +258,7 @@ class MarcheSecuriseService {
         val poids = piece.poids.toString()
 
         var response =""
-        if (MSUtils.convertOctetToMo(piece.poids) > 7.14){
-            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
-        }else{
+        if (MSUtils.convertOctetToMo(piece.poids) <= 7.14) {
             //  Get consultation reference from uri
             val reference = uri.split("/")[8]
 
@@ -288,6 +286,8 @@ class MarcheSecuriseService {
             }else{
                 saveClePiece(response, piece)
             }
+        } else {
+            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
         }
         return response
     }
@@ -304,9 +304,7 @@ class MarcheSecuriseService {
 
         var response = ""
 
-        if (MSUtils.convertOctetToMo(piece.poids) > 7.14){
-            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
-        }else{
+        if (MSUtils.convertOctetToMo(piece.poids) <= 7.14) {
             //  Get consultation reference from uri
             val reference = uri.split("/")[8]
 
@@ -332,6 +330,8 @@ class MarcheSecuriseService {
                 logger.warn("error on finding dce, clePiece or cleLot from BusinessMapping")
                 e.printStackTrace()
             }
+        } else {
+            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
         }
         return response
     }
