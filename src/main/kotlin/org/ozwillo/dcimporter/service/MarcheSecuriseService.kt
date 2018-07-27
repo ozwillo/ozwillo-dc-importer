@@ -277,32 +277,37 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val contenu = Base64.getEncoder().encodeToString(piece.contenu)
         val poids = piece.poids.toString()
 
-        //  Get consultation reference from uri
-        val reference = uri.split("/")[8]
+        var response =""
+        if (MSUtils.convertOctetToMo(piece.poids) <= 7.14) {
+            //  Get consultation reference from uri
+            val reference = uri.split("/")[8]
 
-        //get cleLot and dce from businessMapping
-        val uuidLot = piece.uuidLot!!.substringAfterLast("/")
-        var cleLot = ""
-        var soapMessage = ""
-        try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(reference, "MS")
-            val dce: String = savedMonoBusinessMapping.block()!!.businessId
-            if (!uuidLot.isEmpty()) {
-                val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uuidLot, "MSLot")
-                cleLot = savedLotMonoBusinessMapping.block()!!.businessId
+            //get cleLot and dce from businessMapping
+            val uuidLot = piece.uuidLot!!.substringAfterLast("/")
+            var cleLot = ""
+            var soapMessage = ""
+            try {
+                val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(reference, "MS")
+                var dce: String = savedMonoBusinessMapping.block()!!.businessId
+                if (!uuidLot.isEmpty()) {
+                    val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot!!, "MSLot")
+                    cleLot = savedLotMonoBusinessMapping.block()!!.businessId
+                }
+                soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
+                logger.debug("get dce {} and cleLot {}", dce, cleLot)
+            } catch (e: IllegalArgumentException) {
+                logger.warn("error on finding dce and cleLot from BusinessMapping, ${e.message}")
             }
-            soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
-            logger.debug("get dce {} and cleLot {}", dce, cleLot)
-        } catch (e: IllegalArgumentException) {
-            logger.warn("error on finding dce and cleLot from BusinessMapping, ${e.message}")
-        }
-        val response = MSUtils.sendSoap(url, soapMessage)
+            response = MSUtils.sendSoap(url, soapMessage)
 
-        //  clePiece parsed from response and saved in businessMapping
-        if(response.contains("objet type=\"error\"".toRegex())){
-            logger.error("An error occurs preventing from saving piece in Marche Securise")
-        }else{
-            saveClePiece(response, piece)
+            //  clePiece parsed from response and saved in businessMapping
+            if(response.contains("objet type=\"error\"".toRegex())){
+                logger.error("An error occurs preventing from saving piece in Marche Securise")
+            }else{
+                saveClePiece(response, piece)
+            }
+        } else {
+            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
         }
         return response
     }

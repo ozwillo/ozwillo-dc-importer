@@ -16,6 +16,10 @@ class MSUtils{
 
         private val logger: Logger = LoggerFactory.getLogger(Receiver::class.java)
 
+        fun convertOctetToMo(size:Int):Float{
+            return size.toFloat()/1024/1024
+        }
+
         fun templateToString(templatePath:String):String {
             val resource = ClassPathResource(templatePath)
             val bos = ByteArrayOutputStream()

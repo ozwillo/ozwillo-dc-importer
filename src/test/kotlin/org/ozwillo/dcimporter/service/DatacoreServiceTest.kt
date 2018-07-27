@@ -28,12 +28,12 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     private val siret = "123456789"
 
-    private val bearer = "bearer"
+    private val bearer = "eyJpZCI6Ijg5NDdkMWU0LTBhNzMtNDAxYi1hOTIwLTM1ZWU3NGYxNWZkMC83VEFEQ0VvbGxYMUZsMmdMdHRqdDN3IiwiaWF0IjoxNTMyNjk1NzM4LjUwODAwMDAwMCwiZXhwIjoxNTMyNjk5MzM4LjUwODAwMDAwMH0"
 
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-00060"
+        val reference = "ref-consultation-0002145R234"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -102,8 +102,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun savePieceResourceTest(){
-        val reference = "ref-consultation-00058"
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 11", aapc = false, ordre = 3, nom = "FichierTest11", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 60000)
+        val reference = "ref-consultation-0002145R234"
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Fichier juste assez lourd 2", aapc = false, ordre = 1, nom = "JustHeavyFile", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 7486832)
 
         val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
 
