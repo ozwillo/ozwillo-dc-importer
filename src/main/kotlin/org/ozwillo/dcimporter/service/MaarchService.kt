@@ -50,7 +50,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
 
         val businessMapping = BusinessMapping(applicationName = getName(),
                 businessId = storeResourceResponse!!.resId.toString(),
-                dcId = dcResource.getUri())
+                dcId = dcResource.getUri(), type = "")
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
 
         val contact = MaarchContact(lastname = dcResource.getValues()["citizenreqem:familyName"]!!.toString(),

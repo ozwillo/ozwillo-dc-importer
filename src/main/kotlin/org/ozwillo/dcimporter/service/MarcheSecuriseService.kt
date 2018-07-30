@@ -28,6 +28,10 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         private val logger: Logger = LoggerFactory.getLogger(MarcheSecuriseService::class.java)
     }
 
+    private val CONSULTATION_TYPE = "marchepublic:consultation_0"
+    private val LOT_TYPE = "marchepublic:lot_0"
+    private val PIECE_TYPE = "marchepublic:piece_0"
+
     @Value("\${marchesecurise.url.updateConsultation}")
     private val updateConsultationUrl = ""
 
@@ -48,11 +52,11 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         if (response.contains("<propriete nom=\"cle\" statut=\"changed\">")){
             val parseResponse: List<String> = response.split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
             val dce = parseResponse[1]
-            val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = uri)
+            val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = uri, type = CONSULTATION_TYPE)
             logger.debug("saved BusinessMapping : {}", businessMapping)
             businessMappingRepository.save(businessMapping).block()
         }else{
-            logger.warn("An error occurend preventing from creating default consultation ${consultation.reference} in marche securise")
+            logger.warn("An error occurred preventing from creating default consultation ${consultation.reference} in Marche Securise")
         }
         return response
     }
@@ -60,10 +64,10 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     //  Default Consultation creation and update with correct data
     fun createAndUpdateConsultation(login: String, password: String, pa: String, consultation: Consultation, uri:String, url: String): String {
 
-        var response = ""
+        var response:String
 
         //control of already existing businessMapping with same dcId
-        val existingBusinessMappings: BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS").block()
+        val existingBusinessMappings: BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE).block()
 
         if (existingBusinessMappings == null) {
             createConsultationAndSaveDce(login, password, pa, consultation, uri, url)
@@ -97,7 +101,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         //  get consultation dce from BusinessMappingRepository and generate SOAP request
         var soapMessage = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE)
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
             soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
             logger.debug("get dce {}", dce)
@@ -119,7 +123,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         var response = ""
 
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE)
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {}", dce)
             soapMessage = MSUtils.generateDeleteConsultationLogRequest(login, password, pa, dce)
@@ -128,11 +132,11 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             if (!soapMessage.isEmpty()){
                 response = MSUtils.sendSoap(url, soapMessage)
             }else{
-                logger.warn("A problem occured generating soap request")
+                logger.warn("A problem occurred while generating soap request")
             }
             //Clean businessMapping
             if (response.contains("suppression_consultation_ok")){
-                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(uri, "MS").subscribe()
+                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE).subscribe()
                 logger.debug("Deletion of businessMapping $deletedBusinessMapping")
             }else{
                 logger.warn("Unable to delete consultation $uri")
@@ -158,17 +162,17 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 val parseResponse = targetLot!!.split("<propriete nom=\"cle_lot\">|</propriete>".toRegex())
                 if(parseResponse.size >= 3){
                     val cleLot = parseResponse[2]
-                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = cleLot, dcId = uri)
+                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = cleLot, dcId = uri, type = LOT_TYPE)
                     businessMappingRepository.save(businessMappingLot).block()
                     logger.debug("saved businessMapping {} ", businessMappingLot)
                 }else{
                     logger.warn("unable to parse response in cleLot for response {}", parseResponse)
                 }
             }else{
-                logger.warn("An error occured saving Lot ${lot.libelle}")
+                logger.warn("An error occurred while saving Lot ${lot.libelle}")
             }
         }else{
-            logger.warn("An error occured saving Lot ${lot.libelle}")
+            logger.warn("An error occurred while saving Lot ${lot.libelle}")
         }
     }
 
@@ -180,13 +184,13 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val numero = lot.numero.toString()
 
         //  Get consultation dcId from uri
-        val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:lot_0", "marchepublic:consultation_0")
+        val uriConsultation = uri.substringBeforeLast("/").replace(LOT_TYPE, CONSULTATION_TYPE)
         var soapMessage = ""
         var response = ""
 
         //  get consultation dce (saved during consultation creation) from businessMappingRepository
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uriConsultation, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)
             val dce = savedMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {} ", dce)
             //  SOAP request
@@ -210,21 +214,20 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     fun updateLot(login: String, password: String, pa: String, lot: Lot, uri: String, url: String): String {
 
         //  Lot data formatter
-        val uuid = lot.uuid
         val libelle = if (lot.libelle.length > 255) lot.libelle.substring(0, 255) else lot.libelle
         val ordre = lot.ordre.toString()
         val numero = lot.numero.toString()
 
         //  Get consultation dcId from uri
-        val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:lot_0", "marchepublic:consultation_0")
+        val uriConsultation = uri.substringBeforeLast("/").replace(LOT_TYPE, CONSULTATION_TYPE)
         var soapMessage = ""
         var response = ""
 
         try {
             //get consultation dce (saved during consultation creation) from businessMappingRepository
-            val dce = (businessMappingRepository.findByDcIdAndApplicationName(uriConsultation, "MS")).block()!!.businessId
+            val dce = (businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)).block()!!.businessId
             //  get cleLot (saved during lot creation) from businessMappingRepository
-            val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")).block()!!.businessId
+            val cleLot = (businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", LOT_TYPE)).block()!!.businessId
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //soap request and response
             soapMessage = MSUtils.generateModifyLotRequest(login, password, pa, dce, cleLot, libelle, ordre, numero)
@@ -240,15 +243,15 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     fun deleteLot(login: String, password: String, pa: String, uri:String, url: String): String {
 
         //  Get consultation dcId from uri
-        val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:lot_0", "marchepublic:consultation_0")
+        val uriConsultation = uri.substringBeforeLast("/").replace(LOT_TYPE, CONSULTATION_TYPE)
         var soapMessage: String
         var response = ""
 
         try {
             //  Get consultation dce (saved during consultation creation) from businessMappingRepository
-            val dce = (businessMappingRepository.findByDcIdAndApplicationName(uriConsultation, "MS")).block()!!.businessId
+            val dce = (businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)).block()!!.businessId
             //  Get cleLot (saved during lot creation) from businessMappingRepository
-            val cleLot = (businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")).block()!!.businessId
+            val cleLot = (businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", LOT_TYPE)).block()!!.businessId
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //SOAP request and response
             soapMessage = MSUtils.generateDeleteLotRequest(login, password, pa, dce, cleLot)
@@ -257,7 +260,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             }
             //Delete businessMapping
             if (response.contains("<objet type=\"ms_v2__fullweb_lot\">")){
-                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(uri, "MS").subscribe()
+                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, "MS", LOT_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
             }else{
                 logger.warn("Unable to delete businessMapping for lot $uri")
@@ -295,17 +298,17 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 if (parseResponse.size >= 2){
                     val clePiece = parseResponse[1]
                     logger.debug("get clef Pièce {}", clePiece)
-                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = clePiece, dcId = uri)
+                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = clePiece, dcId = uri, type = PIECE_TYPE)
                     businessMappingRepository.save(businessMappingLot).block()
                     logger.debug("saved businessMapping {} ", businessMappingLot)
                 }else{
                     logger.debug("unable to parse response on clePiece {}", parseResponse)
                 }
             }else{
-                logger.warn("An error occured saving Piece ${piece.libelle}")
+                logger.warn("An error occurred while saving Piece ${piece.libelle}")
             }
         }else{
-            logger.warn("An error occured saving Piece ${piece.libelle}")
+            logger.warn("An error occurred while saving Piece ${piece.libelle}")
         }
     }
 
@@ -323,17 +326,17 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         var response =""
         if (MSUtils.convertOctetToMo(piece.poids) <= 7.14) {
             //  Get consultation dcId from uri
-            val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:piece_0", "marchepublic:consultation_0")
+            val uriConsultation = uri.substringBeforeLast("/").replace(PIECE_TYPE, CONSULTATION_TYPE)
 
             //get cleLot and dce from businessMapping
             val uuidLot = piece.uuidLot ?: ""
             var cleLot = ""
             var soapMessage = ""
             try {
-                val savedMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uriConsultation, "MS")
+                val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)
                 var dce: String = savedMonoBusinessMapping.block()!!.businessId
                 if (!uuidLot.isEmpty()) {
-                    val savedLotMonoBusinessMapping = businessMappingRepository!!.findByDcIdAndApplicationName(uuidLot, "MS")
+                    val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uuidLot, "MS", LOT_TYPE)
                     cleLot = savedLotMonoBusinessMapping.block()!!.businessId
                 }
                 soapMessage = MSUtils.generateCreatePieceLogRequest(login, password, pa, dce, cleLot, libelle, la, ordre, nom, extension, contenu, poids)
@@ -368,7 +371,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val poids = piece.poids.toString()
 
         //  Get dcId reference from uri
-        val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:piece_0", "marchepublic:consultation_0")
+        val uriConsultation = uri.substringBeforeLast("/").replace(PIECE_TYPE, CONSULTATION_TYPE)
 
         //get cleLot, clePiece and dce from businessMapping
         val uuidLot = piece.uuidLot ?: ""
@@ -376,13 +379,13 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         var response = ""
         var cleLot = ""
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uriConsultation, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
             if (!uuidLot.isEmpty()) {
-                val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uuidLot, "MS")
+                val savedLotMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uuidLot, "MS", LOT_TYPE)
                 cleLot = savedLotMonoBusinessMapping.block()!!.businessId
             }
-            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", PIECE_TYPE)
             val clePiece = savedPieceMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {}, clePiece {} and cleLot {}", dce, clePiece, cleLot)
 
@@ -399,16 +402,16 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     fun deletePiece(login: String, password: String, pa: String, uri: String, url: String):String{
 
         //Get consultation dcId from iri
-        val uriConsultation = uri.substringBeforeLast("/").replace("marchepublic:piece_0", "marchepublic:consultation_0")
-        var soapMessage = ""
+        val uriConsultation = uri.substringBeforeLast("/").replace(PIECE_TYPE, CONSULTATION_TYPE)
+        var soapMessage:String
         var response = ""
 
         try {
             //Get consultation dce from businessMapping
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uriConsultation, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uriConsultation, "MS", CONSULTATION_TYPE)
             val dce = savedMonoBusinessMapping.block()!!.businessId
             //Get piece clePiece from businessMapping
-            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val savedPieceMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", PIECE_TYPE)
             val clePiece = savedPieceMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {} and clePiece {}", dce, clePiece)
             soapMessage = MSUtils.generateDeletePieceRequest(login, password, pa, dce, clePiece)
@@ -417,7 +420,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             }
             if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
                 //Delete businessMapping
-                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationName(uri, "MS").subscribe()
+                val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, "MS", PIECE_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
             }else{
                 logger.warn("Unable to delete piece $uri")

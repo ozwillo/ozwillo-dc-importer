@@ -113,7 +113,7 @@ class PublikService(private val datacoreService: DatacoreService,
         val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
 
         val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
-                dcId = result.second.getUri())
+                dcId = result.second.getUri(), type = "")
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
 
         return result
