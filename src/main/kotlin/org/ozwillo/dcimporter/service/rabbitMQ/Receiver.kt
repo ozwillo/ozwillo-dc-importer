@@ -59,7 +59,7 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.toConsultation(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, createConsultationUrl)
+                        marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, resource.getUri(), createConsultationUrl)
                     }
 
                     routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
@@ -82,7 +82,7 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.toConsultation(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        marcheSecuriseService.updateConsultation(login, password, pa, consultation, updateConsultationUrl)
+                        marcheSecuriseService.updateConsultation(login, password, pa, consultation, resource.getUri(), updateConsultationUrl)
                     }
 
                     routingBindingKeyOfType(routingKey,"marchepublic:lot_0") -> {
@@ -97,21 +97,18 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
             routingBindingKeyOfAction(routingKey, BindingKeyAction.DELETE) ->
                     when {
                         routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
-                            val iri = resource.getIri()
-                            logger.debug("Binding $routingKey received deletion order for consultation $iri")
-                            marcheSecuriseService.deleteConsultation(login, password, pa, iri, deleteConsultationUrl)
+                            logger.debug("Binding $routingKey received deletion order for consultation ${resource.getUri()}")
+                            marcheSecuriseService.deleteConsultation(login, password, pa, resource.getUri(), deleteConsultationUrl)
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
-                            val iri = resource.getIri()
-                            logger.debug("Binding $routingKey received deletion order for lot $iri")
-                            marcheSecuriseService.deleteLot(login, password, pa, iri, lotUrl)
+                            logger.debug("Binding $routingKey received deletion order for lot ${resource.getUri()}")
+                            marcheSecuriseService.deleteLot(login, password, pa, resource.getUri(), lotUrl)
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
-                            val iri = resource.getIri()
-                            logger.debug("Binding $routingKey received deletion order for piece $iri")
-                            marcheSecuriseService.deletePiece(login, password, pa, iri, pieceUrl)
+                            logger.debug("Binding $routingKey received deletion order for piece ${resource.getUri()}")
+                            marcheSecuriseService.deletePiece(login, password, pa, resource.getUri(), pieceUrl)
                         }
 
                         else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
