@@ -33,7 +33,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0011"
+        val reference = "ref-consultation-0021"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -47,7 +47,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun  updateResourceTest(){
-        val reference = "ref-consultation-0011"
+        val reference = "ref-consultation-0021"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -61,7 +61,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun deleteResourceTest(){
-        val reference = "ref-consultation-0011"
+        val reference = "ref-consultation-0020"
         val consultation = Consultation(reference = reference,
                 objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
@@ -75,8 +75,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveLotResourceTest(){
-        val reference = "ref-consultation-0011"
-        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Lot 1 bis", ordre = 2, numero = 2)
+        val reference = "ref-consultation-0021"
+        val lot = Lot(uuid = UUID.randomUUID().toString(), libelle = "Lot 1", ordre = 3, numero = 3)
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
@@ -84,8 +84,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun updateLotResourceTest(){
-        val reference = "ref-consultation-0011"
-        val lot = Lot(uuid = "d24c65fe-9e6a-4995-819d-04271e004490", libelle = "Lot modifié", ordre = 3, numero = 3)
+        val reference = "ref-consultation-0020"
+        val lot = Lot(uuid = "9d78eb91-97a4-4303-88fc-2cf73960b1c3", libelle = "Lot 1 bis", ordre = 2, numero = 2)
         val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
 
         datacoreService.updateResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
@@ -93,8 +93,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun deleteLotResourceTest(){
-        val reference = "ref-consultation-0011"
-        val lot = Lot(uuid = "91c8b489-e6ea-431f-a3f0-14941f3d4a28", libelle = "Lot modifié", ordre = 3, numero = 3)
+        val reference = "ref-consultation-0021"
+        val lot = Lot(uuid = "98c5d788-a062-49e5-b075-6fa7f07c746c", libelle = "Lot modifié", ordre = 3, numero = 3)
         val dcLotIri = lot.toDcObject(datacoreProperties.baseUri, siret, reference).getIri()
 
         datacoreService.deleteResource(MP_PROJECT, LOT_TYPE, dcLotIri, bearer)
@@ -102,8 +102,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun savePieceResourceTest(){
-        val reference = "ref-consultation-0011"
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece consultation", aapc = false, ordre = 1, nom = "FichierConsultation", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 6000000)
+        val reference = "ref-consultation-0021"
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = "Libellé Piece 3", aapc = false, ordre = 1, nom = "Fichier5", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 6000000)
 
         val dcPiece:DCBusinessResourceLight = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
 
@@ -122,8 +122,8 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun deletePieceResourceTest(){
-        val reference = "ref-consultation-0011"
-        val piece = Piece(uuid = "d073a2a2-fa72-44b1-8b93-8f2e11a77c99", uuidLot = null, libelle = "Libellé modifié pour pièce 3", aapc = false, ordre = 4, nom = "FichierTest03", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
+        val reference = "ref-consultation-0021"
+        val piece = Piece(uuid = "c662a5fc-995e-4e37-a7ef-f982e8be7342", uuidLot = null, libelle = "Libellé modifié pour pièce 3", aapc = false, ordre = 4, nom = "FichierTest03", extension = "txt", contenu = "Hello world again !".toByteArray(), poids = 10)
         val dcPieceIri = piece.toDcObject(datacoreProperties.baseUri, siret, reference).getIri()
 
         datacoreService.deleteResource(MP_PROJECT, PIECE_TYPE, dcPieceIri, bearer)
