@@ -44,6 +44,10 @@
                     <value xsi:type="xsd:string">$passation</value>
                 </item>
                 <item>
+                  <key xsi:type="xsd:string">informatique</key>
+                  <value xsi:type="xsd:string">$informatique</value>
+                </item>
+                <item>
                     <key xsi:type="xsd:string">a_lots</key>
                     <value xsi:type="xsd:int">$alloti</value>
                 </item>

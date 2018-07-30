@@ -44,6 +44,7 @@ class CreateConsultationSendSoapTest{
     private var typeMarche = ""
     private var prestation = ""
     private var passation = ""
+    private var informatique = ""
     private var alloti = ""
     private var departement = ""
     private var email = ""
@@ -61,6 +62,7 @@ class CreateConsultationSendSoapTest{
         typeMarche = TypeMarcheType.AUTRE.toString().toLowerCase()
         prestation = TypePrestationType.AUTRES.toString().toLowerCase()
         passation = "AORA"
+        informatique = MSUtils.booleanToInt(true).toString()
         alloti = MSUtils.booleanToInt(false).toString()
         departement = MSUtils.intListToString(listOf(74, 38, 6))
         email = if(MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com")).length > 255) (MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))).substring(0,255) else MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))
@@ -78,6 +80,7 @@ class CreateConsultationSendSoapTest{
         typeMarche = ""
         prestation = ""
         passation = ""
+        informatique = ""
         alloti = ""
         departement = ""
         email = ""
@@ -92,7 +95,7 @@ class CreateConsultationSendSoapTest{
     }
 
     private fun getDce(url:String, login: String, password: String, pa: String):String {
-        val parseResponse: List<String> = sendCreateConsultationRequest(url, login, password, pa).split("&lt;propriete nom=\"cle\" statut=\"changed\"&gt;|&lt;/propriete&gt;".toRegex())
+        val parseResponse: List<String> = sendCreateConsultationRequest(url, login, password, pa).split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
         return parseResponse[1]
     }
 
@@ -101,7 +104,7 @@ class CreateConsultationSendSoapTest{
 
         val dce = getDce(CREATE_CONSULTATION_URL, login, password, pa)
         println(dce)
-        val soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, alloti, departement, email)
+        val soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
         println(soapMessage)
         val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
         print(response)

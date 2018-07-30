@@ -53,7 +53,7 @@ class CreateLotSendSoapTest{
         println(soapMessage)
         val response = MSUtils.sendSoap(LOT_URL,soapMessage)
         println(response)
-        val parseResponse = response.split("&lt;propriete nom=\"cle_lot\"&gt;|&lt;/propriete&gt;".toRegex())
+        val parseResponse = response.split("<propriete nom=\"cle_lot\">|</propriete>".toRegex())
         val cleLot = parseResponse[2]
         println(cleLot)
     }
