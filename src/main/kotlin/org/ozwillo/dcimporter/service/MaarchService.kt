@@ -9,6 +9,7 @@ import org.ozwillo.dcimporter.model.maarch.MaarchContact
 import org.ozwillo.dcimporter.model.maarch.MaarchResource
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
@@ -27,6 +28,9 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
         private val LOGGER = LoggerFactory.getLogger(MaarchService::class.java)
         const val name: String = "Maarch GEC"
     }
+
+    @Value("\${publik.datacore.project}")
+    private val type ="type"
 
     override fun getName(): String = name
 
@@ -50,7 +54,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
 
         val businessMapping = BusinessMapping(applicationName = getName(),
                 businessId = storeResourceResponse!!.resId.toString(),
-                dcId = dcResource.getUri(), type = "")
+                dcId = dcResource.getUri(), type = type)
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
 
         val contact = MaarchContact(lastname = dcResource.getValues()["citizenreqem:familyName"]!!.toString(),
