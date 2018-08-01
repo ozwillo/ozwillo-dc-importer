@@ -33,9 +33,9 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0021"
+        val reference = "ref-consultation-0040"
         val consultation = Consultation(reference = reference,
-                objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.of(2018,10,1,0,0,0),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "AORA", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
@@ -49,7 +49,7 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
     fun  updateResourceTest(){
         val reference = "ref-consultation-0021"
         val consultation = Consultation(reference = reference,
-                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                objet = "mon marche modifié", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.of(2018,10,1,0,0,0),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "AORA", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),

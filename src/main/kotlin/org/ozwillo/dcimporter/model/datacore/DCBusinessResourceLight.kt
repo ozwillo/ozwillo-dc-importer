@@ -13,7 +13,7 @@ class DCBusinessResourceLight(uri: String,
                               @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
 
     @JsonIgnore
-    val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.getDefault())
 
     @JsonAnyGetter
     fun getValues(): Map<String, Any> {
@@ -33,7 +33,7 @@ class DCBusinessResourceLight(uri: String,
     }
 
     fun setDateTimeValue(key: String, value: LocalDateTime) {
-        this.values = this.values.plus(Pair(key, value.toString()))
+        this.values = this.values.plus(Pair(key, value.format(df)))
     }
 
     fun setListValue(key: String, values: List<Any>) {
