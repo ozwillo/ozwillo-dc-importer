@@ -29,7 +29,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
         const val name: String = "Maarch GEC"
     }
 
-    @Value("\${publik.datacore.project}")
+    @Value("\${publik.datacore.modelEM}")
     private val type ="type"
 
     override fun getName(): String = name
