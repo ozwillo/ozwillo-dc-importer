@@ -25,6 +25,8 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
     private val updateConsultationUrl = ""
     @Value("\${marchesecurise.url.deleteConsultation}")
     private val deleteConsultationUrl = ""
+    @Value("\${marchesecurise.url.publishConsultation}")
+    private val publishConsultationUrl = ""
     @Value("\${marchesecurise.url.lot}")
     private val lotUrl = ""
     @Value("\${marchesecurise.url.piece}")
@@ -111,6 +113,15 @@ class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
                             marcheSecuriseService.deletePiece(login, password, pa, resource.getUri(), pieceUrl)
                         }
 
+                        else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                    }
+
+            routingBindingKeyOfAction(routingKey, BindingKeyAction.PUBLISH) ->
+                    when{
+                        routingBindingKeyOfType(routingKey, "marchepublic:consultation_0") -> {
+                            logger.debug("Binding $routingKey received publication order for consultation ${resource.getUri()}")
+                            marcheSecuriseService.publishConsultation(login, password, pa, resource.getUri(), publishConsultationUrl)
+                        }
                         else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                     }
 

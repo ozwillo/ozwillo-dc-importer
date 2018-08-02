@@ -33,9 +33,9 @@ class DatacoreServiceTest(@Autowired val datacoreProperties: DatacoreProperties,
 
     @Test
     fun saveResourceTest() {
-        val reference = "ref-consultation-0021"
+        val reference = "ref-consultation-042"
         val consultation = Consultation(reference = reference,
-                objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
+                objet = "mon marche", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
                 finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
                 typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
                 passation = "AORA", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
 
@@ -13,7 +15,7 @@ class DCBusinessResourceLight(uri: String,
                               @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
 
     @JsonIgnore
-    val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
 
     @JsonAnyGetter
     fun getValues(): Map<String, Any> {
@@ -33,7 +35,9 @@ class DCBusinessResourceLight(uri: String,
     }
 
     fun setDateTimeValue(key: String, value: LocalDateTime) {
-        this.values = this.values.plus(Pair(key, value.toString()))
+        val zonedDateTime = ZonedDateTime.of(value, ZoneOffset.UTC)
+        val formattedDate = (zonedDateTime.format(df))
+        this.values = this.values.plus(Pair(key, formattedDate))
     }
 
     fun setListValue(key: String, values: List<Any>) {

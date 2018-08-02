@@ -39,6 +39,7 @@ marchesecurise:
     createConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce
     updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
     deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
+    publishConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_publication_dce
     lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
     piece: https://www.marches-securises.fr/webserv/?module=dce|serveur_fichier_dce
 
