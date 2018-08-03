@@ -145,6 +145,43 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return response
     }
 
+    fun publishConsultation(login: String, password: String, pa: String, uri:String, url: String):String{
+
+        var soapMessage:String
+        var response = ""
+
+        try {
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val dce: String = savedMonoBusinessMapping.block()!!.businessId
+            logger.debug("get dce {}", dce)
+
+            soapMessage = MSUtils.generateCheckConsultationRequest(login, password, pa, dce)
+            if (!soapMessage.isEmpty()){
+                response = MSUtils.sendSoap(url, soapMessage)
+            }else{
+                logger.warn("A problem occured generating soap request")
+            }
+            if (response.contains("<objet type=\"ms_v2__fullweb_dce\">")){
+                soapMessage = MSUtils.generatePublishConsultationRequest(login, password, pa, dce)
+                //Sending soap request
+                if (!soapMessage.isEmpty()){
+                    response = MSUtils.sendSoap(url, soapMessage)
+                }else{
+                    logger.warn("A problem occured generating soap request")
+                }
+            }else if (response.contains("validation_erreur")){
+                val error = (response.split("<validation_erreur erreur_0=|cle=".toRegex()))[1]
+                logger.warn("Unable to procced with consultation publication because of following error : $error")
+            }else{
+                logger.warn("Unable to procced with consultation publication for unknown reasons. Soap response : $response")
+            }
+        } catch (e: Exception) {
+            logger.warn("error on finding dce from BusinessMapping")
+            e.printStackTrace()
+        }
+        return response
+    }
+
 
 /*
 **  Lot **

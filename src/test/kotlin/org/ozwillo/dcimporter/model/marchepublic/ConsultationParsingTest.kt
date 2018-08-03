@@ -26,8 +26,8 @@ class ConsultationParsingTest {
             {
                 "reference": "reference",
                 "objet": "mon marché public",
-                "datePublication": "2018-05-01T00:00:00",
-                "dateCloture": "2018-05-31T00:00:00",
+                "datePublication": "2018-05-01T00:00",
+                "dateCloture": "2018-05-31T00:00",
                 "finaliteMarche": "MARCHE",
                 "typeMarche": "PRIVE",
                 "typePrestation": "TRAVAUX",

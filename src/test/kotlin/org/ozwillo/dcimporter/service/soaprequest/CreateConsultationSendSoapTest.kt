@@ -12,9 +12,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import java.sql.Timestamp
 import java.time.LocalDateTime
-import java.time.Month
+import java.time.ZoneId
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -22,9 +21,12 @@ import java.time.Month
 class CreateConsultationSendSoapTest{
 
     @Value("\${marchesecurise.url.createConsultation}")
-    private val CREATE_CONSULTATION_URL = ""
+    private val createConsultationUrl = ""
     @Value("\${marchesecurise.url.updateConsultation}")
-    private val UPDATE_CONSULTATION_URL = ""
+    private val updateConsultationUrl = ""
+    @Value("\${marchesecurise.url.publishConsultation}")
+    private val publishConsultationUrl = ""
+
 
 
     @Value("\${marchesecurise.login}")
@@ -55,8 +57,8 @@ class CreateConsultationSendSoapTest{
 
         objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"
         enligne = MSUtils.booleanToInt(true).toString()
-        datePublication = ((Timestamp.valueOf(LocalDateTime.now()).time)/1000).toString()
-        dateCloture = ((Timestamp.valueOf(LocalDateTime.of(2018,Month.JULY,19,3,0,0,0)).time)/1000).toString()
+        datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+        dateCloture = LocalDateTime.now().plusMonths(3).atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
         reference = if("F-SICTIAM_06_20180622W2_01".toString().length > 255) ("F-SICTIAM_06_20180622W2_01".toString()).substring(0,255) else "F-SICTIAM_06_20180622W2_01".toString()
         finaliteMarche = FinaliteMarcheType.AUTRE.toString().toLowerCase()
         typeMarche = TypeMarcheType.AUTRE.toString().toLowerCase()
@@ -102,18 +104,40 @@ class CreateConsultationSendSoapTest{
     @Test
     fun sendCreateConsultationRequest (){
 
-        val dce = getDce(CREATE_CONSULTATION_URL, login, password, pa)
+        val dce = getDce(createConsultationUrl, login, password, pa)
         println(dce)
         val soapMessage = MSUtils.generateModifyConsultationLogRequest(login, password, pa, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
         println(soapMessage)
-        val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
+        val response = MSUtils.sendSoap(updateConsultationUrl, soapMessage)
         print(response)
+    }
+
+    @Test
+    fun checkConsultationRequestTest(){
+        val dce = "1533130670tfumxby3j9u5"
+        val soapMessage = MSUtils.generateCheckConsultationRequest(login, password, pa, dce)
+        println(soapMessage)
+        val response = MSUtils.sendSoap(publishConsultationUrl, soapMessage)
+        if (response.contains("validation_erreur")){
+            val error = (response.split("<validation_erreur erreur_0=|cle=".toRegex()))[1]
+            println(error)
+        }else{
+            println(response)
+        }
+    }
+
+    @Test
+    fun publishConsultationTest(){
+        val dce = "1533111686xmk56r7ieh8f"
+        val soapMessage = MSUtils.generatePublishConsultationRequest(login, password, pa, dce)
+        println(soapMessage)
+        val response = MSUtils.sendSoap(publishConsultationUrl, soapMessage)
     }
 
     @Test
     fun badSoapEnvelopeTest(){
 
-        val dce = getDce(CREATE_CONSULTATION_URL, login, password, pa)
+        val dce = getDce(createConsultationUrl, login, password, pa)
 
         val soapMessage = "<soapenv:Envelope xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"https://www.marches-securises.fr/webserv/\">\n" +
                 "    <soapenv:Header/>\n" +
@@ -177,7 +201,7 @@ class CreateConsultationSendSoapTest{
                 "    </soapenv:Body>\n" +
                 "</soapenv:Envelope>"
 
-        val response = MSUtils.sendSoap(UPDATE_CONSULTATION_URL, soapMessage)
+        val response = MSUtils.sendSoap(updateConsultationUrl, soapMessage)
         println(response)
     }
 }

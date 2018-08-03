@@ -327,5 +327,43 @@ class MSUtils{
             }
             return result
         }
+
+        fun generateCheckConsultationRequest(login: String, password: String, pa: String, dce: String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/generateCheckConsultationRequest.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        fun generatePublishConsultationRequest(login: String, password: String, pa: String, dce: String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templatePublishConsultation.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
     }
 }

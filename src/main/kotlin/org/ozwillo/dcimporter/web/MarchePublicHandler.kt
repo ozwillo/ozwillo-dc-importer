@@ -2,11 +2,14 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
+import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.SubscriptionService
+import org.ozwillo.dcimporter.service.rabbitMQ.Sender
+import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -24,7 +27,8 @@ import java.net.URI
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val subscriptionService: SubscriptionService,
-                          private val applicationProperties: ApplicationProperties) {
+                          private val applicationProperties: ApplicationProperties,
+                          private val sender: Sender) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -129,6 +133,23 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }.onErrorResume { error ->
                     badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
                 }
+    }
+
+    fun publish(req: ServerRequest): Mono<ServerResponse>{
+        val bearer = extractBearer(req.headers())
+        val currentDcResource:DCBusinessResourceLight
+        return try {
+            currentDcResource = datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}", bearer)
+            sender.send(currentDcResource, MP_PROJECT, CONSULTATION_TYPE, BindingKeyAction.PUBLISH)
+            ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(currentDcResource))
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultatio with reference ${req.pathVariable("reference")} does not exist or organization with SIRET ${req.pathVariable("siret")}"
+                else -> "Unexpected error"
+            }
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
     }
 
     fun getLot(req: ServerRequest): Mono<ServerResponse> {
