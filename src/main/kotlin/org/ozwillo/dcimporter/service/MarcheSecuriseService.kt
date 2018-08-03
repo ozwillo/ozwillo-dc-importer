@@ -65,12 +65,12 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         //control of already existing businessMapping with same dcId
         val existingBusinessMappings: BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS").block()
 
-        if (existingBusinessMappings == null) {
-            createConsultationAndSaveDce(login, password, pa, consultation, uri, url)
-            response = updateConsultation(login, password, pa, consultation, uri, updateConsultationUrl)
+        response = if (existingBusinessMappings == null) {
+            val creationResponse = createConsultationAndSaveDce(login, password, pa, consultation, uri, url)
+            if(creationResponse.contains("<propriete nom=\"cle\" statut=\"changed\">")) updateConsultation(login, password, pa, consultation, uri, updateConsultationUrl) else "An error occurs during consultation creation"
         } else {
             logger.warn("Resource with ref '{}' already exists", consultation.reference)
-            response = "No consultation creation request sent to Marche Securise"
+            "No consultation creation request sent to Marche Securise"
         }
         return response
     }
