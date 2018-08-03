@@ -136,7 +136,6 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
     }
 
     fun publish(req: ServerRequest): Mono<ServerResponse>{
-        val uri = "http://data.ozwillo.com/dc/type/$CONSULTATION_TYPE/FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}"
         val bearer = extractBearer(req.headers())
         val currentDcResource:DCBusinessResourceLight
         return try {
@@ -146,7 +145,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                HttpStatus.NOT_FOUND -> "Consultation with SIRET $${req.pathVariable("siret")} does not exist"
+                HttpStatus.NOT_FOUND -> "Consultatio with reference ${req.pathVariable("reference")} does not exist or organization with SIRET ${req.pathVariable("siret")}"
                 else -> "Unexpected error"
             }
             return status(e.statusCode).body(BodyInserters.fromObject(body))
