@@ -1,7 +1,6 @@
 package org.ozwillo.dcimporter.util
 
 import groovy.text.SimpleTemplateEngine
-import org.ozwillo.dcimporter.service.rabbitMQ.Receiver
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.ClassPathResource
@@ -14,7 +13,7 @@ import java.net.URLConnection
 class MSUtils{
     companion object {
 
-        private val logger: Logger = LoggerFactory.getLogger(Receiver::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(MSUtils::class.java)
 
         fun convertOctetToMo(size:Int):Float{
             return size.toFloat()/1024/1024

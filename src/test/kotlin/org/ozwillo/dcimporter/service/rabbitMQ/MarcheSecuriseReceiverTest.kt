@@ -15,7 +15,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @SpringBootTest
-class ReceiverTest {
+class MarcheSecuriseReceiverTest {
 
     @Mock
     private lateinit var businessMappingRepository: BusinessMappingRepository
@@ -24,7 +24,7 @@ class ReceiverTest {
     private lateinit var marcheSecuriseService: MarcheSecuriseService
 
     @MockBean
-    private lateinit var receiver: Receiver
+    private lateinit var marcheSecuriseReceiver: MarcheSecuriseReceiver
 
     private val routingKeyExample = "marchepublic_0.25060187900043.marchepublic:consultation_0.create"
 
@@ -36,24 +36,24 @@ class ReceiverTest {
     fun setUp(){
         MockitoAnnotations.initMocks(this)
         marcheSecuriseService = MarcheSecuriseService(businessMappingRepository)
-        receiver  = Receiver(marcheSecuriseService)
+        marcheSecuriseReceiver  = MarcheSecuriseReceiver(marcheSecuriseService)
     }
 
 
     @Test
     fun `Assert return of routing of actions binding key`() {
         assertAll("action",
-                Executable { assertTrue(receiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.CREATE))},
-                Executable { assertFalse(receiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.UPDATE))},
-                Executable { assertFalse(receiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.DELETE))}
+                Executable { assertTrue(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.CREATE))},
+                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.UPDATE))},
+                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.DELETE))}
         )
     }
 
     @Test
     fun `Assert return of routing of types binding keys`() {
         assertAll("type",
-                Executable { assertTrue(receiver.routingBindingKeyOfType(routingKeyExample, consultationType))},
-                Executable { assertFalse(receiver.routingBindingKeyOfType(routingKeyExample, lotType))}
+                Executable { assertTrue(marcheSecuriseReceiver.routingBindingKeyOfType(routingKeyExample, consultationType))},
+                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfType(routingKeyExample, lotType))}
         )
     }
 }

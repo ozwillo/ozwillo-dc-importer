@@ -13,11 +13,10 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
-import reactor.core.publisher.Mono
 import java.math.BigInteger
 
 @Service
-class MaarchService(private val businessMappingRepository: BusinessMappingRepository) : Subscriber {
+class MaarchService(private val businessMappingRepository: BusinessMappingRepository) {
 
     // TODO : externalize
     private val url = "https://e-courrier.sictiam.fr/8ba7be1e-2844-4673-ba9e-dcbe27323b1e"
@@ -32,9 +31,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
     @Value("\${publik.datacore.modelEM}")
     private val type ="type"
 
-    override fun getName(): String = name
-
-    override fun onNewData(dcResource: DCBusinessResourceLight): Mono<String> {
+    fun createCitizenRequest(dcResource: DCBusinessResourceLight) {
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
         LOGGER.debug("\tcontaining $dcResource")
         val maarchFileMetadataList = listOf(
@@ -52,7 +49,8 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 restTemplate.postForObject("$url/rest/res", maarchFile, StoreResourceResponse::class.java)
         LOGGER.debug("Got store resource response $storeResourceResponse")
 
-        val businessMapping = BusinessMapping(applicationName = getName(),
+        // TODO : validate that the mapping has to be done on this resource
+        val businessMapping = BusinessMapping(applicationName = name,
                 businessId = storeResourceResponse!!.resId.toString(),
                 dcId = dcResource.getUri(), type = type)
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
@@ -73,8 +71,6 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
         val storeResourceExtResponse = restTemplate.postForObject("$url/rest/resExt", maarchResource,
                 StoreResourceResponse::class.java)
         LOGGER.debug("Got store resource ext response $storeResourceExtResponse")
-
-        return Mono.just(dcResource.getUri())
     }
 
     data class StoreResourceResponse(val returnCode: Int,

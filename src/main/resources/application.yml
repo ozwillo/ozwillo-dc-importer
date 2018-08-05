@@ -49,6 +49,9 @@ amqp:
       marchesecurise:
         queueName: marchesecurise
         bindingKey: marchepublic_0.#
+      maarch:
+        queueName: maarch
+        bindingKey: citizenreq:elecmeeting_0.#
 
 maarch:
   instance:

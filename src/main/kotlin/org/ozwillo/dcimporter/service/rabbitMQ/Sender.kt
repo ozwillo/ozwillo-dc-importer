@@ -6,38 +6,34 @@ import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.AmqpException
-import org.springframework.amqp.core.TopicExchange
 import org.springframework.amqp.rabbit.core.RabbitTemplate
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class Sender {
+class Sender(private val template: RabbitTemplate) {
 
     private val logger:Logger = LoggerFactory.getLogger(Sender::class.java)
 
-    @Autowired
-    private val template: RabbitTemplate? = null
-
-    @Autowired
-    private val topic: TopicExchange? = null
+    @Value("\${amqp.config.exchangerName}")
+    private val exchangerName = ""
 
     @Throws(InterruptedException::class, AmqpException::class)
     fun send(resource: DCResourceLight, project: String, type: String, action: BindingKeyAction) {
 
         val uri = resource.getUri()
-        val siret = uri.split("/").get(7)
+        val siret = uri.split("/")[7]
         val key = getKey(project, type, siret , action)
         val message = JsonConverter.objectToJson(resource)
 
         logger.debug("Conversion : {}", resource)
 
-        template!!.convertAndSend(topic!!.name, key, message)
+        template.convertAndSend(exchangerName, key, message)
 
         logger.debug("Message sent with routing key : {}", key)
     }
 
-    fun getKey(project:String, type: String, siret: String, action: BindingKeyAction): String {
+    fun getKey(project: String, type: String, siret: String, action: BindingKeyAction): String {
         return "$project.$siret.$type.${action.value}"
     }
 }

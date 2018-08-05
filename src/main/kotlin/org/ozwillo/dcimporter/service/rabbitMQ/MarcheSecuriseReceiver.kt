@@ -15,9 +15,9 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
-class Receiver (val marcheSecuriseService: MarcheSecuriseService) {
+class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) {
 
-    private val logger:Logger = LoggerFactory.getLogger(Receiver::class.java)
+    private val logger:Logger = LoggerFactory.getLogger(MarcheSecuriseReceiver::class.java)
 
     @Value("\${marchesecurise.url.createConsultation}")
     private val createConsultationUrl = ""
