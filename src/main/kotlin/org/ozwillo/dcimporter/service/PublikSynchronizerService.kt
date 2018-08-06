@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("!test")
-class SynchronizerService(private val datacoreService: DatacoreService,
-                          private val publikService: PublikService,
-                          private val publikConfigurationRepository: PublikConfigurationRepository) : CommandLineRunner {
+class PublikSynchronizerService(private val datacoreService: DatacoreService,
+                                private val publikService: PublikService,
+                                private val publikConfigurationRepository: PublikConfigurationRepository) : CommandLineRunner {
 
     @Value("\${publik.datacore.project}")
     private val datacoreProject: String = "datacoreProject"
@@ -51,6 +51,6 @@ class SynchronizerService(private val datacoreService: DatacoreService,
 
     companion object {
 
-        private val LOGGER = LoggerFactory.getLogger(SynchronizerService::class.java)
+        private val LOGGER = LoggerFactory.getLogger(PublikSynchronizerService::class.java)
     }
 }
