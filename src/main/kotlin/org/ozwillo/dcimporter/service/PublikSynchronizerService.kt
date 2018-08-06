@@ -3,7 +3,7 @@ package org.ozwillo.dcimporter.service
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
-import org.ozwillo.dcimporter.repository.PublikConfigurationRepository
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.CommandLineRunner
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component
 @Profile("!test")
 class PublikSynchronizerService(private val datacoreService: DatacoreService,
                                 private val publikService: PublikService,
-                                private val publikConfigurationRepository: PublikConfigurationRepository) : CommandLineRunner {
+                                private val businessAppConfigurationRepository: BusinessAppConfigurationRepository) : CommandLineRunner {
 
     @Value("\${publik.datacore.project}")
     private val datacoreProject: String = "datacoreProject"
@@ -29,7 +29,7 @@ class PublikSynchronizerService(private val datacoreService: DatacoreService,
 
     override fun run(vararg args: String) {
 
-        publikConfigurationRepository.findAll().subscribe { publikConfiguration ->
+        businessAppConfigurationRepository.findByApplicationName(PublikService.name).subscribe { publikConfiguration ->
 
             datacoreService.getDCOrganization(publikConfiguration.organizationName).subscribe { dcResource ->
                 val queryParameters = DCQueryParameters("citizenreq:organization", DCOperator.EQ,

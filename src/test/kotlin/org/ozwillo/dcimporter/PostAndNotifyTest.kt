@@ -11,10 +11,10 @@ import org.ozwillo.dcimporter.extensions.DCBusinessResourceLightMatcher
 import org.ozwillo.dcimporter.extensions.MockitoExtension
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.publik.FormModel
-import org.ozwillo.dcimporter.model.publik.PublikConfiguration
+import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.publik.Submission
 import org.ozwillo.dcimporter.model.publik.User
-import org.ozwillo.dcimporter.repository.PublikConfigurationRepository
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.service.DCModelType
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,25 +28,25 @@ import reactor.test.test
 class PostAndNotifyTest : AbstractIntegrationTests() {
 
     @Autowired
-    private lateinit var publikConfigurationRepository: PublikConfigurationRepository
+    private lateinit var businessAppConfigurationRepository: BusinessAppConfigurationRepository
 
     @MockBean
     private lateinit var datacoreService: DatacoreService
 
     @BeforeAll
     fun declarePublikInstance() {
-        val optPublikConfiguration = publikConfigurationRepository.findByDomain("demarches-sve.test-demarches.sictiam.fr").blockOptional()
+        val optPublikConfiguration = businessAppConfigurationRepository.findByDomainAndApplicationName("demarches-sve.test-demarches.sictiam.fr", "Publik").blockOptional()
         if (!optPublikConfiguration.isPresent) {
-            val publikConfiguration = PublikConfiguration(domain = "demarches-sve.test-demarches.sictiam.fr",
-                    organizationName = "SICTIAM", secret = "aSYZexOBIzl8")
-            publikConfigurationRepository.save(publikConfiguration).subscribe()
+            val publikConfiguration = BusinessAppConfiguration(domain = "demarches-sve.test-demarches.sictiam.fr",
+                    organizationName = "SICTIAM", secret = "aSYZexOBIzl8", applicationName = "Publik")
+            businessAppConfigurationRepository.save(publikConfiguration).subscribe()
         }
     }
 
     @AfterAll
     fun deletePublikInstance() {
-        publikConfigurationRepository.findByDomain("demarches-sve.test-demarches.sictiam.fr").map {
-            publikConfigurationRepository.delete(it).subscribe()
+        businessAppConfigurationRepository.findByDomainAndApplicationName("demarches-sve.test-demarches.sictiam.fr", "Publik").map {
+            businessAppConfigurationRepository.delete(it).subscribe()
         }
     }
 

@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.commons.lang3.RandomStringUtils
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.BusinessMapping
+import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.publik.*
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.repository.PublikConfigurationRepository
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.util.hmac
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -29,7 +30,7 @@ import java.util.*
 // TODO : needs a lot of cleanup and refactoring !!!!
 @Service
 class PublikService(private val datacoreService: DatacoreService,
-                    private val publikConfigurationRepository: PublikConfigurationRepository,
+                    private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
                     private val businessMappingRepository: BusinessMappingRepository) {
 
     @Value("\${publik.formTypeEM}")
@@ -72,11 +73,11 @@ class PublikService(private val datacoreService: DatacoreService,
                 .block(Duration.ofSeconds(10))
     }
 
-    fun syncPublikForms(publikConfiguration: PublikConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
+    fun syncPublikForms(businessAppConfiguration: BusinessAppConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
 
-        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", publikConfiguration.secret)
+        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", businessAppConfiguration.secret)
 
-        LOGGER.debug("Getting Publik form list at URL https://${publikConfiguration.domain}/api/forms/$formType/list?$signedQuery")
+        LOGGER.debug("Getting Publik form list at URL https://${businessAppConfiguration.domain}/api/forms/$formType/list?$signedQuery")
 
         val uriBuilderFactory = DefaultUriBuilderFactory()
         uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
@@ -84,14 +85,14 @@ class PublikService(private val datacoreService: DatacoreService,
                 .uriBuilderFactory(uriBuilderFactory)
                 .build()
         return clientV2.get()
-                .uri("https://${publikConfiguration.domain}/api/forms/$formType/list?$signedQuery")
+                .uri("https://${businessAppConfiguration.domain}/api/forms/$formType/list?$signedQuery")
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError,
                         { response -> response.bodyToMono(PublikResponse::class.java).map {
                             RuntimeException(it.toString())
                         } })
                 .bodyToFlux(ListFormsModel::class.java)
-                .map { getForm(formatUrl(it.url), publikConfiguration.secret) }
+                .map { getForm(formatUrl(it.url), businessAppConfiguration.secret) }
                 .map { convertToDCResource(dcOrganization, it!!) }
                 .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
                 .count()
@@ -107,7 +108,7 @@ class PublikService(private val datacoreService: DatacoreService,
         LOGGER.debug("Got form from Publik : $form")
         LOGGER.debug("Form has URL ${form.url}")
         val uri = URI(form.url)
-        val publikConfiguration = publikConfigurationRepository.findByDomain(uri.host).block()!!
+        val publikConfiguration = businessAppConfigurationRepository.findByDomainAndApplicationName(uri.host, name).block()!!
         val orgResource = datacoreService.getDCOrganization(publikConfiguration.organizationName).block()!!
 
         val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
@@ -118,7 +119,7 @@ class PublikService(private val datacoreService: DatacoreService,
         val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
 
         return result
-//        return publikConfigurationRepository.findByDomain(uri.host).flatMap {
+//        return businessAppConfigurationRepository.findByDomain(uri.host).flatMap {
 //            datacoreService.getDCOrganization(it.organizationName).map { orgResource ->
 //                convertToDCResource(orgResource, form)
 //            }
@@ -255,7 +256,7 @@ class PublikService(private val datacoreService: DatacoreService,
         LOGGER.debug("Changing status of request $publikId")
 
         //val uri = URI(publikId)
-        //val publikConfiguration = publikConfigurationRepository.findByDomain(uri.host).block()!!
+        //val publikConfiguration = businessAppConfigurationRepository.findByDomain(uri.host).block()!!
 
         val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", "aSYZexOBIzl8")
         LOGGER.debug("Changing status of request at URL ${publikId}jump/trigger/close?$signedQuery")
