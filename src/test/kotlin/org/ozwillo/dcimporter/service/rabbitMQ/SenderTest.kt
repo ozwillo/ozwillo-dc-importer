@@ -4,15 +4,11 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.ozwillo.dcimporter.util.BindingKeyAction
-import org.springframework.boot.test.mock.mockito.MockBean
 import java.util.regex.Pattern
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SenderTest {
-
-    @MockBean
-    private var sender: Sender = Sender()
+class SenderTest(private val sender: Sender) {
 
     @Test
     fun `Assert true regular expression of get binding key`() {

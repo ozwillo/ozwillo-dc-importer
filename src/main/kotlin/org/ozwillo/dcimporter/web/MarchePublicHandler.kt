@@ -7,7 +7,6 @@ import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.DatacoreService
-import org.ozwillo.dcimporter.service.SubscriptionService
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
@@ -26,7 +25,6 @@ import java.net.URI
 @Component
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
-                          private val subscriptionService: SubscriptionService,
                           private val applicationProperties: ApplicationProperties,
                           private val sender: Sender) {
 
@@ -82,7 +80,6 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }
                 .flatMap { result ->
                     val reference = result.resource.getUri().substringAfterLast('/')
-                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
