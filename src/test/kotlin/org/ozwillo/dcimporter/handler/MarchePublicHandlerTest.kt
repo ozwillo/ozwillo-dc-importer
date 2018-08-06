@@ -50,7 +50,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun createConsultationFromHandlertoMSTest(){
-        val reference = "rfc-003"
+        val reference = "rfc-005"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
