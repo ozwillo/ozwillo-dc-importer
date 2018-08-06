@@ -50,7 +50,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun createConsultationFromHandlertoMSTest(){
-        val reference = "refc-002"
+        val reference = "rfc-003"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
@@ -71,7 +71,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun getConsultationTest(){
-        val reference = "refc-002"
+        val reference = "rfc-003"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
@@ -90,7 +90,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun updateConsultationTest(){
-        val reference = "refc-002"
+        val reference = "rfc-003"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche modifié", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
@@ -111,7 +111,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun deleteConsultationTest(){
-        val reference = "refc-002"
+        val reference = "rfc-003"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche modifié", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
@@ -130,7 +130,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun publishConsultationTest(){
-        val reference = "refc-002"
+        val reference = "rfc-003"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now().plusMonths(3),

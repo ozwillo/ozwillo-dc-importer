@@ -155,7 +155,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         var response = ""
 
         try {
-            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationName(uri, "MS")
+            val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE)
             val dce: String = savedMonoBusinessMapping.block()!!.businessId
             logger.debug("get dce {}", dce)
 
