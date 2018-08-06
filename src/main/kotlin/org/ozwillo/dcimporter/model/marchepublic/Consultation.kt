@@ -51,7 +51,7 @@ data class Consultation(
 
     companion object {
 
-        fun toConsultation(dcConsultation: DCBusinessResourceLight): Consultation =
+        fun fromDCObject(dcConsultation: DCBusinessResourceLight): Consultation =
                 Consultation(reference = dcConsultation.getStringValue("mpconsultation:reference"),
                         objet = dcConsultation.getStringValue("mpconsultation:objet"),
                         datePublication = dcConsultation.getDateValue("mpconsultation:datePublication"),

@@ -14,24 +14,21 @@ object JsonConverter{
 
             val mapper = jacksonObjectMapper()
 
-            var jsonStr = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
+            val jsonStr = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
             LOGGER.debug("conversion json : {}", jsonStr)
 
             return jsonStr
         }
 
-        fun jsonToobject(input:String):DCBusinessResourceLight{
+        fun jsonToObject(input:String):DCBusinessResourceLight{
 
             val mapper = jacksonObjectMapper()
             mapper.findAndRegisterModules()
 
-            var resource:DCBusinessResourceLight = mapper.readValue(input)
-
+            val resource:DCBusinessResourceLight = mapper.readValue(input)
 
             LOGGER.debug("Conversion vers objet {}", resource)
 
             return resource
         }
-
-
 }

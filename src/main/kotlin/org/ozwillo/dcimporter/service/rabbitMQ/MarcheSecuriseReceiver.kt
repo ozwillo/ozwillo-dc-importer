@@ -49,7 +49,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
     fun receive(incoming: Message) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
-        val resource = JsonConverter.jsonToobject(message)
+        val resource = JsonConverter.jsonToObject(message)
 
         routingByBindingKey(resource, routingKey)
     }
@@ -59,7 +59,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.CREATE) ->
                 when {
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
-                        val consultation:Consultation = Consultation.toConsultation(resource)
+                        val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, resource.getUri(), createConsultationUrl)
                     }
@@ -82,7 +82,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
                 when {
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
-                        val consultation:Consultation = Consultation.toConsultation(resource)
+                        val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         marcheSecuriseService.updateConsultation(login, password, pa, consultation, resource.getUri(), updateConsultationUrl)
                     }

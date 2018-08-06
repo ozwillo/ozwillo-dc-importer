@@ -24,7 +24,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
     fun receive(incoming: Message) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
-        val resource = JsonConverter.jsonToobject(message)
+        val resource = JsonConverter.jsonToObject(message)
 
         routingByBindingKey(resource, routingKey)
     }
