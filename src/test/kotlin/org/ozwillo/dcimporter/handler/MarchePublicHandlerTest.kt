@@ -10,10 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.OzwilloDcImporterApplication
-import org.ozwillo.dcimporter.model.marchepublic.Consultation
-import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
+import org.ozwillo.dcimporter.model.marchepublic.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.runApplication
 import org.springframework.boot.test.context.SpringBootTest
@@ -26,6 +23,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.reactive.server.WebTestClient
 import reactor.core.publisher.Mono
 import java.time.LocalDateTime
+import java.util.*
 
 
 @ExtendWith(SpringExtension::class)
@@ -130,7 +128,7 @@ class MarchePublicHandlerNewTest: TestBase(){
 
     @Test
     fun publishConsultationTest(){
-        val reference = "rfc-003"
+        val reference = "rfc-011"
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now().plusMonths(3),
@@ -149,6 +147,28 @@ class MarchePublicHandlerNewTest: TestBase(){
                 .expectStatus().isOk
                 .expectHeader().contentType(MediaType.APPLICATION_JSON)
 
+    }
+
+    @Test
+    fun createPiece(){
+        val reference = "rfc-011"
+
+        val libellePiece = "Une pièce"
+        val nom = "NomDuFichierSansTiret"
+        val extension = "txt"
+        val byteArrayContenu = "un contenu texte".toByteArray()
+
+        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = libellePiece, aapc = false, ordre = 1, nom = nom, extension = extension, contenu = byteArrayContenu, poids = 60000)
+
+        //create
+        client.post()
+                .uri("/api/marche-public/${siret}/consultation/${reference}/piece", siret, reference)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(Mono.just(piece), Piece::class.java)
+                .exchange()
+                .expectStatus().isCreated
+                .expectHeader().contentType(MediaType.APPLICATION_JSON)
     }
 }
 

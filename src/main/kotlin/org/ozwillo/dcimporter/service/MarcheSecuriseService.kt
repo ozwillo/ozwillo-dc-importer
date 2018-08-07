@@ -44,17 +44,32 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return MSUtils.sendSoap(url, soapMessage)
     }
 
+    fun parseDceFromResponse(response:String):String{
+        return if (response.contains("<propriete nom=\"cle\" statut=\"changed\">")) {
+            val parseResponse: List<String> = response.split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
+            if(parseResponse.size >= 2){
+                val dce = parseResponse[1]
+                dce
+            }else{
+                val dce = ""
+                dce
+            }
+        }else {
+            val dce = ""
+            dce
+        }
+    }
+
     //  Default Consultation creation
     private fun createConsultationAndSaveDce(login: String, password: String, pa: String, consultation: Consultation, uri:String, url: String): String {
         val response = sendCreateConsultationRequest(login, password, pa, url)
 
         //saving dce (=consultation id in MS)
-        if (response.contains("<propriete nom=\"cle\" statut=\"changed\">")){
-            val parseResponse: List<String> = response.split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
-            val dce = parseResponse[1]
+        val dce = parseDceFromResponse(response)
+        if (!dce.isEmpty()){
             val businessMapping = BusinessMapping(applicationName = "MS", businessId = dce, dcId = uri, type = CONSULTATION_TYPE)
-            logger.debug("saved BusinessMapping : {}", businessMapping)
             businessMappingRepository.save(businessMapping).block()
+            logger.debug("saved BusinessMapping : {}", businessMapping)
         }else{
             logger.warn("An error occurred preventing from creating default consultation ${consultation.reference} in Marche Securise")
         }
@@ -64,7 +79,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     //  Default Consultation creation and update with correct data
     fun createAndUpdateConsultation(login: String, password: String, pa: String, consultation: Consultation, uri:String, url: String): String {
 
-        var response:String
+        val response:String
 
         //control of already existing businessMapping with same dcId
         val existingBusinessMappings: BusinessMapping? = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, "MS", CONSULTATION_TYPE).block()
@@ -119,7 +134,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
     fun deleteConsultation(login: String, password: String, pa: String, uri:String, url: String):String{
 
-        var soapMessage:String
+        val soapMessage:String
         var response = ""
 
         try {
@@ -191,23 +206,35 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 **  Lot **
 */
 
-    fun saveCleLot(response: String, lot: Lot, uri:String){
-        if (response.contains("<objet type=\"ms_v2__fullweb_lot\">")){
+    fun parseCleLot(response: String, lot:Lot):String{
+        if (response.contains("<objet type=\"ms_v2__fullweb_lot\">")) {
             val lotList = response.split("<objet type=\"ms_v2__fullweb_lot\">|</objet>".toRegex())
-            if(response.contains("<propriete nom=\"cle_lot\">")){
-                val targetLot = lotList.find { s -> s.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>")}
+            return if (response.contains("<propriete nom=\"cle_lot\">")) {
+                val targetLot = lotList.find { s -> s.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>") }
                 val parseResponse = targetLot!!.split("<propriete nom=\"cle_lot\">|</propriete>".toRegex())
-                if(parseResponse.size >= 3){
-                    val cleLot = parseResponse[2]
-                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = cleLot, dcId = uri, type = LOT_TYPE)
-                    businessMappingRepository.save(businessMappingLot).block()
-                    logger.debug("saved businessMapping {} ", businessMappingLot)
+                if (parseResponse.size >= 3) {
+                   val cleLot = parseResponse[2]
+                    cleLot
                 }else{
-                    logger.warn("unable to parse response in cleLot for response {}", parseResponse)
+                    logger.debug("unable to parse response on clePiece {}", parseResponse)
+                    val cleLot = ""
+                    cleLot
                 }
             }else{
-                logger.warn("An error occurred while saving Lot ${lot.libelle}")
+                val cleLot = ""
+                cleLot
             }
+        }else{
+            return ""
+        }
+    }
+
+    fun saveCleLot(response: String, lot: Lot, uri:String){
+        val cleLot = parseCleLot(response, lot)
+        if (!cleLot.isEmpty()){
+            val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = cleLot, dcId = uri, type = LOT_TYPE)
+            businessMappingRepository.save(businessMappingLot).block()
+            logger.debug("saved businessMapping {} ", businessMappingLot)
         }else{
             logger.warn("An error occurred while saving Lot ${lot.libelle}")
         }
@@ -281,7 +308,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
         //  Get consultation dcId from uri
         val uriConsultation = uri.substringBeforeLast("/").replace(LOT_TYPE, CONSULTATION_TYPE)
-        var soapMessage: String
+        val soapMessage: String
         var response = ""
 
         try {
@@ -326,24 +353,35 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 **     Piece
  */
 
-    fun saveClePiece(response: String, piece: Piece, uri:String) {
+    fun parseClePiece(response:String, piece: Piece):String{
         if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
             val piecesList = response.split("<objet type=\"ms_v2__fullweb_piece\">|</objet>".toRegex())
-            if (response.contains("<propriete nom=\"nom\">")){
+            return if (response.contains("<propriete nom=\"nom\">")){
                 val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.txt</propriete>") }
                 val parseResponse = targetPiece!!.split("<propriete nom=\"cle_piece\">|</propriete>".toRegex())
                 if (parseResponse.size >= 2){
                     val clePiece = parseResponse[1]
                     logger.debug("get clef Pièce {}", clePiece)
-                    val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = clePiece, dcId = uri, type = PIECE_TYPE)
-                    businessMappingRepository.save(businessMappingLot).block()
-                    logger.debug("saved businessMapping {} ", businessMappingLot)
+                    clePiece
                 }else{
                     logger.debug("unable to parse response on clePiece {}", parseResponse)
+                    val clePiece = ""
+                    clePiece
                 }
             }else{
-                logger.warn("An error occurred while saving Piece ${piece.libelle}")
+                ""
             }
+        }else{
+            return ""
+        }
+    }
+
+    fun saveClePiece(response: String, piece: Piece, uri:String) {
+        val clePiece = parseClePiece(response, piece)
+        if (!clePiece.isEmpty()){
+            val businessMappingLot = BusinessMapping(applicationName = "MS", businessId = clePiece, dcId = uri, type = PIECE_TYPE)
+            businessMappingRepository.save(businessMappingLot).block()
+            logger.debug("saved businessMapping {} ", businessMappingLot)
         }else{
             logger.warn("An error occurred while saving Piece ${piece.libelle}")
         }
