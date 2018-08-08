@@ -7,6 +7,7 @@ import org.ozwillo.dcimporter.model.maarch.MaarchArrayData
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.maarch.MaarchContact
 import org.ozwillo.dcimporter.model.maarch.MaarchResource
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -16,12 +17,8 @@ import org.springframework.web.client.RestTemplate
 import java.math.BigInteger
 
 @Service
-class MaarchService(private val businessMappingRepository: BusinessMappingRepository) {
-
-    // TODO : externalize
-    private val url = "https://e-courrier.sictiam.fr/8ba7be1e-2844-4673-ba9e-dcbe27323b1e"
-    private val user = "restUser"
-    private val password = "maarch"
+class MaarchService(private val businessMappingRepository: BusinessMappingRepository,
+                    private val businessAppConfigurationRepository: BusinessAppConfigurationRepository) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MaarchService::class.java)
@@ -31,9 +28,10 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
     @Value("\${publik.datacore.modelEM}")
     private val type ="type"
 
-    fun createCitizenRequest(dcResource: DCBusinessResourceLight) {
+    fun createCitizenRequest(siret: String, dcResource: DCBusinessResourceLight) {
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
         LOGGER.debug("\tcontaining $dcResource")
+        val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, MaarchService.name).block()!!
         val maarchFileMetadataList = listOf(
                 MaarchArrayData(column = "subject", value = dcResource.getValues()["citizenreq:displayName"]!!.toString()),
                 MaarchArrayData(column = "type_id", value = "102"),
@@ -42,11 +40,11 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 fileFormat = "pdf", table = "res_letterbox", encodedFile = dcResource.gimmeResourceFile().base64content)
         LOGGER.debug("Generated Maarch file ${maarchFile.data[0].value}")
 
-        val restTemplate: RestTemplate = RestTemplateBuilder().basicAuthorization(user, password).build()
+        val restTemplate: RestTemplate = RestTemplateBuilder().basicAuthorization(businessAppConfiguration.login, businessAppConfiguration.password).build()
         restTemplate.interceptors.add(FullLoggingInterceptor())
 
         val storeResourceResponse =
-                restTemplate.postForObject("$url/rest/res", maarchFile, StoreResourceResponse::class.java)
+                restTemplate.postForObject("${businessAppConfiguration.baseUrl}/rest/res", maarchFile, StoreResourceResponse::class.java)
         LOGGER.debug("Got store resource response $storeResourceResponse")
 
         // TODO : validate that the mapping has to be done on this resource
@@ -59,7 +57,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 firstname = dcResource.getValues()["citizenreqem:firstName"]!!.toString(),
                 email = dcResource.getValues()["citizenreqem:email"]!!.toString(),
                 isCorporatePerson = "N", contactType = 106, contactPurposeId = 3)
-        val createContactResponse = restTemplate.postForObject("$url/rest/contacts", contact, CreateContactResponse::class.java)
+        val createContactResponse = restTemplate.postForObject("${businessAppConfiguration.baseUrl}/rest/contacts", contact, CreateContactResponse::class.java)
         LOGGER.debug("Got create contact response $createContactResponse")
 
         val maarchResourceDataList = listOf(
@@ -68,7 +66,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 MaarchArrayData(column = "category_id", value = "incoming"))
         val maarchResource = MaarchResource(resId = storeResourceResponse.resId.toString(),
                 table = "mlb_coll_ext", data = maarchResourceDataList)
-        val storeResourceExtResponse = restTemplate.postForObject("$url/rest/resExt", maarchResource,
+        val storeResourceExtResponse = restTemplate.postForObject("${businessAppConfiguration.baseUrl}/rest/resExt", maarchResource,
                 StoreResourceResponse::class.java)
         LOGGER.debug("Got store resource ext response $storeResourceExtResponse")
     }

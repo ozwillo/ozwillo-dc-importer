@@ -11,38 +11,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
 class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) {
 
     private val logger:Logger = LoggerFactory.getLogger(MarcheSecuriseReceiver::class.java)
-
-    @Value("\${marchesecurise.url.createConsultation}")
-    private val createConsultationUrl = ""
-    @Value("\${marchesecurise.url.updateConsultation}")
-    private val updateConsultationUrl = ""
-    @Value("\${marchesecurise.url.deleteConsultation}")
-    private val deleteConsultationUrl = ""
-    @Value("\${marchesecurise.url.publishConsultation}")
-    private val publishConsultationUrl = ""
-    @Value("\${marchesecurise.url.lot}")
-    private val lotUrl = ""
-    @Value("\${marchesecurise.url.piece}")
-    private val pieceUrl = ""
-
-
-    @Value("\${amqp.config.marchesecurise.bindingKey}")
-    val bindingKey = ""
-
-    @Value("\${marchesecurise.login}")
-    private var login: String = ""
-    @Value("\${marchesecurise.password}")
-    private var password: String = ""
-    @Value("\${marchesecurise.pa}")
-    private var pa: String = ""
-
 
     @RabbitListener(queues = ["marchesecurise"])
     @Throws(InterruptedException::class)
@@ -61,19 +35,19 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        marcheSecuriseService.createAndUpdateConsultation(login, password, pa, consultation, resource.getUri(), createConsultationUrl)
+                        marcheSecuriseService.createAndUpdateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
                     }
 
                     routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
-                        marcheSecuriseService.createLot(login, password, pa, lot, resource.getUri(), lotUrl)
+                        marcheSecuriseService.createLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                     }
 
                     routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
                         val piece:Piece = Piece.toPiece(resource)
                         logger.debug("Binding $routingKey received piece ${piece.libelle}")
-                        marcheSecuriseService.createPiece(login, password, pa, piece, resource.getUri(), pieceUrl)
+                        marcheSecuriseService.createPiece(routingBindingKeySiret(routingKey), piece, resource.getUri())
                     }
 
                     else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
@@ -84,13 +58,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        marcheSecuriseService.updateConsultation(login, password, pa, consultation, resource.getUri(), updateConsultationUrl)
+                        marcheSecuriseService.updateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
                     }
 
                     routingBindingKeyOfType(routingKey,"marchepublic:lot_0") -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
-                        marcheSecuriseService.updateLot(login, password, pa, lot, resource.getUri(), lotUrl)
+                        marcheSecuriseService.updateLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                     }
 
                     else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
@@ -100,17 +74,17 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                     when {
                         routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                             logger.debug("Binding $routingKey received deletion order for consultation ${resource.getUri()}")
-                            marcheSecuriseService.deleteConsultation(login, password, pa, resource.getUri(), deleteConsultationUrl)
+                            marcheSecuriseService.deleteConsultation(routingBindingKeySiret(routingKey), resource.getUri())
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
                             logger.debug("Binding $routingKey received deletion order for lot ${resource.getUri()}")
-                            marcheSecuriseService.deleteLot(login, password, pa, resource.getUri(), lotUrl)
+                            marcheSecuriseService.deleteLot(routingBindingKeySiret(routingKey), resource.getUri())
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
                             logger.debug("Binding $routingKey received deletion order for piece ${resource.getUri()}")
-                            marcheSecuriseService.deletePiece(login, password, pa, resource.getUri(), pieceUrl)
+                            marcheSecuriseService.deletePiece(routingBindingKeySiret(routingKey), resource.getUri())
                         }
 
                         else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
@@ -120,7 +94,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                     when{
                         routingBindingKeyOfType(routingKey, "marchepublic:consultation_0") -> {
                             logger.debug("Binding $routingKey received publication order for consultation ${resource.getUri()}")
-                            marcheSecuriseService.publishConsultation(login, password, pa, resource.getUri(), publishConsultationUrl)
+                            marcheSecuriseService.publishConsultation(routingBindingKeySiret(routingKey), resource.getUri())
                         }
                         else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                     }
@@ -136,4 +110,6 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
     fun routingBindingKeyOfType(routingKey: String, type: String): Boolean {
         return routingKey.split('.')[2] == type
     }
+
+    fun routingBindingKeySiret(routingKey: String): String = routingKey.split('.')[1]
 }

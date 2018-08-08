@@ -32,16 +32,13 @@ publik:
     modelUser: citizenreq:user_0
 
 marchesecurise:
-  login: login
-  password: password
-  pa: pa
   url:
-    createConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_crea_dce
-    updateConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_modif_dce
-    deleteConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_suppr_dce
-    publishConsultation: https://www.marches-securises.fr/webserv/?module=dce|serveur_publication_dce
-    lot: https://www.marches-securises.fr/webserv/?module=dce|serveur_lot_dce
-    piece: https://www.marches-securises.fr/webserv/?module=dce|serveur_fichier_dce
+    createConsultation: /webserv/?module=dce|serveur_crea_dce
+    updateConsultation: /webserv/?module=dce|serveur_modif_dce
+    deleteConsultation: /webserv/?module=dce|serveur_suppr_dce
+    publishConsultation: /webserv/?module=dce|serveur_publication_dce
+    lot: /webserv/?module=dce|serveur_lot_dce
+    piece: /webserv/?module=dce|serveur_fichier_dce
 
 amqp:
   config:
@@ -52,13 +49,6 @@ amqp:
       maarch:
         queueName: maarch
         bindingKey: citizenreq:elecmeeting_0.#
-
-maarch:
-  instance:
-    - baseUrl: http://localhost
-      organization: my-organization
-  login: login
-  password: password
 
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:

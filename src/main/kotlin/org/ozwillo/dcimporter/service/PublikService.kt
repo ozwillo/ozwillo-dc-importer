@@ -49,6 +49,8 @@ class PublikService(private val datacoreService: DatacoreService,
     private val datacoreModelSVE: String? = null
     @Value("\${publik.datacore.modelUser}")
     private val datacoreModelUser: String = "citizenreq:user_0"
+    @Value("\${publik.datacore.modelORG}")
+    private val datacoreModelORG: String = "org:Organization_0"
     @Value("\${datacore.baseUri}")
     private val datacoreBaseUri: String? = null
 
@@ -75,9 +77,9 @@ class PublikService(private val datacoreService: DatacoreService,
 
     fun syncPublikForms(businessAppConfiguration: BusinessAppConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
 
-        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", businessAppConfiguration.secret)
+        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", businessAppConfiguration.secretOrToken!!)
 
-        LOGGER.debug("Getting Publik form list at URL https://${businessAppConfiguration.domain}/api/forms/$formType/list?$signedQuery")
+        LOGGER.debug("Getting Publik form list at URL ${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
 
         val uriBuilderFactory = DefaultUriBuilderFactory()
         uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
@@ -85,14 +87,13 @@ class PublikService(private val datacoreService: DatacoreService,
                 .uriBuilderFactory(uriBuilderFactory)
                 .build()
         return clientV2.get()
-                .uri("https://${businessAppConfiguration.domain}/api/forms/$formType/list?$signedQuery")
+                .uri("${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError,
-                        { response -> response.bodyToMono(PublikResponse::class.java).map {
-                            RuntimeException(it.toString())
-                        } })
+                .onStatus(HttpStatus::is4xxClientError) { response -> response.bodyToMono(PublikResponse::class.java).map {
+                    RuntimeException(it.toString())}
+                }
                 .bodyToFlux(ListFormsModel::class.java)
-                .map { getForm(formatUrl(it.url), businessAppConfiguration.secret) }
+                .map { getForm(formatUrl(it.url), businessAppConfiguration.secretOrToken) }
                 .map { convertToDCResource(dcOrganization, it!!) }
                 .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
                 .count()
@@ -103,27 +104,19 @@ class PublikService(private val datacoreService: DatacoreService,
                          @JsonProperty("err_desc") val errDesc: String,
                          @JsonProperty("err") val err: Int)
 
-    fun formToDCResource(form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
+    fun formToDCResource(organizationSiret: String, form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
 
         LOGGER.debug("Got form from Publik : $form")
         LOGGER.debug("Form has URL ${form.url}")
-        val uri = URI(form.url)
-        val publikConfiguration = businessAppConfigurationRepository.findByDomainAndApplicationName(uri.host, name).block()!!
-        val orgResource = datacoreService.getDCOrganization(publikConfiguration.organizationName).block()!!
 
+        val orgResource = datacoreService.getResourceFromURI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
         val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
-        val type = result.first
 
         val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
-                dcId = result.second.getUri(), type = type)
-        val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
+                dcId = result.second.getUri(), type = result.first)
+        businessMappingRepository.save(businessMapping).subscribe()
 
         return result
-//        return businessAppConfigurationRepository.findByDomain(uri.host).flatMap {
-//            datacoreService.getDCOrganization(it.organizationName).map { orgResource ->
-//                convertToDCResource(orgResource, form)
-//            }
-//        }
     }
 
     private fun convertToDCResource(dcOrganization: DCResourceLight, form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {

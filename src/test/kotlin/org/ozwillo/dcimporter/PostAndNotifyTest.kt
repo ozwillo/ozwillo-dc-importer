@@ -17,6 +17,7 @@ import org.ozwillo.dcimporter.model.publik.User
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.service.DCModelType
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.PublikService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpStatus
@@ -35,17 +36,17 @@ class PostAndNotifyTest : AbstractIntegrationTests() {
 
     @BeforeAll
     fun declarePublikInstance() {
-        val optPublikConfiguration = businessAppConfigurationRepository.findByDomainAndApplicationName("demarches-sve.test-demarches.sictiam.fr", "Publik").blockOptional()
+        val optPublikConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName("20003019500115", PublikService.name).blockOptional()
         if (!optPublikConfiguration.isPresent) {
-            val publikConfiguration = BusinessAppConfiguration(domain = "demarches-sve.test-demarches.sictiam.fr",
-                    organizationName = "SICTIAM", secret = "aSYZexOBIzl8", applicationName = "Publik")
+            val publikConfiguration = BusinessAppConfiguration(baseUrl = "https://demarches-sve.test-demarches.sictiam.fr",
+                    organizationSiret = "20003019500115", secretOrToken = "aSYZexOBIzl8", applicationName = "Publik")
             businessAppConfigurationRepository.save(publikConfiguration).subscribe()
         }
     }
 
     @AfterAll
     fun deletePublikInstance() {
-        businessAppConfigurationRepository.findByDomainAndApplicationName("demarches-sve.test-demarches.sictiam.fr", "Publik").map {
+        businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName("20003019500115", PublikService.name).map {
             businessAppConfigurationRepository.delete(it).subscribe()
         }
     }

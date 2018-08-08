@@ -7,6 +7,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.function.Executable
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.MarcheSecuriseService
 import org.ozwillo.dcimporter.util.BindingKeyAction
@@ -19,6 +20,9 @@ class MarcheSecuriseReceiverTest {
 
     @Mock
     private lateinit var businessMappingRepository: BusinessMappingRepository
+
+    @Mock
+    private lateinit var businessAppConfigurationRepository: BusinessAppConfigurationRepository
 
     @Mock
     private lateinit var marcheSecuriseService: MarcheSecuriseService
@@ -35,7 +39,7 @@ class MarcheSecuriseReceiverTest {
     @BeforeAll
     fun setUp(){
         MockitoAnnotations.initMocks(this)
-        marcheSecuriseService = MarcheSecuriseService(businessMappingRepository)
+        marcheSecuriseService = MarcheSecuriseService(businessMappingRepository, businessAppConfigurationRepository)
         marcheSecuriseReceiver  = MarcheSecuriseReceiver(marcheSecuriseService)
     }
 

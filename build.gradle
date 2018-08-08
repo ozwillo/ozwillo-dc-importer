@@ -27,9 +27,6 @@ noArg {
     annotation("org.springframework.boot.context.properties.ConfigurationPro‌​perties")
 }
 
-
-
-
 group = 'com.ozwillo'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
@@ -68,8 +65,6 @@ dependencies {
     compile('org.codehaus.groovy:groovy')
     compile('org.codehaus.groovy:groovy-templates')
 
-
-
     runtime('org.springframework.boot:spring-boot-devtools')
     runtime('org.codehaus.groovy:groovy:2.4.7')
 
@@ -77,11 +72,13 @@ dependencies {
         exclude module: "junit"
     }
     testCompile('com.github.tomakehurst:wiremock-standalone:2.17.0')
-    testImplementation('org.junit.jupiter:junit-jupiter-api')
-    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
     testCompile("io.projectreactor:reactor-test")
+    testCompile('com.github.fridujo:rabbitmq-mock:1.0.3')
+    testCompile('de.flapdoodle.embed:de.flapdoodle.embed.mongo')
 
+    testImplementation('org.junit.jupiter:junit-jupiter-api')
 
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
 }
 
 bootRun {

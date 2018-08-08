@@ -35,7 +35,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
                 when {
                     routingBindingKeyOfType(routingKey, elecmeetingType) -> {
                         logger.debug("Binding $routingKey received elecmeeting request ${resource.getUri()}")
-                        maarchService.createCitizenRequest(resource)
+                        maarchService.createCitizenRequest(routingBindingKeySiret(routingKey), resource)
                     }
 
                     else -> logger.warn("Unable to recognize type from routing key $routingKey")
@@ -52,4 +52,6 @@ class MaarchReceiver(private val maarchService: MaarchService) {
     fun routingBindingKeyOfType(routingKey: String, type: String): Boolean {
         return routingKey.split('.')[2] == type
     }
+
+    fun routingBindingKeySiret(routingKey: String): String = routingKey.split('.')[1]
 }

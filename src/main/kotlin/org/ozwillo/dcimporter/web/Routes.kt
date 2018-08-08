@@ -15,7 +15,7 @@ class Routes(private val statusHandler: StatusHandler,
     fun router() = router {
         (accept(MediaType.APPLICATION_JSON) and "/api").nest {
             "/publik".nest {
-                POST("/form", publikHandler::publish)
+                POST("/{siret}/form", publikHandler::publish)
             }
             "/maarch".nest {
                 PUT("/status", maarchHandler::status)
