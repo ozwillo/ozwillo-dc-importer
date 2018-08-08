@@ -108,8 +108,8 @@ class MarcheSecuriseServiceTest{
         wireMockServer.start()
 
         WireMock.configureFor(8990)
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("http://localhost:8990"))
-                .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
+        WireMock.stubFor(WireMock.post(WireMock.urlEqualTo("http://localhost:8990"))
+                .willReturn(WireMock.aResponse().withStatus(200)))
     }
 
     @AfterAll
