@@ -87,6 +87,7 @@ bootRun {
 
 test {
     useJUnitPlatform()
+    environment 'spring.profiles.active', 'test'
 }
 
 task wrapper(type: Wrapper) {
