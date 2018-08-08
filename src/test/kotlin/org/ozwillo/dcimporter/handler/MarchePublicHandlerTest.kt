@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.handler
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import com.github.tomakehurst.wiremock.matching.EqualToPattern
 import org.assertj.core.api.Assertions.assertThat
@@ -9,169 +10,22 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.ozwillo.dcimporter.OzwilloDcImporterApplication
-import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.model.marchepublic.Consultation
+import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
+import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
+import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.runApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.http.*
 import org.springframework.http.client.ClientHttpRequestInterceptor
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import org.springframework.test.web.reactive.server.WebTestClient
-import reactor.core.publisher.Mono
 import java.time.LocalDateTime
-import java.util.*
 
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
-class TestBase(){
-    protected val client = WebTestClient.bindToServer()
-                                            .baseUrl("http://localhost:8080")
-                                            .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
-                                            .defaultHeader("Authorization", "Bearer bearer")
-                                            .build()
-
-    @BeforeAll
-    fun initApplication(){
-        runApplication<OzwilloDcImporterApplication>()
-    }
-}
-
-class MarchePublicHandlerNewTest: TestBase(){
-
-    val siret = "123456789"
-
-    @Test
-    fun createConsultationFromHandlertoMSTest(){
-        val reference = "rfc-005"
-
-        val consultation = Consultation(reference = reference,
-                objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
-                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
-                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
-                passation = "AORA", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
-                enLigne = false, alloti = false, invisible = false, nbLots = 1)
-
-        client.post()
-                .uri("/api/marche-public/$siret/consultation")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(Mono.just(consultation), Consultation::class.java)
-                .exchange()
-                .expectStatus().isCreated
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-    }
-
-    @Test
-    fun getConsultationTest(){
-        val reference = "rfc-003"
-
-        val consultation = Consultation(reference = reference,
-                objet = "mon marche", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
-                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
-                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
-                passation = "AORA", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
-                enLigne = false, alloti = false, invisible = false, nbLots = 1)
-
-        client.get()
-                .uri("/api/marche-public/$siret/consultation/$reference")
-                .exchange()
-                .expectStatus().isOk
-                .expectBody()
-                .jsonPath("$.reference").isEqualTo(reference)
-    }
-
-    @Test
-    fun updateConsultationTest(){
-        val reference = "rfc-003"
-
-        val consultation = Consultation(reference = reference,
-                objet = "mon marche modifié", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
-                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.AUTRE,
-                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
-                passation = "PICO", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
-                enLigne = false, alloti = false, invisible = false, nbLots = 1)
-
-        client.put()
-                .uri("/api/marche-public/${siret}/consultation/${reference}")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(Mono.just(consultation), Consultation::class.java)
-                .exchange()
-                .expectStatus().isOk
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-    }
-
-    @Test
-    fun deleteConsultationTest(){
-        val reference = "rfc-003"
-
-        val consultation = Consultation(reference = reference,
-                objet = "mon marche modifié", datePublication = LocalDateTime.of(2018,8,1,11,49,56, 12), dateCloture = LocalDateTime.of(2018,10,1,11,8,45, 9),
-                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.AUTRE,
-                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
-                passation = "PICO", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
-                enLigne = false, alloti = false, invisible = false, nbLots = 1)
-
-        client.delete()
-                .uri("/api/marche-public/${siret}/consultation/${reference}")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-    }
-
-    @Test
-    fun publishConsultationTest(){
-        val reference = "rfc-011"
-
-        val consultation = Consultation(reference = reference,
-                objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now().plusMonths(3),
-                finaliteMarche = FinaliteMarcheType.MARCHE, typeMarche = TypeMarcheType.PUBLIC,
-                typePrestation = TypePrestationType.FOURNITURES, departementsPrestation = listOf(6, 83),
-                passation = "passation", informatique = true, passe = "motdepasse", emails = listOf("dev@sictiam.fr", "demat@sictiam.fr"),
-                enLigne = false, alloti = false, invisible = false, nbLots = 0)
-
-        // Publish
-        client.post()
-                .uri("/api/marche-public/${siret}/consultation/${reference}/publish", siret, reference)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(Mono.just(consultation), Consultation::class.java)
-                .exchange()
-                .expectStatus().isOk
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-
-    }
-
-    @Test
-    fun createPiece(){
-        val reference = "rfc-011"
-
-        val libellePiece = "Une pièce"
-        val nom = "NomDuFichierSansTiret"
-        val extension = "txt"
-        val byteArrayContenu = "un contenu texte".toByteArray()
-
-        val piece = Piece(uuid = UUID.randomUUID().toString(), uuidLot = null, libelle = libellePiece, aapc = false, ordre = 1, nom = nom, extension = extension, contenu = byteArrayContenu, poids = 60000)
-
-        //create
-        client.post()
-                .uri("/api/marche-public/${siret}/consultation/${reference}/piece", siret, reference)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(Mono.just(piece), Piece::class.java)
-                .exchange()
-                .expectStatus().isCreated
-                .expectHeader().contentType(MediaType.APPLICATION_JSON)
-    }
-}
-
 class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     private lateinit var wireMockServer: WireMockServer
@@ -196,7 +50,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         })
 
         WireMock.configureFor(8089)
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/tokeninfo"))
+        stubFor(WireMock.post(WireMock.urlMatching("/a/tokeninfo"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpNa2xMcm94V1ZGKy9QRFNqazlONkcra29VZTV5T0ZhL1JodEhmVzg5YzZF"))
                 .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
     }
@@ -208,23 +62,21 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
     fun `Test correct creation of a consultation`() {
-        val reference = "ref-consultation-000003"
-        val dcResponse = """
-            {
-                "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/$reference"
-            }
-            """
+        val reference = "ref-consultation"
         val dcGetResponse = """
             {
-                "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/$siret",
-                "version": 1
+                "@id": "https://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret"
             }
             """
-
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
-                .willReturn(WireMock.okJson(dcResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("dc/type/marchepublic:consultation_0/FR/$siret"))
+        val dcResponse = """
+            {
+                "@id": "https://data.ozwillo.com/dc/type/marchepublic:consultation_0/$siret/$reference"
+            }
+            """
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
                 .willReturn(WireMock.okJson(dcGetResponse).withStatus(200)))
+        stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
+                .willReturn(WireMock.okJson(dcResponse).withStatus(201)))
 
         val consultation = Consultation(reference = reference,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
@@ -242,7 +94,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
     fun `Test bad request sent to the Datacore`() {
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
+        stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.aResponse().withStatus(400)))
 
         val consultation = Consultation(reference = "ref-consultation",
@@ -295,9 +147,9 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/123456/$reference"
             }
             """
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
+        stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.okJson(dcResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
+        stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
                 .willReturn(WireMock.okJson(dcResponse).withStatus(200)))
 
         val consultation = Consultation(reference = reference,
@@ -335,11 +187,11 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 "version": 1
             }
             """
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
+        stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.okJson(dcCreateResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
                 .willReturn(WireMock.okJson(dcGetResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.delete(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
+        stubFor(WireMock.delete(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
                 .willReturn(WireMock.aResponse().withStatus(204)))
 
         val consultation = Consultation(reference = reference,
@@ -359,6 +211,6 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         WireMock.verify(
                 WireMock.deleteRequestedFor(
                         WireMock.urlEqualTo("/dc/type/marchepublic:consultation_0/FR/$siret/$reference"))
-                            .withHeader("If-Match", EqualToPattern("1")))
+                        .withHeader("If-Match", EqualToPattern("1")))
     }
 }
