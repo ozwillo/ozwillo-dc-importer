@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
+import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -60,6 +61,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
 
         val siret = req.pathVariable("siret")
+
         try {
             datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
@@ -72,8 +74,19 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             return status(e.statusCode).body(BodyInserters.fromObject(body))
         }
 
+        var alreadyExist = false
+
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
+                    try {
+                        datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${consultation.reference}", bearer)
+                        alreadyExist = true
+                    }catch (e:HttpClientErrorException){
+                        when{
+                            e.statusCode == HttpStatus.NOT_FOUND -> LOGGER.debug("No already existing resource")
+                            else -> status(e.statusCode).body(BodyInserters.fromObject("Unexpected error"))
+                        }
+                    }
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
                     datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0",
                             dcConsultation, bearer)
@@ -82,11 +95,15 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     val reference = result.resource.getUri().substringAfterLast('/')
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(BodyInserters.empty<String>())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->
-                    LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
+                    if (alreadyExist){
+                        status(HttpStatus.CONFLICT).body(BodyInserters.fromObject("Resource already exists"))
+                    }else{
+                        LOGGER.error("Creation failed with error $error")
+                        badRequest().body(BodyInserters.fromObject((error as HttpClientErrorException).responseBodyAsString))
+                    }
                 }
     }
 
