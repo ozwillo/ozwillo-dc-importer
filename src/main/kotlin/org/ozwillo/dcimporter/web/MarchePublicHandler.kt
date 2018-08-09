@@ -406,6 +406,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val iri = "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}/${req.pathVariable("uuid")}"
         return datacoreService.deleteResource("marchepublic_0", "marchepublic:piece_0", iri, bearer)
                 .flatMap { result ->
+                    status(HttpStatus.OK)
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
                 }.onErrorResume { error ->

@@ -357,7 +357,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
             val piecesList = response.split("<objet type=\"ms_v2__fullweb_piece\">|</objet>".toRegex())
             return if (response.contains("<propriete nom=\"nom\">")){
-                val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.txt</propriete>") }
+                val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.${piece.extension}</propriete>") }
                 val parseResponse = targetPiece!!.split("<propriete nom=\"cle_piece\">|</propriete>".toRegex())
                 if (parseResponse.size >= 2){
                     val clePiece = parseResponse[1]
