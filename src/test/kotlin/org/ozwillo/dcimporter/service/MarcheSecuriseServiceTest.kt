@@ -14,6 +14,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Autowired
@@ -99,11 +100,13 @@ class MarcheSecuriseServiceTest{
     private lateinit var marcheSecuriseService: MarcheSecuriseService
     @Mock
     private lateinit var businessMappingRepository: BusinessMappingRepository
+    @Mock
+    private lateinit var businessAppConfigurationRepository: BusinessAppConfigurationRepository
 
 
     @BeforeAll
     fun setUp(){
-        marcheSecuriseService = MarcheSecuriseService(businessMappingRepository)
+        marcheSecuriseService = MarcheSecuriseService(businessMappingRepository, businessAppConfigurationRepository)
         wireMockServer = WireMockServer(WireMockConfiguration.wireMockConfig().port(8990))
         wireMockServer.start()
 
