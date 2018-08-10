@@ -323,7 +323,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 response = MSUtils.sendSoap(url, soapMessage)
             }
             //Delete businessMapping
-            if (response.contains("<objet type=\"ms_v2__fullweb_lot\">")){
+            if (response.contains("<objet type=\"ms_v2__fullweb_lot\">|<objet lot=\"last\">|<propriete suppression=\"true\">supprime</propriete>".toRegex())){
                 val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, "MS", LOT_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
             }else{
@@ -357,7 +357,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
             val piecesList = response.split("<objet type=\"ms_v2__fullweb_piece\">|</objet>".toRegex())
             return if (response.contains("<propriete nom=\"nom\">")){
-                val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.txt</propriete>") }
+                val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.${piece.extension}</propriete>") }
                 val parseResponse = targetPiece!!.split("<propriete nom=\"cle_piece\">|</propriete>".toRegex())
                 if (parseResponse.size >= 2){
                     val clePiece = parseResponse[1]
@@ -498,7 +498,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, "MS", PIECE_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
             }else{
-                logger.warn("Unable to delete piece $uri")
+                logger.warn("Unable to delete piece $uri from businessMapping")
             }
         }catch (e:IllegalArgumentException){
             logger.warn("error on finding dce and clePiece from businessMapping, ${e.message}")
