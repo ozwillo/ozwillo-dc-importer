@@ -14,7 +14,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -74,13 +73,10 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             return status(e.statusCode).body(BodyInserters.fromObject(body))
         }
 
-        var alreadyExist = false
-
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     try {
                         datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${consultation.reference}", bearer)
-                        alreadyExist = true
                     }catch (e:HttpClientErrorException){
                         when{
                             e.statusCode == HttpStatus.NOT_FOUND -> LOGGER.debug("No already existing resource")
@@ -95,16 +91,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     val reference = result.resource.getUri().substringAfterLast('/')
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference"
                     created(URI(resourceUri))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    if (alreadyExist){
-                        status(HttpStatus.CONFLICT).body(BodyInserters.fromObject("Resource already exists"))
-                    }else{
-                        LOGGER.error("Creation failed with error $error")
-                        badRequest().body(BodyInserters.fromObject(error.toString()))
-                    }
-                }
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .body(BodyInserters.empty<String>())
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun update(req: ServerRequest): Mono<ServerResponse> {
@@ -141,12 +130,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     datacoreService.updateResource("marchepublic_0", "marchepublic:consultation_0", dcConsultation, bearer)
                 }
                 .flatMap { _ ->
-                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
                     ok().contentType(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.toString()))
-                }
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun delete(req: ServerRequest): Mono<ServerResponse> {
@@ -242,10 +228,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject(error.toString()))
-                }
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun updateLot(req: ServerRequest): Mono<ServerResponse> {
@@ -299,9 +282,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.toString()))
-                }
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun deleteLot(req: ServerRequest): Mono<ServerResponse> {
@@ -376,15 +357,11 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 }
                 .flatMap { result ->
                     val pieceUuid = result.resource.getUri().substringAfterLast('/')
-                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
                     val resourceUri = "${applicationProperties.url}/api/marche-public/$siret/consultation/$reference/piece/$pieceUuid"
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    LOGGER.error("Creation failed with error $error")
-                    badRequest().body(BodyInserters.fromObject(error.toString()))
-                }
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun updatePiece(req: ServerRequest): Mono<ServerResponse> {
@@ -435,12 +412,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     datacoreService.updateResource("marchepublic_0", "marchepublic:piece_0", dcPiece, bearer)
                 }
                 .flatMap { _ ->
-                    // val notifyResult: Mono<String> = subscriptionService.notifyMock("marchepublic:consultation_0", it)
                     ok().contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-                }.onErrorResume { error ->
-                    badRequest().body(BodyInserters.fromObject(error.toString()))
-                }
+                }.onErrorResume(this::throwableToResponse)
     }
 
     fun deletePiece(req: ServerRequest): Mono<ServerResponse> {
@@ -463,5 +437,16 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             return ""
 
         return authorizationHeader[0].split(" ")[1]
+    }
+
+    private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
+        LOGGER.error("Operation failed with error $throwable")
+        return when (throwable) {
+            is HttpClientErrorException -> badRequest().body(BodyInserters.fromObject(throwable.responseBodyAsString))
+            else -> {
+                badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
+            }
+        }
+
     }
 }

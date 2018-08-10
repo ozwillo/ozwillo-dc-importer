@@ -80,8 +80,7 @@ class DatacoreService {
             val response = restTemplate.exchange(request, DCResourceLight::class.java)
             val result: DCResourceLight = response.body!!
 
-            //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(resource, project, type, BindingKeyAction.CREATE)
+            sender.send(resource, project, type, BindingKeyAction.CREATE)
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
@@ -102,7 +101,7 @@ class DatacoreService {
         LOGGER.debug("Updating resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
-        resource.setStringValue("o:version", dcCurrentResource?.let { dcCurrentResource.getValues()["o:version"]!!.toString() }.orEmpty())
+        resource.setStringValue("o:version", dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -114,8 +113,7 @@ class DatacoreService {
 
         try {
             restTemplate.put(uri, request)
-            //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(resource, project, type, BindingKeyAction.UPDATE)
+            sender.send(resource, project, type, BindingKeyAction.UPDATE)
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
@@ -130,7 +128,7 @@ class DatacoreService {
         LOGGER.debug("Deleting resource at URI $uri")
 
         val dcCurrentResource = getResourceFromURI(project, type, iri, bearer)
-        val version = dcCurrentResource?.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
+        val version = dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -142,8 +140,7 @@ class DatacoreService {
 
         try {
             val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
-            //Sending to MarcheSecurise throught rabbitmq
-            sender!!.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
+            sender.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
             return Mono.just(response.statusCode)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
