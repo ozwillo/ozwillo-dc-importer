@@ -3,12 +3,20 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.util.BindingKeyAction
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.util.regex.Pattern
 
-
+@ExtendWith(SpringExtension::class)
+@SpringBootTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class SenderTest(private val sender: Sender) {
+class SenderTest {
+
+    @Autowired
+    private lateinit var sender: Sender
 
     @Test
     fun `Assert true regular expression of get binding key`() {
