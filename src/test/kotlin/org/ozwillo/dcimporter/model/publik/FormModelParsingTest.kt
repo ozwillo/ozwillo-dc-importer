@@ -26,7 +26,7 @@ class FormModelParsingTest {
     @Throws(IOException::class)
     fun testJsonFormParsing() {
 
-        val formResource: Resource = ClassPathResource("/JsonFiles/Form.json")
+        val formResource: Resource = ClassPathResource("/data/citizenreq/Form.json")
         val formModelJson = FileCopyUtils.copyToByteArray(formResource.inputStream)
         val formModel = jacksonTester.parseObject(formModelJson)
 
