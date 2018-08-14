@@ -73,16 +73,22 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             return status(e.statusCode).body(BodyInserters.fromObject(body))
         }
 
+        var alreadyExist = false
+
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
                     try {
+                        //resource must not already exist to be created - if getResourceFromUri don't trigger error alreadyExist = true, flux is not stopped
                         datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${consultation.reference}", bearer)
+                        alreadyExist = true
                     }catch (e:HttpClientErrorException){
                         when{
+                            //if getResourcefromUri trigger 404 a debug logger confirm it, flux is not stopped
                             e.statusCode == HttpStatus.NOT_FOUND -> LOGGER.debug("No already existing resource")
                             else -> status(e.statusCode).body(BodyInserters.fromObject("Unexpected error"))
                         }
                     }
+                    //if resource already exist saveResource trigger an error 400 catched in onErrorResume
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
                     datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0",
                             dcConsultation, bearer)
@@ -93,7 +99,15 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     created(URI(resourceUri))
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(BodyInserters.empty<String>())
-                }.onErrorResume(this::throwableToResponse)
+                }.onErrorResume{ error ->
+                    if (alreadyExist){
+                        //return 409
+                        status(HttpStatus.CONFLICT).body(BodyInserters.fromObject("Resource already exists"))
+                    }else{
+                        //throw to response any other error code
+                        this.throwableToResponse(error)
+                    }
+                }
     }
 
     fun update(req: ServerRequest): Mono<ServerResponse> {
