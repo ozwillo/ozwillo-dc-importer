@@ -170,7 +170,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         return try {
             currentDcResource = datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}", bearer)
             sender.send(currentDcResource, MP_PROJECT, CONSULTATION_TYPE, BindingKeyAction.PUBLISH)
-            ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(currentDcResource))
+            ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
