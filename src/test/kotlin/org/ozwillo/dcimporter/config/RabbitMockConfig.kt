@@ -52,7 +52,11 @@ class RabbitMockConfig {
         // maybe extend TestRabbitTemplate to able to wildcard queue names ?
         container.setQueueNames("marchepublic_0.123456789.marchepublic:consultation_0.create",
                 "marchepublic_0.123456789.marchepublic:consultation_0.update",
-                "marchepublic_0.123456789.marchepublic:consultation_0.delete")
+                "marchepublic_0.123456789.marchepublic:consultation_0.delete",
+                "marchepublic_0.123456789.marchepublic:consultation_0.publish",
+                "marchepublic_0.123456789.marchepublic:lot_0.create",
+                "marchepublic_0.123456789.marchepublic:lot_0.update",
+                "marchepublic_0.123456789.marchepublic:lot_0.delete")
         container.setMessageListener(MessageListenerAdapter( object {
             fun handleMessage(message: String) {
                 LOGGER.debug("Got message $message")
