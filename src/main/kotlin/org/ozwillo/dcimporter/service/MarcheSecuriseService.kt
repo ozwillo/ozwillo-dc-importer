@@ -177,8 +177,18 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return response
     }
 
-    fun publishConsultation(siret: String, uri:String):String{
+    private fun checkConsultationForPublication(dce: String, siret: String, login:String, password: String, pa: String, baseUrl: String): String{
+        val soapMessage = MSUtils.generateCheckConsultationRequest(login, password, pa, dce)
+        var response = ""
+        if (!soapMessage.isEmpty()){
+            response = MSUtils.sendSoap("${baseUrl}/$publishConsultationUrl", soapMessage)
+        }else{
+            logger.warn("A problem occured generating soap request")
+        }
+        return response
+    }
 
+    fun publishConsultation(siret: String, uri:String):String{
         var soapMessage:String
         var response = ""
 
@@ -188,12 +198,8 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             logger.debug("get dce {}", dce)
 
             val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
-            soapMessage = MSUtils.generateCheckConsultationRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce)
-            if (!soapMessage.isEmpty()){
-                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$publishConsultationUrl", soapMessage)
-            }else{
-                logger.warn("A problem occured generating soap request")
-            }
+            response = checkConsultationForPublication(dce, siret, businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+                    businessAppConfiguration.baseUrl)
             if (response.contains("<objet type=\"ms_v2__fullweb_dce\">")){
                 soapMessage = MSUtils.generatePublishConsultationRequest(businessAppConfiguration.login, businessAppConfiguration.password, businessAppConfiguration.instanceId, dce)
                 //Sending soap request
