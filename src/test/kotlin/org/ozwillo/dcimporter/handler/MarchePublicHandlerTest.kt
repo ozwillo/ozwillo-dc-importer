@@ -19,7 +19,6 @@ import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.context.annotation.Import
 import org.springframework.http.*
 import org.springframework.http.client.ClientHttpRequestInterceptor
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.util.*
@@ -27,7 +26,6 @@ import java.util.*
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(RabbitMockConfig::class)
-@ActiveProfiles("test")
 class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     private lateinit var wireMockServer: WireMockServer
@@ -366,6 +364,14 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
 
     @Test
     fun `Test correct delete of a lot`(){
+
+        val dcGetResponse = """
+            {
+                "@id" : "http://data.ozwillo.com/dc/type/marchepublic:lot_0/FR/$siret/$referenceConsultation/$uuidLot",
+                "o:version" : 1
+            }
+            """
+
         stubFor(WireMock.post(WireMock.urlMatching("/a/tokeninfo"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpNa2xMcm94V1ZGKy9QRFNqazlONkcra29VZTV5T0ZhL1JodEhmVzg5YzZF"))
                 .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
@@ -376,7 +382,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:lot_0"))
                 .willReturn(WireMock.okJson(dcPostLotResponse).withStatus(201)))
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:lot_0/FR/$siret/$referenceConsultation/$uuidLot"))
-                .willReturn(WireMock.okJson(dcExistingLotResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(dcGetResponse).withStatus(200)))
         stubFor(WireMock.delete(WireMock.urlMatching("/dc/type/marchepublic:lot_0/FR/$siret/$referenceConsultation/$uuidLot"))
                 .willReturn(WireMock.aResponse().withStatus(204)))
 

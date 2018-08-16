@@ -17,7 +17,6 @@ import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("test")
 class SoapRequestGenerationTest{
 
     @Value("\${marchesecurise.login}")
