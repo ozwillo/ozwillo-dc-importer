@@ -29,14 +29,11 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
         val appName = applicationNameFormatter(req.pathVariable("applicationName"))
 
         return try {
-            val businessAppConfiguration:Flux<BusinessAppConfiguration> = businessAppConfigurationRepository.findAllByApplicationName(appName)
-            ok().contentType(MediaType.APPLICATION_JSON).body(businessAppConfiguration, BusinessAppConfiguration::class.java)
-        }catch (e: HttpClientErrorException){
-            when(e.statusCode){
-                HttpStatus.NOT_FOUND -> status(e.statusCode).body(BodyInserters.fromObject("Nothing found for application name : $appName"))
-                else -> status(e.statusCode).body(BodyInserters.fromObject("Unexpected error"))
-            }
-        }
+                    val businessAppConfiguration:Flux<BusinessAppConfiguration> = businessAppConfigurationRepository.findAllByApplicationName(appName)
+                    ok().contentType(MediaType.APPLICATION_JSON).body(businessAppConfiguration, BusinessAppConfiguration::class.java)
+                }catch (e: Exception){
+                    this.throwableToResponse(e)
+                }
     }
 
     fun createNewConnectors(req: ServerRequest): Mono<ServerResponse> {
