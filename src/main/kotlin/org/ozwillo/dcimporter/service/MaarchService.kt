@@ -31,14 +31,21 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
     fun createCitizenRequest(siret: String, dcResource: DCBusinessResourceLight) {
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
         LOGGER.debug("\tcontaining $dcResource")
+
+        if (dcResource.getValues()["citizenreqem:fileContent"] == null) {
+            LOGGER.warn("No file attached to resource, not sending it to Maarch GED")
+            return
+        }
+
         val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, MaarchService.name).block()!!
         val maarchFileMetadataList = listOf(
                 MaarchArrayData(column = "subject", value = dcResource.getValues()["citizenreq:displayName"]!!.toString()),
                 MaarchArrayData(column = "type_id", value = "102"),
                 MaarchArrayData(column = "custom_t1", value = dcResource.getUri()))
+        val fileFormat = dcResource.getValues()["citizenreqem:fileContentType"].toString().substringAfterLast("/").toUpperCase()
         val maarchFile = MaarchFile(status = "COU", collId = "letterbox_coll", data = maarchFileMetadataList,
-                fileFormat = "pdf", table = "res_letterbox", encodedFile = dcResource.gimmeResourceFile().base64content)
-        LOGGER.debug("Generated Maarch file ${maarchFile.data[0].value}")
+                fileFormat = fileFormat, table = "res_letterbox",
+                encodedFile = dcResource.getValues()["citizenreqem:fileContent"].toString())
 
         val restTemplate: RestTemplate = RestTemplateBuilder().basicAuthorization(businessAppConfiguration.login, businessAppConfiguration.password).build()
         restTemplate.interceptors.add(FullLoggingInterceptor())

@@ -44,15 +44,6 @@ class DCBusinessResourceLight(uri: String,
         this.values = this.values.plus(Pair(key, values))
     }
 
-    @JsonIgnore
-    private val resourceFiles: MutableList<DCBusinessResourceFile> = mutableListOf()
-
-    fun addResourceFile(dcBusinessResourceFile: DCBusinessResourceFile) {
-        this.resourceFiles.add(dcBusinessResourceFile)
-    }
-
-    fun gimmeResourceFile(): DCBusinessResourceFile = resourceFiles[0]
-
     fun getStringValue(s: String): String = values[s]?.let { it as String }.orEmpty()
 
     fun getIntValue(s: String): Int = values[s] as Int
@@ -65,8 +56,3 @@ class DCBusinessResourceLight(uri: String,
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
 }
-
-data class DCBusinessResourceFile(
-        val base64content: String,
-        val contentType: String,
-        val filename: String)
