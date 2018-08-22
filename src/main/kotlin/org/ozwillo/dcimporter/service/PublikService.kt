@@ -172,11 +172,9 @@ class PublikService(private val datacoreService: DatacoreService,
 
         if (form.fields["courrier"] != null) {
             val courrierFieds: Map<String, Any> = form.fields["courrier"] as Map<String, Any>
-            val base64content = courrierFieds["content"].toString()
-            val contentType = courrierFieds["content_type"].toString()
-            val filename = courrierFieds["filename"].toString()
-            val resourceFile = DCBusinessResourceFile(base64content = base64content, contentType = contentType, filename = filename)
-            dcResource.addResourceFile(resourceFile)
+            dcResource.setStringValue("citizenreqem:fileContentType", courrierFieds["content_type"].toString())
+            dcResource.setStringValue("citizenreqem:fileName", courrierFieds["filename"].toString())
+            dcResource.setStringValue("citizenreqem:fileContent", courrierFieds["content"].toString())
         }
 
         return dcResource
@@ -219,14 +217,12 @@ class PublikService(private val datacoreService: DatacoreService,
         // for now, let's say agent_sictiam is the universal fallback user
         val nameId = if (form.user == null) "5c977a7f1d444fa1ab0f777325fdda93" else form.user.nameID[0]
 
-        val queryParametersOrg = DCQueryParameters("citizenrequser:nameID", DCOperator.EQ, DCOrdering.DESCENDING,
-                nameId)
-        val listUsers = datacoreService.findResource(datacoreProject, datacoreModelUser, queryParametersOrg).block()!!
-
-        if (!listUsers.isEmpty())
-            return Mono.just(listUsers[0].getUri())
-        else
-            return createUser(form.user!!)
+        return try {
+            val userResource = datacoreService.getResourceFromURI(datacoreProject, datacoreModelUser, nameId, null)
+            Mono.just(userResource.getUri())
+        } catch (t: Throwable) {
+            createUser(form.user!!)
+        }
     }
 
     private fun createUser(user: User): Mono<String> {

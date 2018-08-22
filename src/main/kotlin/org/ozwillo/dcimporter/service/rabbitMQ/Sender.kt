@@ -22,15 +22,19 @@ class Sender(private val template: RabbitTemplate) {
     fun send(resource: DCResourceLight, project: String, type: String, action: BindingKeyAction) {
 
         val uri = resource.getUri()
-        val siret = uri.split("/")[7]
+        val splittedUri = uri.split("/")
+        // TODO : temp solution to compose the message key
+        // we don't always have a SIRET in the URI and we can't assume it will be at the 8th position when there is one
+        // for now, if we don't find it where expected, take the last part of the URI
+        val siret =
+                if (splittedUri.size >= 8) splittedUri[7]
+                else uri.substringAfterLast("/")
         val key = getKey(project, type, siret , action)
         val message = JsonConverter.objectToJson(resource)
 
-        logger.debug("Conversion : {}", resource)
+        logger.debug("About to send $message with key $key")
 
         template.convertAndSend(exchangerName, key, message)
-
-        logger.debug("Message sent with routing key : {}", key)
     }
 
     fun getKey(project: String, type: String, siret: String, action: BindingKeyAction): String {

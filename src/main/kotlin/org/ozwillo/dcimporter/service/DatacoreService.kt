@@ -84,7 +84,6 @@ class DatacoreService {
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no creation request sent to Marche Securise for resource {}", resource)
             throw e
         }
     }
@@ -204,7 +203,7 @@ class DatacoreService {
 
         //val client: WebClient = WebClient.create(requestUri)
 
-        val accessToken = getAccessToken().block()!!
+        val accessToken = getSyncAccessToken()
         val restTemplate = RestTemplate()
         val headers = LinkedMultiValueMap<String, String>()
         headers.set("X-Datacore-Project", project)
