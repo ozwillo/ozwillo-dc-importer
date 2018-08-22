@@ -9,11 +9,19 @@ import org.springframework.web.reactive.function.server.router
 class Routes(private val statusHandler: StatusHandler,
              private val publikHandler: PublikHandler,
              private val maarchHandler: MaarchHandler,
-             private val marchePublicHandler: MarchePublicHandler) {
+             private val marchePublicHandler: MarchePublicHandler,
+             private val connectorsHandler: ConnectorsHandler) {
 
     @Bean
     fun router() = router {
         (accept(MediaType.APPLICATION_JSON) and "/api").nest {
+            "/configuration".nest {
+                GET("/{applicationName}/{siret}/connectors", connectorsHandler::getAllByAppName)
+                POST("/{applicationName}/{siret}/connectors", connectorsHandler::createNewConnectors)
+                PUT("/{applicationName}/{siret}/connectors/{login}", connectorsHandler::updateConnectors)
+                DELETE("/{applicationName}/{siret}/connectors/{login}", connectorsHandler::deleteConnectors)
+            }
+
             "/publik".nest {
                 POST("/{siret}/form", publikHandler::publish)
             }
