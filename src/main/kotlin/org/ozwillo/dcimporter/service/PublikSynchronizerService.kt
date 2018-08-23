@@ -33,7 +33,7 @@ class PublikSynchronizerService(private val datacoreService: DatacoreService,
 
         businessAppConfigurationRepository.findByApplicationName(PublikService.name).subscribe { publikConfiguration ->
 
-            val dcResource = datacoreService.getResourceFromURI(datacoreProject, datacoreModelORG, "FR/${publikConfiguration.organizationSiret}", null)
+            val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/${publikConfiguration.organizationSiret}", null)
             val queryParameters = DCQueryParameters("citizenreq:organization", DCOperator.EQ,
                     DCOrdering.DESCENDING, dcResource.getUri())
 

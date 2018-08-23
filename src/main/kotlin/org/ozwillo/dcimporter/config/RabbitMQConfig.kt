@@ -57,4 +57,22 @@ class RabbitMQConfig {
             return BindingBuilder.bind(queue).to(topic).with(BINDING_KEY)
         }
     }
+
+    private class PublikReceiverConfig {
+
+        @Value("\${amqp.config.publik.queueName}")
+        private val QUEUE_PUBLIK_NAME = ""
+        @Value("\${amqp.config.publik.bindingKey}")
+        private val BINDING_KEY = ""
+
+        @Bean(name = ["queue_publik"])
+        fun queuePublik(): Queue {
+            return Queue(QUEUE_PUBLIK_NAME)
+        }
+
+        @Bean
+        fun bindingToPublik(topic: TopicExchange, @Qualifier("queue_publik") queue: Queue): Binding {
+            return BindingBuilder.bind(queue).to(topic).with(BINDING_KEY)
+        }
+    }
 }

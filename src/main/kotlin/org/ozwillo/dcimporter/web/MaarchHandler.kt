@@ -1,10 +1,9 @@
 package org.ozwillo.dcimporter.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.MaarchService
-import org.ozwillo.dcimporter.service.PublikService
-import org.springframework.http.HttpStatus
+import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.service.DatacoreService
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -12,8 +11,13 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyToMono
 
 @Component
-class MaarchHandler(private val businessMappingRepository: BusinessMappingRepository,
-                    private val publikService: PublikService) {
+class MaarchHandler(private val datacoreService: DatacoreService) {
+
+    @Value("\${publik.datacore.project}")
+    private val datacoreProject: String = "datacoreProject"
+
+    @Value("\${publik.datacore.modelEM}")
+    private val datacoreModelEM: String = "datacoreModelEM"
 
     data class MaarchStatusRequest(@JsonProperty("publikId") val dcId: String)
     data class MaarchResponse(val returnCode: Int)
@@ -21,10 +25,16 @@ class MaarchHandler(private val businessMappingRepository: BusinessMappingReposi
     fun status(req: ServerRequest) =
             req.bodyToMono<MaarchStatusRequest>()
                     .flatMap { maarchRequest ->
-                        businessMappingRepository.findByDcIdAndApplicationName(maarchRequest.dcId, PublikService.name)
-                    }.map { publikMapping ->
-                        publikService.changeStatus(publikMapping.businessId)
+                        val iri = maarchRequest.dcId.substringAfter(datacoreModelEM)
+                        val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelEM, iri, null)
+                        // TODO : not sure we really neeed to do that
+                        val values = dcResource.getValues().filter { entry ->
+                            entry.key.startsWith("citizenreq")
+                        }
+                        val updatedResource = DCBusinessResourceLight(maarchRequest.dcId, values)
+                        updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
+                        datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
                     }.flatMap {
-                        ServerResponse.ok().body(BodyInserters.fromObject(MaarchResponse(it.err!!)))
+                        ServerResponse.status(it).body(BodyInserters.fromObject(MaarchResponse(it.value())))
                     }
 }

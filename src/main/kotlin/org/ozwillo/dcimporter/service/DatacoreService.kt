@@ -23,7 +23,6 @@ import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URI
-import java.net.URISyntaxException
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -35,6 +34,7 @@ class DatacoreService {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
+        private const val typePrefix = "/dc/type"
     }
 
     @Value("\${datacore.url: http://localhost:8080}")
@@ -99,7 +99,7 @@ class DatacoreService {
 
         LOGGER.debug("Updating resource at URI $uri")
 
-        val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
+        val dcCurrentResource = getResourceFromIRI(project, type, resource.getIri(), bearer)
         resource.setStringValue("o:version", dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
 
         val accessToken = bearer ?: getSyncAccessToken()
@@ -116,7 +116,6 @@ class DatacoreService {
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no update request sent to Marche Securise for resource", resource)
             throw e
         }
     }
@@ -126,7 +125,7 @@ class DatacoreService {
         val uri = "$datacoreUrl/dc/type/$type/$iri"
         LOGGER.debug("Deleting resource at URI $uri")
 
-        val dcCurrentResource = getResourceFromURI(project, type, iri, bearer)
+        val dcCurrentResource = getResourceFromIRI(project, type, iri, bearer)
         val version = dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
 
         val accessToken = bearer ?: getSyncAccessToken()
@@ -148,25 +147,23 @@ class DatacoreService {
         }
     }
 
-    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
+    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
         val resourceUri = dcResourceUri(type, iri)
+        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        val uri = UriComponentsBuilder.fromUriString(resourceUri.toString())
-                .build().encode().toUriString()
-
-        LOGGER.debug("Fetching resource from URI $uri")
+        LOGGER.debug("Fetching resource from URI $encodedUri")
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
+        restTemplate.interceptors.add(FullLoggingInterceptor())
         val headers = LinkedMultiValueMap<String, String>()
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(uri))
+        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
 
         val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
         LOGGER.debug("Got response : ${response.body}")
-        val result: DCBusinessResourceLight = response.body!!
-        return result
+        return response.body!!
     }
 
     fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
@@ -298,31 +295,14 @@ class DatacoreService {
         return response.body!!.accessToken!! //Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
-    private fun dcResourceUri(resourceType: String, iri: String): URI {
-        return builderToUri(dcResourceUriBuilder(resourceType, iri, "/dc/type/"))
-    }
-
-    /**
-     * avoids URISyntaxException
-     */
-    private fun builderToUri(sb: StringBuilder): URI {
-        try {
-            return URI(sb.toString())
-        } catch (e: URISyntaxException) {
-            throw IllegalArgumentException(e)
-        }
-    }
-
-    private fun dcResourceUriBuilder(resourceType: String, resourceIri: String, apiUriPart: String): StringBuilder {
-        return dcResourceTypeUriBuilder(resourceType, apiUriPart)
-            .append('/')
-            .append(resourceIri) // already encoded
-    }
-
-    private fun dcResourceTypeUriBuilder(resourceType: String, apiUriPart: String): StringBuilder {
+    private fun dcResourceUri(type: String, iri: String): String {
         return StringBuilder(datacoreUrl)
-                .append(apiUriPart)
-                .append(DCResource.encodeUriPathSegment(resourceType))
+                .append(typePrefix)
+                .append('/')
+                .append(DCResource.encodeUriPathSegment(type))
+                .append('/')
+                .append(iri) // already encoded
+                .toString()
     }
 }
 

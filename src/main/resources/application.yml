@@ -49,6 +49,9 @@ amqp:
       maarch:
         queueName: maarch
         bindingKey: citizenreq_0.#
+      publik:
+        queueName: publik
+        bindingKey: citizenreq_0.#
 
 # TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
