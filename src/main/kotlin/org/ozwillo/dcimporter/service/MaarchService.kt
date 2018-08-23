@@ -22,7 +22,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MaarchService::class.java)
-        const val name: String = "Maarch GEC"
+        const val name: String = "maarch"
     }
 
     @Value("\${publik.datacore.modelEM}")

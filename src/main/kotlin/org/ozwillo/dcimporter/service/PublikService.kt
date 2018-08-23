@@ -304,7 +304,7 @@ class PublikService(private val datacoreService: DatacoreService,
     companion object {
 
         private val LOGGER = LoggerFactory.getLogger(PublikService::class.java)
-        const val name: String = "Publik"
+        const val name: String = "publik"
     }
 
 }

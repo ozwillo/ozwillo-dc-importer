@@ -26,7 +26,7 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
     }
 
     fun getAllByAppName(req: ServerRequest): Mono<ServerResponse>{
-        val appName = applicationNameFormatter(req.pathVariable("applicationName"))
+        val appName = req.pathVariable("applicationName")
 
         return try {
                     val businessAppConfiguration:Flux<BusinessAppConfiguration> = businessAppConfigurationRepository.findByApplicationName(appName)
@@ -38,20 +38,21 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
 
     fun createNewConnectors(req: ServerRequest): Mono<ServerResponse> {
         val siret = req.pathVariable("siret")
+        val appName = req.pathVariable("applicationName")
 
         return req.bodyToMono<BusinessAppConfiguration>()
                 .flatMap { businessAppConfiguration ->
-                    businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, businessAppConfiguration.applicationName)
-                            .defaultIfEmpty(BusinessAppConfiguration(applicationName = businessAppConfiguration.applicationName, organizationSiret = siret, baseUrl = businessAppConfiguration.baseUrl))
+                    businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, appName)
+                            .defaultIfEmpty(BusinessAppConfiguration(applicationName = "", organizationSiret = siret, baseUrl = businessAppConfiguration.baseUrl))
                             .flatMap { existingConnector ->
-                                if (existingConnector.login == null) {
+                                if (existingConnector.applicationName.isEmpty()) {
                                     businessAppConfigurationRepository.save(BusinessAppConfiguration(baseUrl = businessAppConfiguration.baseUrl,
                                             organizationSiret = siret,
                                             instanceId = businessAppConfiguration.instanceId, login = businessAppConfiguration.login, password = businessAppConfiguration.password,
-                                            applicationName = businessAppConfiguration.applicationName)).subscribe()
+                                            applicationName = appName, secretOrToken = businessAppConfiguration.secretOrToken)).subscribe()
                                     status(HttpStatus.CREATED).body(BodyInserters.empty<String>())
                                 } else {
-                                    status(HttpStatus.CONFLICT).body(BodyInserters.fromObject("Connectors have already been created for application \"${businessAppConfiguration.applicationName}\" and siret $siret, please update"))
+                                    status(HttpStatus.CONFLICT).body(BodyInserters.fromObject("Connectors have already been created for application \"$appName\" and siret $siret, please update"))
                                 }
                             }
                 }
@@ -60,7 +61,7 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
 
     fun updateConnectors(req: ServerRequest): Mono<ServerResponse>{
         val siret = req.pathVariable("siret")
-        val appName = applicationNameFormatter(req.pathVariable("applicationName"))
+        val appName = req.pathVariable("applicationName")
 
         val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
@@ -71,7 +72,7 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
                             .flatMap {businessAppConfiguration ->
 
                                 businessAppConfigurationRepository.save(BusinessAppConfiguration(id = existingConnector.id, baseUrl = businessAppConfiguration.baseUrl, organizationSiret = siret,
-                                        instanceId = businessAppConfiguration.instanceId, login = businessAppConfiguration.login, password = businessAppConfiguration.password, applicationName = businessAppConfiguration.applicationName)).subscribe()
+                                        instanceId = businessAppConfiguration.instanceId, login = businessAppConfiguration.login, password = businessAppConfiguration.password, applicationName = appName, secretOrToken = businessAppConfiguration.secretOrToken)).subscribe()
                                 ok().body(BodyInserters.empty<String>())
                             }
                 }
@@ -85,7 +86,7 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
 
     fun deleteConnectors(req: ServerRequest): Mono<ServerResponse>{
         val siret = req.pathVariable("siret")
-        val appName = applicationNameFormatter(req.pathVariable("applicationName"))
+        val appName = req.pathVariable("applicationName")
 
         val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
@@ -112,18 +113,6 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
             }
         }
 
-    }
-
-    private fun applicationNameFormatter(pathAppName: String):String {
-        return when (pathAppName) {
-            "marche-securise" -> MarcheSecuriseService.name
-            "publik" -> PublikService.name
-            "maarch" -> MaarchService.name
-            else -> {
-                LOGGER.error("Unable to recognize application from $pathAppName")
-                "error"
-            }
-        }
     }
 }
 
