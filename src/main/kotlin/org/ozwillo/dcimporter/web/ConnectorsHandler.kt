@@ -29,7 +29,7 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
         val appName = applicationNameFormatter(req.pathVariable("applicationName"))
 
         return try {
-                    val businessAppConfiguration:Flux<BusinessAppConfiguration> = businessAppConfigurationRepository.findAllByApplicationName(appName)
+                    val businessAppConfiguration:Flux<BusinessAppConfiguration> = businessAppConfigurationRepository.findByApplicationName(appName)
                     ok().contentType(MediaType.APPLICATION_JSON).body(businessAppConfiguration, BusinessAppConfiguration::class.java)
                 }catch (e: Exception){
                     this.throwableToResponse(e)
@@ -61,11 +61,10 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
     fun updateConnectors(req: ServerRequest): Mono<ServerResponse>{
         val siret = req.pathVariable("siret")
         val appName = applicationNameFormatter(req.pathVariable("applicationName"))
-        val login = req.pathVariable("login")
 
-        val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector with login \"$login\" and application \"$appName\" was not found for siret $siret"))
+        val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
-        return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationNameAndLogin(siret, appName, login)
+        return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, appName)
                 .switchIfEmpty(fallback)
                 .flatMap { existingConnector ->
                     req.bodyToMono<BusinessAppConfiguration>()
@@ -87,14 +86,13 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
     fun deleteConnectors(req: ServerRequest): Mono<ServerResponse>{
         val siret = req.pathVariable("siret")
         val appName = applicationNameFormatter(req.pathVariable("applicationName"))
-        val login = req.pathVariable("login")
 
-        val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector with login \"$login\" and application \"$appName\" was not found for siret $siret"))
+        val fallback: Mono<BusinessAppConfiguration> = Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
-        return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationNameAndLogin(siret, appName, login)
+        return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, appName)
                 .switchIfEmpty(fallback)
                 .flatMap { _ ->
-                    businessAppConfigurationRepository.deleteByOrganizationSiretAndApplicationNameAndLogin(siret, appName, login).subscribe()
+                    businessAppConfigurationRepository.deleteByOrganizationSiretAndApplicationName(siret, appName).subscribe()
                     status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
                 }
                 .onErrorResume{e ->

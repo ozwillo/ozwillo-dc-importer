@@ -11,11 +11,7 @@ import reactor.core.publisher.Mono
 interface BusinessAppConfigurationRepository : ReactiveMongoRepository<BusinessAppConfiguration, String> {
     fun findByApplicationName(applicationName: String): Flux<BusinessAppConfiguration>
 
-    fun findAllByApplicationName(applicationName: String): Flux<BusinessAppConfiguration>
-
     fun findByOrganizationSiretAndApplicationName(siret: String, applicationName: String): Mono<BusinessAppConfiguration>
 
-    fun findByOrganizationSiretAndApplicationNameAndLogin(siret: String, applicationName: String, login: String): Mono<BusinessAppConfiguration>
-
-    fun deleteByOrganizationSiretAndApplicationNameAndLogin(siret: String, applicationName: String, login: String):Mono<DeleteResult>
+    fun deleteByOrganizationSiretAndApplicationName(siret: String, applicationName: String):Mono<DeleteResult>
 }
