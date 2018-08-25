@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service
 
 import com.google.common.io.BaseEncoding
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
+import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
@@ -28,7 +29,7 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Service
-class DatacoreService {
+class DatacoreService(private val kernelProperties: KernelProperties) {
 
     @Autowired
     private lateinit var sender: Sender
@@ -45,15 +46,6 @@ class DatacoreService {
 
     @Value("\${publik.datacore.modelORG}")
     private val datacoreModelORG: String = "datacoreModelOrg"
-
-    @Value("\${kernel.auth.token_endpoint: http://localhost:8080}")
-    private val tokenEndpoint: String = "http://localhost:8080/a/token"
-
-    @Value("\${kernel.clientId}")
-    private val clientId: String = "client_id"
-
-    @Value("\${kernel.clientSecret}")
-    private val clientSecret: String = "client_secret"
 
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
@@ -267,9 +259,9 @@ class DatacoreService {
     }
 
     private fun getAccessToken(): Mono<String> {
-        val client: WebClient = WebClient.create(tokenEndpoint)
+        val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", clientId, clientSecret).toByteArray(StandardCharsets.UTF_8))
+                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
         return client.post()
                 .header("Authorization", authorizationHeaderValue)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -284,7 +276,7 @@ class DatacoreService {
         val restTemplate = RestTemplate()
 
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", clientId, clientSecret).toByteArray(StandardCharsets.UTF_8))
+                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         headers.set("Authorization", authorizationHeaderValue)
@@ -293,7 +285,7 @@ class DatacoreService {
         map.add("refresh_token", refreshToken)
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-        val response = restTemplate.postForEntity(tokenEndpoint, request, TokenResponse::class.java)
+        val response = restTemplate.postForEntity(kernelProperties.tokenEndpoint, request, TokenResponse::class.java)
 
         return response.body!!.accessToken!! //Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
