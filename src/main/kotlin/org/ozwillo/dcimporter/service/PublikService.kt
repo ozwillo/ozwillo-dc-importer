@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.commons.lang3.RandomStringUtils
-import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.datacore.*
@@ -256,17 +255,13 @@ class PublikService(private val datacoreService: DatacoreService,
         businessAppConfigurationMono
                 .zipWith(businessMappingMono)
                 .subscribe { tuple2 ->
-                    LOGGER.debug("Got ${tuple2.t1} / ${tuple2.t2}")
                     val businessAppConfiguration = tuple2.t1
                     val businessMapping = tuple2.t2
 
-                    // TODO : see what we can do with this email, avoidable ?
-                    val signedQuery = signQuery("email=borihuela@ozwillo.org&", businessAppConfiguration.secretOrToken!!)
+                    val signedQuery = signQuery("email=${businessAppConfiguration.login}&", businessAppConfiguration.secretOrToken!!)
                     val uri = "${businessMapping.businessId}jump/trigger/close?$signedQuery"
-                    LOGGER.debug("Changing status of request at URL $uri")
 
                     val restTemplate = RestTemplate()
-                    restTemplate.interceptors.add(FullLoggingInterceptor())
                     val headers = LinkedMultiValueMap<String, String>()
                     headers.set("Accept", "application/json")
                     val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
@@ -276,6 +271,7 @@ class PublikService(private val datacoreService: DatacoreService,
                         LOGGER.debug("Got Publik response for status change $response")
                     } catch (e: HttpClientErrorException) {
                         // TODO : what can we do here ?
+                        LOGGER.warn("Request status change failed in Publik ${e.responseBodyAsString}")
                     }
                 }
     }
@@ -283,18 +279,17 @@ class PublikService(private val datacoreService: DatacoreService,
     private fun signQuery(query: String, secret: String): String {
 
         val tz = TimeZone.getTimeZone("UTC")
-        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-        df.timeZone = tz
+        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").apply { timeZone = tz }
         val thisMoment = df.format(Date())
 
         val nonce = RandomStringUtils.random(64, true, true)
 
-        val fullEncodedQuery = query + "algo=" + this.algo +
-                "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") +
-                "&nonce=" + URLEncoder.encode(nonce, "UTF-8") +
-                "&orig=" + URLEncoder.encode(this.orig, "UTF-8")
-        val signature = fullEncodedQuery.hmac("HmacSHA256", secret)
-        return fullEncodedQuery + "&signature=" + URLEncoder.encode(signature, "UTF-8")
+        val fullQuery = query + "algo=" + this.algo +
+                "&timestamp=" + thisMoment +
+                "&nonce=" + nonce +
+                "&orig=" + this.orig
+        val signature = fullQuery.hmac("HmacSHA256", secret)
+        return "$fullQuery&signature=$signature"
     }
 
     @Throws(MalformedURLException::class)
