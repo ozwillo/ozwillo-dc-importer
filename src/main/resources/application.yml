@@ -28,7 +28,7 @@ publik:
     project: citizenreq_0
     modelEM: citizenreq:elecmeeting_0
     modelSVE: citizenreq:sve_0
-    modelORG: org:Organization_0
+    modelORG: orgfr:Organisation_0
     modelUser: citizenreq:user_0
 
 marchesecurise:
@@ -48,6 +48,9 @@ amqp:
         bindingKey: marchepublic_0.#
       maarch:
         queueName: maarch
+        bindingKey: citizenreq_0.#
+      publik:
+        queueName: publik
         bindingKey: citizenreq_0.#
 
 kernel:

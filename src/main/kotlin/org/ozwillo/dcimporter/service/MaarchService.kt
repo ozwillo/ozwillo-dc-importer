@@ -43,8 +43,11 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 MaarchArrayData(column = "type_id", value = "102"),
                 MaarchArrayData(column = "custom_t1", value = dcResource.getUri()))
         val fileFormat = dcResource.getValues()["citizenreqem:fileContentType"].toString().substringAfterLast("/").toUpperCase()
-        val maarchFile = MaarchFile(status = "COU", collId = "letterbox_coll", data = maarchFileMetadataList,
-                fileFormat = fileFormat, table = "res_letterbox",
+        val maarchFile = MaarchFile(status = "COU",
+                collId = "letterbox_coll",
+                data = maarchFileMetadataList,
+                fileFormat = fileFormat,
+                table = "res_letterbox",
                 encodedFile = dcResource.getValues()["citizenreqem:fileContent"].toString())
 
         val restTemplate: RestTemplate = RestTemplateBuilder().basicAuthorization(businessAppConfiguration.login, businessAppConfiguration.password).build()
@@ -54,11 +57,10 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
                 restTemplate.postForObject("${businessAppConfiguration.baseUrl}/rest/res", maarchFile, StoreResourceResponse::class.java)
         LOGGER.debug("Got store resource response $storeResourceResponse")
 
-        // TODO : validate that the mapping has to be done on this resource
         val businessMapping = BusinessMapping(applicationName = name,
                 businessId = storeResourceResponse!!.resId.toString(),
                 dcId = dcResource.getUri(), type = type)
-        val savedBusinessMapping = businessMappingRepository.save(businessMapping).block()!!
+        businessMappingRepository.save(businessMapping).subscribe()
 
         val contact = MaarchContact(lastname = dcResource.getValues()["citizenreqem:familyName"]!!.toString(),
                 firstname = dcResource.getValues()["citizenreqem:firstName"]!!.toString(),

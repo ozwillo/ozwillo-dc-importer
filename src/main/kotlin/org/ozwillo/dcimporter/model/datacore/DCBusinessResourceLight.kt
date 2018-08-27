@@ -55,4 +55,8 @@ class DCBusinessResourceLight(uri: String,
     fun getIntListValue(s: String): List<Int> = values[s] as List<Int>
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
+
+    override fun toString(): String {
+        return "DCBusinessResourceLight(values=$values)"
+    }
 }

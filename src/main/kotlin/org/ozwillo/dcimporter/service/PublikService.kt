@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.commons.lang3.RandomStringUtils
-import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.datacore.*
@@ -109,7 +108,7 @@ class PublikService(private val datacoreService: DatacoreService,
         LOGGER.debug("Got form from Publik : $form")
         LOGGER.debug("Form has URL ${form.url}")
 
-        val orgResource = datacoreService.getResourceFromURI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
+        val orgResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
         val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
 
         val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
@@ -218,7 +217,7 @@ class PublikService(private val datacoreService: DatacoreService,
         val nameId = if (form.user == null) "5c977a7f1d444fa1ab0f777325fdda93" else form.user.nameID[0]
 
         return try {
-            val userResource = datacoreService.getResourceFromURI(datacoreProject, datacoreModelUser, nameId, null)
+            val userResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelUser, nameId, null)
             Mono.just(userResource.getUri())
         } catch (t: Throwable) {
             createUser(form.user!!)
@@ -241,48 +240,56 @@ class PublikService(private val datacoreService: DatacoreService,
 
     data class PublikStatusResponse(val url: String?, val err: Int?)
 
-    fun changeStatus(publikId: String): PublikStatusResponse {
-        LOGGER.debug("Changing status of request $publikId")
+    fun changeStatus(siret: String, dcResource: DCBusinessResourceLight) {
 
-        //val uri = URI(publikId)
-        //val publikConfiguration = businessAppConfigurationRepository.findByDomain(uri.host).block()!!
-
-        val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", "aSYZexOBIzl8")
-        LOGGER.debug("Changing status of request at URL ${publikId}jump/trigger/close?$signedQuery")
-
-        val restTemplate = RestTemplate()
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("Accept", "application/json")
-        val uri = "${publikId}jump/trigger/close?$signedQuery"
-        val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
-
-        try {
-            val response = restTemplate.exchange(request, PublikStatusResponse::class.java)
-            LOGGER.debug("Got Publik response for status change $response")
-            return response.body!!
-        } catch (e: HttpClientErrorException) {
-            // TODO : temp hack while not handling existing resource yet
-            LOGGER.error("Publik returned an error", e)
-            return PublikStatusResponse(err = -1, url = "")
+        if (dcResource.getStringValue("citizenreq:workflowStatus") != "Terminé") {
+            LOGGER.debug("Ignoring unhandled workflow status ${dcResource.getStringValue("citizenreq:workflowStatus")}")
+            return
         }
+
+        val businessAppConfigurationMono: Mono<BusinessAppConfiguration> =
+                businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name)
+        val businessMappingMono: Mono<BusinessMapping> =
+                businessMappingRepository.findByDcIdAndApplicationName(dcResource.getUri(), name)
+
+        businessAppConfigurationMono
+                .zipWith(businessMappingMono)
+                .subscribe { tuple2 ->
+                    val businessAppConfiguration = tuple2.t1
+                    val businessMapping = tuple2.t2
+
+                    val signedQuery = signQuery("email=${businessAppConfiguration.login}&", businessAppConfiguration.secretOrToken!!)
+                    val uri = "${businessMapping.businessId}jump/trigger/close?$signedQuery"
+
+                    val restTemplate = RestTemplate()
+                    val headers = LinkedMultiValueMap<String, String>()
+                    headers.set("Accept", "application/json")
+                    val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
+
+                    try {
+                        val response = restTemplate.exchange(request, PublikStatusResponse::class.java)
+                        LOGGER.debug("Got Publik response for status change $response")
+                    } catch (e: HttpClientErrorException) {
+                        // TODO : what can we do here ?
+                        LOGGER.warn("Request status change failed in Publik ${e.responseBodyAsString}")
+                    }
+                }
     }
 
     private fun signQuery(query: String, secret: String): String {
 
         val tz = TimeZone.getTimeZone("UTC")
-        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-        df.timeZone = tz
+        val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").apply { timeZone = tz }
         val thisMoment = df.format(Date())
 
         val nonce = RandomStringUtils.random(64, true, true)
 
-        val fullEncodedQuery = query + "algo=" + this.algo +
-                "&timestamp=" + URLEncoder.encode(thisMoment, "UTF-8") +
-                "&nonce=" + URLEncoder.encode(nonce, "UTF-8") +
-                "&orig=" + URLEncoder.encode(this.orig, "UTF-8")
-        val signature = fullEncodedQuery.hmac("HmacSHA256", secret)
-        return fullEncodedQuery + "&signature=" + URLEncoder.encode(signature, "UTF-8")
+        val fullQuery = query + "algo=" + this.algo +
+                "&timestamp=" + thisMoment +
+                "&nonce=" + nonce +
+                "&orig=" + this.orig
+        val signature = fullQuery.hmac("HmacSHA256", secret)
+        return "$fullQuery&signature=$signature"
     }
 
     @Throws(MalformedURLException::class)
