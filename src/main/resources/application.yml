@@ -8,6 +8,9 @@ spring:
     addresses: localhost
     username: guest
     password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
 
 server:
   compression.enabled: true
