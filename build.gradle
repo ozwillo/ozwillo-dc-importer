@@ -1,7 +1,7 @@
 buildscript {
     ext {
         springBootVersion = '2.0.1.RELEASE'
-        kotlinVersion = '1.2.51'
+        kotlinVersion = '1.2.61'
     }
     repositories {
         mavenCentral()
@@ -54,6 +54,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-actuator')
     compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
     compile('org.springframework.boot:spring-boot-starter-webflux')
+    compile('org.springframework.boot:spring-boot-starter-security')
     compile('org.springframework.boot:spring-boot-configuration-processor')
     compile('org.springframework.boot:spring-boot-starter-amqp')
     compile("org.jetbrains.kotlin:kotlin-stdlib-jre8")
