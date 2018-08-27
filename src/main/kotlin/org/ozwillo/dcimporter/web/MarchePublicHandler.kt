@@ -43,7 +43,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         return try {
-            val dcConsultation = datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${req.pathVariable("reference")}", bearer)
+            val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${req.pathVariable("reference")}", bearer)
             ok().body(BodyInserters.fromObject(Consultation.fromDCObject(dcConsultation)))
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
@@ -62,7 +62,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val siret = req.pathVariable("siret")
 
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -79,7 +79,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                 .flatMap { consultation ->
                     try {
                         //resource must not already exist to be created - if getResourceFromUri don't trigger error alreadyExist = true, flux is not stopped
-                        datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${consultation.reference}", bearer)
+                        datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${consultation.reference}", bearer)
                         alreadyExist = true
                     }catch (e:HttpClientErrorException){
                         when{
@@ -115,7 +115,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -127,7 +127,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }
 
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${req.pathVariable("reference")}", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/${req.pathVariable("reference")}", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -168,7 +168,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val bearer = extractBearer(req.headers())
         val currentDcResource:DCBusinessResourceLight
         return try {
-            currentDcResource = datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}", bearer)
+            currentDcResource = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}", bearer)
             sender.send(currentDcResource, MP_PROJECT, CONSULTATION_TYPE, BindingKeyAction.PUBLISH)
             ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
         } catch (e: HttpClientErrorException) {
@@ -188,7 +188,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val reference = req.pathVariable("reference")
         val uuid = req.pathVariable("uuid")
         return try {
-            val dcLot = datacoreService.getResourceFromURI(MP_PROJECT, LOT_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            val dcLot = datacoreService.getResourceFromIRI(MP_PROJECT, LOT_TYPE, "FR/$siret/$reference/$uuid", bearer)
             ok().body(BodyInserters.fromObject(Lot.toLot(dcLot)))
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
@@ -206,7 +206,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -219,7 +219,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val reference = req.pathVariable("reference")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -250,7 +250,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -263,7 +263,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val reference = req.pathVariable("reference")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -276,7 +276,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val uuid = req.pathVariable("uuid")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, LOT_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, LOT_TYPE, "FR/$siret/$reference/$uuid", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -321,7 +321,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val reference = req.pathVariable("reference")
         val uuid = req.pathVariable("uuid")
         return try {
-            val dcPiece = datacoreService.getResourceFromURI(MP_PROJECT, PIECE_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            val dcPiece = datacoreService.getResourceFromIRI(MP_PROJECT, PIECE_TYPE, "FR/$siret/$reference/$uuid", bearer)
             ok().body(BodyInserters.fromObject(Piece.toPiece(dcPiece)))
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
@@ -339,7 +339,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -352,7 +352,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val reference = req.pathVariable("reference")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -383,7 +383,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val siret = req.pathVariable("siret")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -396,7 +396,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val reference = req.pathVariable("reference")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/$siret/$reference", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -409,7 +409,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         val uuid = req.pathVariable("uuid")
         try {
-            datacoreService.getResourceFromURI(MP_PROJECT, PIECE_TYPE, "FR/$siret/$reference/$uuid", bearer)
+            datacoreService.getResourceFromIRI(MP_PROJECT, PIECE_TYPE, "FR/$siret/$reference/$uuid", bearer)
         } catch (e: HttpClientErrorException) {
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"

@@ -31,7 +31,7 @@ publik:
     project: citizenreq_0
     modelEM: citizenreq:elecmeeting_0
     modelSVE: citizenreq:sve_0
-    modelORG: org:Organization_0
+    modelORG: orgfr:Organisation_0
     modelUser: citizenreq:user_0
 
 marchesecurise:
@@ -52,32 +52,15 @@ amqp:
       maarch:
         queueName: maarch
         bindingKey: citizenreq_0.#
+      publik:
+        queueName: publik
+        bindingKey: citizenreq_0.#
 
-# TODO : Copied pasted from portal configuration, check if we really need all of them
 kernel:
-  base_uri: https://kernel.ozwillo-preprod.eu
-  accountUri: https://accounts.ozwillo-preprod.eu
-  alt_uri: ${kernel.base_uri}
-  auth:
-    issuer: ${kernel.base_uri}/
-    auth_endpoint: ${kernel.alt_uri}/a/auth
-    token_endpoint: ${kernel.base_uri}/a/token
-    keys_endpoint: ${kernel.base_uri}/a/keys
-    userinfo_endpoint: ${kernel.base_uri}/a/userinfo
-    password_change_endpoint: ${kernel.alt_uri}/a/password
-    revoke_endpoint: ${kernel.base_uri}/a/revoke
-    logout_endpoint: ${kernel.alt_uri}/a/logout
-    callback_uri: ${application.url}/callback
-    home_uri: ${application.url}
-  user_profile_endpoint: ${kernel.base_uri}/d/user
-  user_membership_endpoint: ${kernel.base_uri}/d
-  organization_endpoint: ${kernel.base_uri}/d/org
-  event_bus_endpoint: ${kernel.base_uri}/e
-  notifications_endpoint: ${kernel.base_uri}/n
+  baseUri: https://kernel.ozwillo-preprod.eu
+  tokenEndpoint: ${kernel.baseUri}/a/token
   clientId: dcimporter
   clientSecret: secret
-  # NB. once Datacore cache is in place, move datacore scope to its dedicated system user
-  scopes_to_require: openid profile email datacore
 
 datacore:
   containerUrl: http://data.ozwillo.com

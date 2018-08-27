@@ -30,7 +30,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MarcheSecuriseService::class.java)
-        const val name: String = "Marches Sécurisés"
+        const val name: String = "marche-securise"
     }
 
     private val CONSULTATION_TYPE = "marchepublic:consultation_0"

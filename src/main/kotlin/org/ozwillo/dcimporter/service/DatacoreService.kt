@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service
 
 import com.google.common.io.BaseEncoding
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
+import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
@@ -23,18 +24,18 @@ import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URI
-import java.net.URISyntaxException
 import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Service
-class DatacoreService {
+class DatacoreService(private val kernelProperties: KernelProperties) {
 
     @Autowired
     private lateinit var sender: Sender
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
+        private const val typePrefix = "/dc/type"
     }
 
     @Value("\${datacore.url: http://localhost:8080}")
@@ -45,15 +46,6 @@ class DatacoreService {
 
     @Value("\${publik.datacore.modelORG}")
     private val datacoreModelORG: String = "datacoreModelOrg"
-
-    @Value("\${kernel.auth.token_endpoint: http://localhost:8080}")
-    private val tokenEndpoint: String = "http://localhost:8080/a/token"
-
-    @Value("\${kernel.clientId}")
-    private val clientId: String = "client_id"
-
-    @Value("\${kernel.clientSecret}")
-    private val clientSecret: String = "client_secret"
 
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
@@ -99,7 +91,7 @@ class DatacoreService {
 
         LOGGER.debug("Updating resource at URI $uri")
 
-        val dcCurrentResource = getResourceFromURI(project, type, resource.getIri(), bearer)
+        val dcCurrentResource = getResourceFromIRI(project, type, resource.getIri(), bearer)
         resource.setStringValue("o:version", dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
 
         val accessToken = bearer ?: getSyncAccessToken()
@@ -116,7 +108,6 @@ class DatacoreService {
             return Mono.just(HttpStatus.OK)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no update request sent to Marche Securise for resource", resource)
             throw e
         }
     }
@@ -126,7 +117,7 @@ class DatacoreService {
         val uri = "$datacoreUrl/dc/type/$type/$iri"
         LOGGER.debug("Deleting resource at URI $uri")
 
-        val dcCurrentResource = getResourceFromURI(project, type, iri, bearer)
+        val dcCurrentResource = getResourceFromIRI(project, type, iri, bearer)
         val version = dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
 
         val accessToken = bearer ?: getSyncAccessToken()
@@ -148,25 +139,23 @@ class DatacoreService {
         }
     }
 
-    fun getResourceFromURI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
+    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
         val resourceUri = dcResourceUri(type, iri)
+        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        val uri = UriComponentsBuilder.fromUriString(resourceUri.toString())
-                .build().encode().toUriString()
-
-        LOGGER.debug("Fetching resource from URI $uri")
+        LOGGER.debug("Fetching resource from URI $encodedUri")
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
+        restTemplate.interceptors.add(FullLoggingInterceptor())
         val headers = LinkedMultiValueMap<String, String>()
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(uri))
+        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
 
         val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
         LOGGER.debug("Got response : ${response.body}")
-        val result: DCBusinessResourceLight = response.body!!
-        return result
+        return response.body!!
     }
 
     fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
@@ -267,9 +256,9 @@ class DatacoreService {
     }
 
     private fun getAccessToken(): Mono<String> {
-        val client: WebClient = WebClient.create(tokenEndpoint)
+        val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", clientId, clientSecret).toByteArray(StandardCharsets.UTF_8))
+                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
         return client.post()
                 .header("Authorization", authorizationHeaderValue)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -284,7 +273,7 @@ class DatacoreService {
         val restTemplate = RestTemplate()
 
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", clientId, clientSecret).toByteArray(StandardCharsets.UTF_8))
+                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         headers.set("Authorization", authorizationHeaderValue)
@@ -293,36 +282,19 @@ class DatacoreService {
         map.add("refresh_token", refreshToken)
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-        val response = restTemplate.postForEntity(tokenEndpoint, request, TokenResponse::class.java)
+        val response = restTemplate.postForEntity(kernelProperties.tokenEndpoint, request, TokenResponse::class.java)
 
         return response.body!!.accessToken!! //Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
-    private fun dcResourceUri(resourceType: String, iri: String): URI {
-        return builderToUri(dcResourceUriBuilder(resourceType, iri, "/dc/type/"))
-    }
-
-    /**
-     * avoids URISyntaxException
-     */
-    private fun builderToUri(sb: StringBuilder): URI {
-        try {
-            return URI(sb.toString())
-        } catch (e: URISyntaxException) {
-            throw IllegalArgumentException(e)
-        }
-    }
-
-    private fun dcResourceUriBuilder(resourceType: String, resourceIri: String, apiUriPart: String): StringBuilder {
-        return dcResourceTypeUriBuilder(resourceType, apiUriPart)
-            .append('/')
-            .append(resourceIri) // already encoded
-    }
-
-    private fun dcResourceTypeUriBuilder(resourceType: String, apiUriPart: String): StringBuilder {
+    private fun dcResourceUri(type: String, iri: String): String {
         return StringBuilder(datacoreUrl)
-                .append(apiUriPart)
-                .append(DCResource.encodeUriPathSegment(resourceType))
+                .append(typePrefix)
+                .append('/')
+                .append(DCResource.encodeUriPathSegment(type))
+                .append('/')
+                .append(iri) // already encoded
+                .toString()
     }
 }
 
