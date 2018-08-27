@@ -1,6 +1,5 @@
 package org.ozwillo.dcimporter.repository
 
-import com.mongodb.client.result.DeleteResult
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import org.springframework.stereotype.Repository
@@ -13,5 +12,5 @@ interface BusinessAppConfigurationRepository : ReactiveMongoRepository<BusinessA
 
     fun findByOrganizationSiretAndApplicationName(siret: String, applicationName: String): Mono<BusinessAppConfiguration>
 
-    fun deleteByOrganizationSiretAndApplicationName(siret: String, applicationName: String):Mono<DeleteResult>
+    fun deleteByOrganizationSiretAndApplicationName(siret: String, applicationName: String):Mono<BusinessAppConfiguration>
 }
