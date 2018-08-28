@@ -13,12 +13,19 @@ server:
   compression.enabled: true
   address: 127.0.0.1
 
+security:
+  basicAuth:
+    connexion:
+      user: sictiam
+      password: password
+      role: DEV
+
 application:
   url: http://localhost:3000
   security:
     fetchUserInfo: true
   syncDelay: 10000
-  
+
 publik:
   formTypeEM: demande-de-rendez-vous
   formTypeSVE: saisine-par-voie-electronique-new
