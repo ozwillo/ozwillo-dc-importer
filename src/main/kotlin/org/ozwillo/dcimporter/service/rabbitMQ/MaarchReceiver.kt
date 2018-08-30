@@ -39,7 +39,6 @@ class MaarchReceiver(private val maarchService: MaarchService) {
                     routingBindingKeyOfType(routingKey, elecmeetingType) -> {
                         logger.debug("Binding $routingKey received elecmeeting request ${resource.getUri()}")
                         maarchService.createCitizenRequest(routingBindingKeySiret(routingKey), resource)
-                        channel.basicReject(tag, false)
                     }
 
                     else -> logger.warn("Unable to recognize type from routing key $routingKey")
@@ -47,6 +46,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
 
             else -> logger.warn("Unable to recognize action (create) from routing key $routingKey")
         }
+        channel.basicAck(tag, false)
     }
 
     fun routingBindingKeyOfAction(routingKey: String, controlKey : BindingKeyAction): Boolean {

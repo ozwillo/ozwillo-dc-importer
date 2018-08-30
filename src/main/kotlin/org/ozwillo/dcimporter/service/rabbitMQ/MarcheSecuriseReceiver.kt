@@ -1,37 +1,57 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.rabbitmq.client.Channel
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.MarcheSecuriseService
-import org.ozwillo.dcimporter.util.BindingKeyAction
-import org.ozwillo.dcimporter.util.JsonConverter
+import org.ozwillo.dcimporter.util.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 @Service
-class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) {
+class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, private val template: RabbitTemplate) {
 
     private val logger:Logger = LoggerFactory.getLogger(MarcheSecuriseReceiver::class.java)
 
     @RabbitListener(queues = ["marchesecurise"])
     @Throws(InterruptedException::class)
     fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long) {
-        val message = String(incoming.body)
-        val routingKey = incoming.messageProperties.receivedRoutingKey
-        val resource = JsonConverter.jsonToObject(message)
-
-        routingByBindingKey(resource, routingKey, channel, tag)
+        routingByBindingKey(incoming, channel, tag)
     }
 
-    fun routingByBindingKey(resource: DCBusinessResourceLight, routingKey: String, channel: Channel, tag: Long) {
+    @RabbitListener(queues = ["deadletter"])
+    @Throws(InterruptedException::class)
+    fun dealFailedMessage(failedMessage: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long){
+        val retriesHeader:Int = if(failedMessage.messageProperties.headers["x-retries"] == null) 0 else (failedMessage.messageProperties.headers["x-retries"] as Int)
+        val delayFactor = if(failedMessage.messageProperties.headers["x-delay-factor"] == null) 1 else (failedMessage.messageProperties.headers["x-delay-factor"] as Int)
+        val messageId = failedMessage.messageProperties.headers["message-id"]
+
+        when{
+            retriesHeader < 50 -> {
+                failedMessage.messageProperties.headers["x-retries"] = retriesHeader+1
+                failedMessage.messageProperties.headers["x-delay-factor"] = delayFactor * 2
+                failedMessage.messageProperties.delay = delayFactor * 1900000   // delay 1/2 hour -> *2 each try for 50 tries
+                val routingKey = failedMessage.messageProperties.headers["original-routing-key"].toString()
+                this.template.convertAndSend("dcimporter", routingKey, failedMessage)
+                logger.debug("Failed message ${failedMessage.body} with routing key $routingKey about to be re-send to marchesecurise in ${failedMessage.messageProperties.delay} ms (${failedMessage.messageProperties.delay/3600000} hours)")
+                channel.basicAck(tag, false)
+            }
+            else -> logger.warn("Unable to finalize message treatment. Please check Dead Letter queue for message with id $messageId.")
+        }
+    }
+
+    fun routingByBindingKey(incoming: Message, channel: Channel, tag: Long) {
+        val message = String(incoming.body)
+        val routingKey: String = incoming.messageProperties.headers["original-routing-key"].toString()
+        val resource = JsonConverter.jsonToObject(message)
+
         when {
             routingBindingKeyOfAction(routingKey, BindingKeyAction.CREATE) ->
                 when {
@@ -39,18 +59,21 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         val response = marcheSecuriseService.createAndUpdateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
+
                         when{
-                            response.contains("<propriete nom=\"ref_interne\" statut=\"changed\">") -> {
-                                channel.basicReject(tag, false)
+                            MSUtils.checkResponse(response, consultation.reference.toString()) -> {
+                                if (response.contains("statut=\"not_changed\""))
+                                    logger.warn("An error occurs in consultation data saving, please check consultation and update with correct data if needed")
+                                channel.basicAck(tag, false)
                                 logger.debug("Creation of consultation ${consultation.reference} successful")
                             }
-                            response.contains("<propriete nom=\"load_pa_error\">error</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create consultation in Marchés Sécurisés because of incorrect pa. Please delete and retry with correct connectors.")
+                            response.contains("ref ${consultation.reference} already exist") -> {
+                                channel.basicAck(tag, false)
+                                logger.warn("Unable to create consultation in Marchés Sécurisés because resource with ref ${consultation.reference} already exists.")
                             }
-                            response.contains("<return xsi:nil=\"true\"/>") -> {
+                            !MSUtils.errorReturn(response).isEmpty() -> {
+                                logger.warn(MSUtils.errorReturn(response))
                                 channel.basicReject(tag, false)
-                                logger.debug("Unable to create consultation in Marchés Sécurisés because of unknown login/password. Please delete and retry with correct connectors.")
                             }
                             else -> channel.basicReject(tag, true)
                         }
@@ -61,21 +84,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
                         val response = marcheSecuriseService.createLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                         when{
-                            response.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>") -> {
-                                channel.basicReject(tag, false)
+                            MSUtils.checkResponse(response, lot.ordre.toString()) -> {
+                                channel.basicAck(tag, false)
                                 logger.debug("Creation of lot ${lot.libelle} successful")
                             }
-                            response.contains("<propriete nom=\"load_dce_error\">error</propriete>") -> {
+                            !MSUtils.errorReturn(response).isEmpty() -> {
+                                logger.warn(MSUtils.errorReturn(response))
                                 channel.basicReject(tag, false)
-                                logger.warn("Unable to create lot in Marchés Sécurisés because the specified consultation is not found. Please delete and retry with correct consultation reference or dce (check businessMapping).")
-                            }
-                            response.contains("<propriete nom=\"load_pa_error\">error</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create lot in Marchés Sécurisés because of incorrect pa. Please delete and retry with correct connectors.")
-                            }
-                            response.contains("<return xsi:nil=\"true\"/>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create lot in Marchés Sécurisés because of unknown login/password. Please delete and retry with correct connectors.")
                             }
                             else -> channel.basicReject(tag, true)
                         }
@@ -86,31 +101,25 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         logger.debug("Binding $routingKey received piece ${piece.libelle}")
                         val response = marcheSecuriseService.createPiece(routingBindingKeySiret(routingKey), piece, resource.getUri())
                         when{
-                            response.contains("<propriete nom=\"nom\">${piece.nom}.${piece.extension}</propriete>") -> {
-                                channel.basicReject(tag, false)
+                            MSUtils.checkResponse(response, "${piece.nom}.${piece.extension}") -> {
+                                channel.basicAck(tag, false)
                                 logger.debug("Creation of piece ${piece.libelle} successful")
                             }
-                            response.contains("<propriete nom=\"fichier_error\"> file_exist</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create piece ${piece.libelle} in Marchés Sécurisés because a file with the name ${piece.nom}.${piece.extension} already exist")
+                            response.contains(SoapPieceResponse.CREATION_FAILED_FILE_ALREADY_EXIST.value) -> {
+                                channel.basicAck(tag, false)
+                                logger.warn("Unable to create piece ${piece.libelle} in Marchés Sécurisés because a file with the name ${piece.nom}.${piece.extension} already exist. Please delete and retry with a new Name")
                             }
-                            response.contains("<consultation_non_trouvee") -> {
+                            !MSUtils.errorReturn(response).isEmpty() -> {
+                                logger.warn(MSUtils.errorReturn(response))
                                 channel.basicReject(tag, false)
-                                logger.warn("Unable to create piece ${piece.libelle} in Marchés Sécurisés because the specified consultation is not found. Please delete and retry with correct consultation reference or dce (check businessMapping).")
-                            }
-                            response.contains("<pa_non_trouvee") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create piece ${piece.libelle} in Marchés Sécurisés because of incorrect pa. Please delete and retry with correct connectors.")
-                            }
-                            response.contains("<logs_non_trouves") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to create lot in Marchés Sécurisés because of unknown login/password. Please delete and retry with correct connectors.")
                             }
                             else -> channel.basicReject(tag, true)
                         }
                     }
 
-                    else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                    else -> {
+                        logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                        channel.basicReject(tag, false)}
                 }
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
@@ -120,21 +129,15 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         val response = marcheSecuriseService.updateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
                         when {
-                            response.contains("<propriete nom=\"cle\">") -> {
-                                channel.basicReject(tag, false)
+                            MSUtils.checkResponse(response, consultation.reference.toString()) -> {
+                                if (response.contains("statut=\"not_changed\""))
+                                    logger.warn("An error occurs in consultation data saving, please check consultation and update with correct data if needed")
+                                channel.basicAck(tag, false)
                                 logger.debug("Update of consultation ${consultation.reference} successful")
                             }
-                            response.contains("<propriete nom=\"load_consultation_fail\" statut=\"not_changed\" message=\"no_consultation\">no_consultation</propriete>") -> {
+                            !MSUtils.errorReturn(response).isEmpty() -> {
+                                logger.warn(MSUtils.errorReturn(response))
                                 channel.basicReject(tag, false)
-                                logger.warn("Unable to update consultation ${consultation.reference} in Marchés Sécurisés because the specified object is not found. Please retry with correct consultation reference or dce (check businessMapping).")
-                            }
-                            response.contains("<propriete nom=\"load_pa_error\">error</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to update consultation in Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                            }
-                            response.contains("<return xsi:nil=\"true\"/>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to update consultation in Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                             }
                             else -> channel.basicReject(tag, true)
                         }
@@ -145,31 +148,22 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
                         val response = marcheSecuriseService.updateLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                         when{
-                            (response.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>|<propriete nom=\"ordre\" statut=\"changed\">${lot.ordre}</propriete>".toRegex()) && !response.contains("<propriete nom=\"load_lot_error\">error</propriete>"))-> {
-                                channel.basicReject(tag, false)
+                            MSUtils.checkResponse(response, lot.ordre.toString())-> {
+                                channel.basicAck(tag, false)
                                 logger.debug("Update of lot ${lot.libelle} successful")
                             }
-                            response.contains("<propriete nom=\"load_lot_error\">error</propriete>") -> {
+                            !MSUtils.errorReturn(response).isEmpty() -> {
+                                logger.warn(MSUtils.errorReturn(response))
                                 channel.basicReject(tag, false)
-                                logger.warn("Unable to update lot in Marchés Sécurisés because the specified object is not found. Please retry with correct lot uuid or cleLot (check businessMapping).")
-                            }
-                            response.contains("<propriete nom=\"load_dce_error\">error</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.warn("Unable to update lot in Marchés Sécurisés because the specified consultation is not found. Please retry with correct consultation reference or dce (check businessMapping).")
-                            }
-                            response.contains("<propriete nom=\"load_pa_error\">error</propriete>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to update lot in Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                            }
-                            response.contains("<return xsi:nil=\"true\"/>") -> {
-                                channel.basicReject(tag, false)
-                                logger.debug("Unable to update lot in Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                             }
                             else -> channel.basicReject(tag, true)
                         }
                     }
 
-                    else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                    else -> {
+                        logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                        channel.basicReject(tag, false)
+                    }
                 }
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.DELETE) ->
@@ -178,21 +172,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                             logger.debug("Binding $routingKey received deletion order for consultation ${resource.getUri()}")
                             val response = marcheSecuriseService.deleteConsultation(routingBindingKeySiret(routingKey), resource.getUri())
                             when {
-                                response.contains("<consultation_suppr_ok etat_consultation=\"supprimee\"/>") -> {
-                                    channel.basicReject(tag, false)
+                                MSUtils.checkResponse(response, resource.getUri()) -> {
+                                    channel.basicAck(tag, false)
                                     logger.debug("Delete successful")
                                 }
-                                response.contains("<consultation_cle_error") -> {
+                                !MSUtils.errorReturn(response).isEmpty() -> {
+                                    logger.warn(MSUtils.errorReturn(response))
                                     channel.basicReject(tag, false)
-                                    logger.warn("Unable to delete consultation from Marchés Sécurisés because the specified object is not found. Please retry with correct lot uuid or cleLot (check businessMapping).")
-                                }
-                                response.contains("<pa_suppr_dce_error".toRegex()) -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete consultation from Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                                }
-                                response.contains("<log_error") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete consultation from Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
@@ -202,25 +188,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                             logger.debug("Binding $routingKey received deletion order for lot ${resource.getUri()}")
                             val response = marcheSecuriseService.deleteLot(routingBindingKeySiret(routingKey), resource.getUri())
                             when {
-                                (response.contains("<propriete suppression=\"true\">supprime</propriete>|<objet type=\"ms_v2__fullweb_lot\">".toRegex()) && !response.contains(("<propriete nom=\"load_lot_error\">error</propriete>"))) -> {
-                                    channel.basicReject(tag, false)
+                                MSUtils.checkResponse(response, resource.getUri()) -> {
+                                    channel.basicAck(tag, false)
                                     logger.debug("Delete successful")
                                 }
-                                response.contains("<propriete nom=\"load_lot_error\">error</propriete>") -> {
+                                !MSUtils.errorReturn(response).isEmpty() -> {
+                                    logger.warn(MSUtils.errorReturn(response))
                                     channel.basicReject(tag, false)
-                                    logger.warn("Unable to delete lot from Marchés Sécurisés because the specified object is not found. Please retry with correct lot uuid or cleLot (check businessMapping).")
-                                }
-                                response.contains("<propriete nom=\"load_dce_error\">error</propriete>") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.warn("Unable to delete lot from Marchés Sécurisés because the specified consultation is not found. Please retry with correct consultation reference or dce (check businessMapping).")
-                                }
-                                response.contains("<propriete nom=\"load_pa_error\">error</propriete>") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete lot from Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                                }
-                                response.contains("<return xsi:nil=\"true\"/>") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete lot from Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
@@ -229,32 +203,23 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                         routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
                             logger.debug("Binding $routingKey received deletion order for piece ${resource.getUri()}")
                             val response = marcheSecuriseService.deletePiece(routingBindingKeySiret(routingKey), resource.getUri())
-                            when{
-                                response.contains("<objet type=\"ms_v2__fullweb_piece\">") -> {
-                                    channel.basicReject(tag, false)
+                            when {
+                                MSUtils.checkResponse(response, resource.getUri()) -> {
+                                    channel.basicAck(tag, false)
                                     logger.debug("Delete successful")
                                 }
-                                response.contains("<cle_piece_non_trouvee") -> {
+                                !MSUtils.errorReturn(response).isEmpty() -> {
+                                    logger.warn(MSUtils.errorReturn(response))
                                     channel.basicReject(tag, false)
-                                    logger.warn("Unable to delete piece from Marchés Sécurisés because the specified object is not found. Please retry with correct piece uuid or clePiece (check businessMapping).")
-                                }
-                                response.contains("<cle_dce_non_trouvee") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.warn("Unable to delete piece from Marchés Sécurisés because the specified consultation is not found. Please retry with correct consultation reference or dce (check businessMapping).")
-                                }
-                                response.contains("<pa_non_trouvee") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete piece from Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                                }
-                                response.contains("<logs_non_trouves".toRegex()) -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to delete piece from Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
                         }
 
-                        else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                        else -> {
+                            logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                            channel.basicReject(tag, false)
+                        }
                     }
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.PUBLISH) ->
@@ -263,33 +228,31 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService) 
                             logger.debug("Binding $routingKey received publication order for consultation ${resource.getUri()}")
                             val response = marcheSecuriseService.publishConsultation(routingBindingKeySiret(routingKey), resource.getUri())
                             when{
-                                response.contains("<propriete nom=\"cle\">") -> {
-                                    channel.basicReject(tag, false)
+                                MSUtils.checkResponse(response, resource.getUri()) -> {
+                                    channel.basicAck(tag, false)
                                     logger.debug("Publication successful")
                                 }
-                                response.contains("<validation_erreur") -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Publication rejected. Please retry with correct datas.")
+                                response.contains(SoapConsultationResponse.PUBLICATION_REJECTED.value) -> {
+                                    channel.basicAck(tag, false)
+                                    logger.warn("Publication rejected. Please update with correct data and retry")
                                 }
-                                response.contains("<dce_error".toRegex()) -> {
+                                !MSUtils.errorReturn(response).isEmpty() -> {
+                                    logger.warn(MSUtils.errorReturn(response))
                                     channel.basicReject(tag, false)
-                                    logger.debug("Unable to publish consultation in Marchés Sécurisés because the specified object is not found. Please retry with correct consultation reference or dce (check businessMapping).")
-                                }
-                                response.contains("<pa_error".toRegex()) -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to publish consultation in Marchés Sécurisés because of incorrect pa. Please retry with correct connectors.")
-                                }
-                                response.contains("<identification_error".toRegex()) -> {
-                                    channel.basicReject(tag, false)
-                                    logger.debug("Unable to publish consultation in Marchés Sécurisés because of unknown login/password. Please retry with correct connectors.")
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
                         }
-                        else -> logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                        else -> {
+                            logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
+                            channel.basicReject(tag, false)
+                        }
                     }
 
-            else -> logger.warn("Unable to recognize action (create, update, delete) from routing key $routingKey")
+            else -> {
+                logger.warn("Unable to recognize action (create, update, delete) from routing key $routingKey")
+                channel.basicReject(tag, false)
+            }
         }
     }
 

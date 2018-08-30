@@ -364,5 +364,32 @@ class MSUtils{
             }
             return result
         }
+
+        fun checkResponse(response: String, resourceRef: String): Boolean{
+            return response.contains("${SoapConsultationResponse.CREATION_OK.value}|${SoapLotResponse.CREATION_OK.value}$resourceRef|${SoapPieceResponse.CREATION_OK.value}$resourceRef|${SoapConsultationResponse.PROCESS_OK.value}|${SoapLotResponse.UPDATE_NO_CHANGE_OK.value}$resourceRef|${SoapLotResponse.UPDATE_CHANGE_OK.value}$resourceRef|${SoapConsultationResponse.DELETE_OK.value}|${SoapLotResponse.DELETE_OK.value}|${SoapLotResponse.DELETE_LAST_OK.value}|${SoapPieceResponse.DELETE_OK.value}".toRegex()) && !response.contains(SoapLotResponse.NOT_FOUND.value)
+        }
+
+        fun errorReturn(response: String): String{
+            return when{
+                response.contains(SoapConsultationResponse.UPDATE_FAILED_BAD_DCE.value) -> "Unable to update consultation in Marchés Sécurisés because the specified object is not found"
+                response.contains(SoapConsultationResponse.DELETION_FAILED_BAD_DCE.value) -> "Unable to delete consultation from Marchés Sécurisés because the specified object is not found"
+                response.contains(SoapConsultationResponse.DELETION_FAILED_BAD_PA.value) -> "Unable to delete consultation from Marchés Sécurisés because of incorrect pa"
+                response.contains(SoapConsultationResponse.DELETION_FAILED_UNKNOWN_PASSWORD.value) -> "Unable to delete consultation from Marchés Sécurisés because of unknown login/password"
+                response.contains(SoapConsultationResponse.PUBLICATION_FAILED_NOT_FOUND.value) -> "Unable to publish consultation in Marchés Sécurisés because the specified object is not found"
+                response.contains(SoapConsultationResponse.PUBLICATION_FAILED_BAD_PA.value) -> "Unable to publish consultation in Marchés Sécurisés because of incorrect pa"
+                response.contains(SoapConsultationResponse.PUBLICATION_FAILED_UNKNOWN_PASSWORD.value) -> "Unable to publish consultation in Marchés Sécurisés because of unknown login/password"
+                response.contains(SoapLotResponse.BAD_DCE.value) -> "Unable to process lot in Marchés Sécurisés because the specified consultation is not found"
+                response.contains(SoapLotResponse.NOT_FOUND.value) -> "Unable to process lot in Marchés Sécurisés because the specified object is not found"
+                response.contains("exceeds allowed size limit of 7486832.64 octet") -> response
+                response.contains(SoapPieceResponse.CREATION_FAILED_BAD_DCE.value) -> "Unable to create piece in Marchés Sécurisés because the specified consultation is not found"
+                response.contains(SoapPieceResponse.BAD_PA.value) -> "Unable to process piece in Marchés Sécurisés because of incorrect pa"
+                response.contains(SoapPieceResponse.UNKNOWN_PASSWORD.value) -> "Unable to process piece in Marchés Sécurisés because of unknown login/password"
+                response.contains(SoapPieceResponse.NOT_FOUND.value) -> "Unable to process piece in Marchés Sécurisés because the specified object is not found"
+                response.contains(SoapPieceResponse.DELETE_FAILED_BAD_DCE.value) -> "Unable to delete piece from Marchés Sécurisés because the specified consultation is not found"
+                response.contains(SoapGeneralFailureResponse.BAD_PA.value) -> "Unable to process operation in Marchés Sécurisés because of incorrect pa"
+                response.contains(SoapGeneralFailureResponse.UNKNOWN_PASSWORD.value) -> "Unable to process operation in Marchés Sécurisés because of unknown login/password"
+                else -> ""
+            }
+        }
     }
 }

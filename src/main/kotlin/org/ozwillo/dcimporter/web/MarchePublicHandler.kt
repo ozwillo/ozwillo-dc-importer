@@ -159,6 +159,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }catch (e:HttpClientErrorException){
             return when(e.statusCode){
                 HttpStatus.NOT_FOUND -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.responseBodyAsString))
+                HttpStatus.UNAUTHORIZED -> status(HttpStatus.UNAUTHORIZED).body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
                 else -> badRequest().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.responseBodyAsString))
             }
         }
@@ -309,6 +310,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }catch (e:HttpClientErrorException){
             return when(e.statusCode){
                 HttpStatus.NOT_FOUND -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.responseBodyAsString))
+                HttpStatus.UNAUTHORIZED -> status(HttpStatus.UNAUTHORIZED).body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
                 else -> badRequest().body(BodyInserters.fromObject(e.responseBodyAsString))
             }
         }
@@ -440,6 +442,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }catch (e:HttpClientErrorException){
             return when(e.statusCode){
                 HttpStatus.NOT_FOUND -> status(404).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.responseBodyAsString))
+                HttpStatus.UNAUTHORIZED -> status(HttpStatus.UNAUTHORIZED).body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
                 else -> badRequest().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.responseBodyAsString))
             }
         }

@@ -395,6 +395,6 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         WireMock.verify(
                 WireMock.deleteRequestedFor(
                         WireMock.urlEqualTo("/dc/type/marchepublic:lot_0/FR/$siret/$referenceConsultation/$uuidLot"))
-                        .withHeader("If-Match", EqualToPattern("1")))     //TODO: not working
+                        .withHeader("If-Match", EqualToPattern("1")))
     }
 }

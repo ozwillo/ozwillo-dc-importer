@@ -1,6 +1,5 @@
 package org.ozwillo.dcimporter.service
 
-import org.bson.types.ObjectId
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Lot
@@ -11,7 +10,6 @@ import org.ozwillo.dcimporter.util.MSUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.data.annotation.Id
 import org.springframework.stereotype.Service
 import java.time.ZoneId
 import java.util.*
@@ -103,7 +101,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             if(creationResponse.contains("<propriete nom=\"cle\" statut=\"changed\">")) updateConsultation(siret, consultation, uri) else creationResponse
         } else {
             logger.warn("Resource with ref '{}' already exists", consultation.reference)
-            "No consultation creation request sent to Marche Securise"
+            "No consultation creation request sent to Marche Securise because resource with ref ${consultation.reference} already exist"
         }
     }
 
@@ -181,7 +179,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return response
     }
 
-    private fun checkConsultationForPublication(dce: String, siret: String, login:String, password: String, pa: String, baseUrl: String): String{
+    private fun checkConsultationForPublication(dce: String, login:String, password: String, pa: String, baseUrl: String): String{
         val soapMessage = MSUtils.generateCheckConsultationRequest(login, password, pa, dce)
         var response = ""
         if (!soapMessage.isEmpty()){
@@ -203,7 +201,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             logger.debug("get dce {}", dce)
 
             val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
-            response = checkConsultationForPublication(dce, siret, businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+            response = checkConsultationForPublication(dce, businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
                     businessAppConfiguration.baseUrl)
             if (response.contains("<objet type=\"ms_v2__fullweb_dce\">")){
                 soapMessage = MSUtils.generatePublishConsultationRequest(businessAppConfiguration.login, businessAppConfiguration.password, businessAppConfiguration.instanceId, dce)
@@ -479,7 +477,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 logger.error("An error occurs preventing from saving piece in Marche Securise")
             }
         } else {
-            logger.error("File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet")
+            response = "File size ${piece.poids} exceeds allowed size limit of 7486832.64 octet"
         }
         return response
     }

@@ -1,11 +1,8 @@
 package org.ozwillo.dcimporter.config
 
-import org.springframework.amqp.core.Binding
-import org.springframework.amqp.core.BindingBuilder
-import org.springframework.amqp.core.Queue
+import org.springframework.amqp.core.*
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.amqp.core.TopicExchange
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 
@@ -18,19 +15,30 @@ class RabbitMQConfig {
 
     @Bean
     fun topic(): TopicExchange {
-        return TopicExchange(EXCHANGER_NAME)
+        val topic =  TopicExchange(EXCHANGER_NAME)
+        topic.isDelayed = true
+        return topic
     }
 
     private class MarcheSecuriseReceiverConfig {
 
         @Value("\${amqp.config.marchesecurise.queueName}")
         private val QUEUE_MS_NAME = ""
+        private val DEAD_LETTER_QUEUE_NAME = "deadletter"
         @Value("\${amqp.config.marchesecurise.bindingKey}")
         private val BINDING_KEY = ""
 
         @Bean(name = ["queue_ms"])
         fun queueMS(): Queue {
-            return Queue(QUEUE_MS_NAME)
+            return QueueBuilder.durable(QUEUE_MS_NAME)
+                    .withArgument("x-dead-letter-exchange", "")
+                    .withArgument("x-dead-letter-routing-key", DEAD_LETTER_QUEUE_NAME)
+                    .build()
+        }
+
+        @Bean(name = ["queue_deadletter"])
+        fun deadLetterQueue(): Queue{
+            return Queue(DEAD_LETTER_QUEUE_NAME)
         }
 
         @Bean
