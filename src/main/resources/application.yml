@@ -16,8 +16,8 @@ server:
 security:
   basicAuth:
     connexion:
-      user: sictiam
-      password: password
+      user: user
+      password: changeme
       role: DEV
 
 application:

@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.config
 
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
@@ -13,6 +14,10 @@ import org.springframework.security.crypto.password.PasswordEncoder
 
 @EnableWebFluxSecurity
 class WebSecurityConfig{
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(WebSecurityConfig::class.java)
+    }
 
     @Value("\${security.basicAuth.connexion.user}")
     private val user = ""
@@ -38,6 +43,9 @@ class WebSecurityConfig{
 
     @Bean
     fun userDetailsService(): MapReactiveUserDetailsService{
+        if (password == "changeme")
+            logger.warn("Basic auth has not been set up, please review it (security.basicAuth.connexion.password) !")
+        
         val user: UserDetails = User
                 .withUsername(user)
                 .password(passwordEncoder().encode(password))
