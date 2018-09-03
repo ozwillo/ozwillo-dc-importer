@@ -128,7 +128,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
                 .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
         stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
-                .willReturn(WireMock.aResponse().withStatus(400)))
+                .willReturn(WireMock.okJson(dcPostConsultationResponse).withStatus(400)))
 
         val consultation = Consultation(reference = referenceConsultation,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
@@ -154,7 +154,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
                 .willReturn(WireMock.aResponse().withStatus(404)))
         stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
-                .willReturn(WireMock.aResponse().withStatus(400)))
+                .willReturn(WireMock.okJson(dcPostConsultationResponse).withStatus(400)))
 
         val consultation = Consultation(reference = referenceConsultation,
                 objet = "mon marche", datePublication = LocalDateTime.now(), dateCloture = LocalDateTime.now(),
@@ -319,7 +319,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
                 .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
         stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:lot_0"))
-                .willReturn(WireMock.aResponse().withStatus(400)))
+                .willReturn(WireMock.okJson(dcPostLotResponse).withStatus(400)))
 
         val lot = Lot(uuid = uuidLot, libelle = "Lot de test", ordre = 1, numero = 1)
         val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/consultation/$referenceConsultation/lot", lot)

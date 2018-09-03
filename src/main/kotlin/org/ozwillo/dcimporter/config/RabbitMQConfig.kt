@@ -24,7 +24,8 @@ class RabbitMQConfig {
 
         @Value("\${amqp.config.marchesecurise.queueName}")
         private val QUEUE_MS_NAME = ""
-        private val DEAD_LETTER_QUEUE_NAME = "deadletter"
+        @Value("\${amqp.config.marchesecurise.deadLetterQueue}")
+        private val DEAD_LETTER_QUEUE_NAME = ""
         @Value("\${amqp.config.marchesecurise.bindingKey}")
         private val BINDING_KEY = ""
 

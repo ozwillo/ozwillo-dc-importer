@@ -26,7 +26,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
         routingByBindingKey(incoming, channel, tag)
     }
 
-    @RabbitListener(queues = ["deadletter"])
+    @RabbitListener(queues = ["ms.deadletter"])
     @Throws(InterruptedException::class)
     fun dealFailedMessage(failedMessage: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long){
         val retriesHeader:Int = if(failedMessage.messageProperties.headers["x-retries"] == null) 0 else (failedMessage.messageProperties.headers["x-retries"] as Int)
@@ -37,7 +37,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
             retriesHeader < 50 -> {
                 failedMessage.messageProperties.headers["x-retries"] = retriesHeader+1
                 failedMessage.messageProperties.headers["x-delay-factor"] = delayFactor * 2
-                failedMessage.messageProperties.delay = delayFactor * 1900000   // delay 1/2 hour -> *2 each try for 50 tries
+                failedMessage.messageProperties.delay = delayFactor * 900000   // delay 1/4 hour -> *2 each try for 50 tries
                 val routingKey = failedMessage.messageProperties.headers["original-routing-key"].toString()
                 this.template.convertAndSend("dcimporter", routingKey, failedMessage)
                 logger.debug("Failed message ${failedMessage.body} with routing key $routingKey about to be re-send to marchesecurise in ${failedMessage.messageProperties.delay} ms (${failedMessage.messageProperties.delay/3600000} hours)")

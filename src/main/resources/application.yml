@@ -48,6 +48,7 @@ amqp:
       exchangerName: dcimporter
       marchesecurise:
         queueName: marchesecurise
+        deadLetterQueue: ms.deadletter
         bindingKey: marchepublic_0.#
       maarch:
         queueName: maarch
