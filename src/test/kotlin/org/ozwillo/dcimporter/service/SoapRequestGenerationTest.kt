@@ -19,12 +19,9 @@ import java.util.*
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SoapRequestGenerationTest{
 
-    @Value("\${marchesecurise.login}")
-    private var login: String = ""
-    @Value("\${marchesecurise.password}")
-    private var password: String = ""
-    @Value("\${marchesecurise.pa}")
-    private var pa: String = ""
+    private var login: String = "login"
+    private var password: String = "password"
+    private var pa: String = "instance pa"
 
     val dce = "1533297690p44lmzk2fidz"
     val objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"

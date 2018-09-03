@@ -16,6 +16,12 @@ server:
   compression.enabled: true
   address: 127.0.0.1
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: httptrace, health, info
+
 security:
   basicAuth:
     connexion:

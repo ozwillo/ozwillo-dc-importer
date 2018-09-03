@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
@@ -43,12 +44,9 @@ class MarcheSecuriseServiceTest{
     @Value("\${marchesecurise.url.piece}")
     private val pieceUrl = ""
 
-    @Value("\${marchesecurise.login}")
-    private val login = ""
-    @Value("\${marchesecurise.password}")
-    private val password = ""
-    @Value("\${marchesecurise.pa}")
-    private val pa = ""
+    private var login = ""
+    private var password = ""
+    private var pa = ""
 
     private val siret = "123456789"
 
@@ -95,7 +93,7 @@ class MarcheSecuriseServiceTest{
     private lateinit var marcheSecuriseService: MarcheSecuriseService
     @Mock
     private lateinit var businessMappingRepository: BusinessMappingRepository
-    @Mock
+    @Autowired
     private lateinit var businessAppConfigurationRepository: BusinessAppConfigurationRepository
 
 
@@ -108,11 +106,25 @@ class MarcheSecuriseServiceTest{
         WireMock.configureFor(8990)
         WireMock.stubFor(WireMock.post(WireMock.urlEqualTo("http://localhost:8990"))
                 .willReturn(WireMock.aResponse().withStatus(200)))
+
+        businessAppConfigurationRepository.save(BusinessAppConfiguration(applicationName = "marche-securise", baseUrl = "https://marches-securises.fr", organizationSiret = "123456789", instanceId = "instance pa", login = "login", password = "password")).subscribe()
+
+        val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, MarcheSecuriseService.name).blockOptional()
+        login = businessAppConfiguration.map { businessMapping ->  businessMapping.login!! }.orElse("")
+        password = businessAppConfiguration.map { businessMapping -> businessMapping.password!! }.orElse("")
+        pa = businessAppConfiguration.map { businessMapping -> businessMapping.instanceId!! }.orElse("")
     }
 
     @AfterAll
     fun end(){
         wireMockServer.stop()
+    }
+
+    @Test
+    fun `correct connectors recovery`(){
+        Assertions.assertThat(login).isEqualTo("login")
+        Assertions.assertThat(password).isEqualTo("password")
+        Assertions.assertThat(pa).isEqualTo("instance pa")
     }
 
     @Test
