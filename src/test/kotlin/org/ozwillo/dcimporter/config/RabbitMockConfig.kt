@@ -6,6 +6,7 @@ import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.willReturn
 import org.mockito.Mockito.mock
 import org.slf4j.LoggerFactory
+import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.Connection
 import org.springframework.amqp.rabbit.connection.ConnectionFactory
@@ -58,7 +59,7 @@ class RabbitMockConfig {
                 "marchepublic_0.123456789.marchepublic:lot_0.update",
                 "marchepublic_0.123456789.marchepublic:lot_0.delete")
         container.setMessageListener(MessageListenerAdapter( object {
-            fun handleMessage(message: String) {
+            fun handleMessage(message: Any) {
                 LOGGER.debug("Got message $message")
             }
         }))

@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
+import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.service.PublikService
 import org.ozwillo.dcimporter.util.BindingKeyAction
@@ -8,7 +9,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
+import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 @Service
@@ -21,15 +24,15 @@ class PublikReceiver(private val publikService: PublikService) {
 
     @RabbitListener(queues = ["publik"])
     @Throws(InterruptedException::class)
-    fun receive(incoming: Message) {
+    fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
         val resource = JsonConverter.jsonToObject(message)
 
-        routingByBindingKey(resource, routingKey)
+        routingByBindingKey(resource, routingKey, channel, tag)
     }
 
-    fun routingByBindingKey(resource: DCBusinessResourceLight, routingKey: String) {
+    fun routingByBindingKey(resource: DCBusinessResourceLight, routingKey: String, channel: Channel, tag: Long) {
         when {
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
                 when {
@@ -43,6 +46,7 @@ class PublikReceiver(private val publikService: PublikService) {
 
             else -> logger.debug("Unhandled action from routing key $routingKey")
         }
+        channel.basicAck(tag, false)
     }
 
     fun routingBindingKeyOfAction(routingKey: String, controlKey : BindingKeyAction): Boolean {

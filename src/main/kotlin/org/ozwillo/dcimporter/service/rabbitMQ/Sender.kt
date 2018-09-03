@@ -6,9 +6,12 @@ import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.AmqpException
+import org.springframework.amqp.core.MessageBuilder
+import org.springframework.amqp.core.MessageProperties
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class Sender(private val template: RabbitTemplate) {
@@ -34,7 +37,11 @@ class Sender(private val template: RabbitTemplate) {
 
         logger.debug("About to send $message with key $key")
 
-        template.convertAndSend(exchangerName, key, message)
+        val properties = MessageProperties()
+        properties.setHeader("original-routing-key", key)
+        properties.setHeader("message-id", UUID.randomUUID())
+
+        template.convertAndSend(exchangerName, key, MessageBuilder.withBody(message.toByteArray()).andProperties(properties).build())
     }
 
     fun getKey(project: String, type: String, siret: String, action: BindingKeyAction): String {

@@ -11,6 +11,7 @@ import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.MarcheSecuriseService
 import org.ozwillo.dcimporter.util.BindingKeyAction
+import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 
@@ -27,6 +28,9 @@ class MarcheSecuriseReceiverTest {
     @Mock
     private lateinit var marcheSecuriseService: MarcheSecuriseService
 
+    @Mock
+    private lateinit var template: RabbitTemplate
+
     @MockBean
     private lateinit var marcheSecuriseReceiver: MarcheSecuriseReceiver
 
@@ -40,7 +44,7 @@ class MarcheSecuriseReceiverTest {
     fun setUp(){
         MockitoAnnotations.initMocks(this)
         marcheSecuriseService = MarcheSecuriseService(businessMappingRepository, businessAppConfigurationRepository)
-        marcheSecuriseReceiver  = MarcheSecuriseReceiver(marcheSecuriseService)
+        marcheSecuriseReceiver  = MarcheSecuriseReceiver(marcheSecuriseService, template)
     }
 
 
