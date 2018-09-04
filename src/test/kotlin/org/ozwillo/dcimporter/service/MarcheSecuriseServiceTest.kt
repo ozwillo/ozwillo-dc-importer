@@ -44,9 +44,9 @@ class MarcheSecuriseServiceTest{
     @Value("\${marchesecurise.url.piece}")
     private val pieceUrl = ""
 
-    private var login = ""
-    private var password = ""
-    private var pa = ""
+    private val login = "login"
+    private val password = "password"
+    private val pa = "instance pa"
 
     private val siret = "123456789"
 
@@ -106,25 +106,11 @@ class MarcheSecuriseServiceTest{
         WireMock.configureFor(8990)
         WireMock.stubFor(WireMock.post(WireMock.urlEqualTo("http://localhost:8990"))
                 .willReturn(WireMock.aResponse().withStatus(200)))
-
-        businessAppConfigurationRepository.save(BusinessAppConfiguration(applicationName = "marche-securise", baseUrl = "https://marches-securises.fr", organizationSiret = "123456789", instanceId = "instance pa", login = "login", password = "password")).subscribe()
-
-        val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, MarcheSecuriseService.name).blockOptional()
-        login = businessAppConfiguration.map { businessMapping ->  businessMapping.login!! }.orElse("")
-        password = businessAppConfiguration.map { businessMapping -> businessMapping.password!! }.orElse("")
-        pa = businessAppConfiguration.map { businessMapping -> businessMapping.instanceId!! }.orElse("")
     }
 
     @AfterAll
     fun end(){
         wireMockServer.stop()
-    }
-
-    @Test
-    fun `correct connectors recovery`(){
-        Assertions.assertThat(login).isEqualTo("login")
-        Assertions.assertThat(password).isEqualTo("password")
-        Assertions.assertThat(pa).isEqualTo("instance pa")
     }
 
     @Test
