@@ -16,13 +16,13 @@ class PublikSynchronizerService(private val datacoreService: DatacoreService,
                                 private val publikService: PublikService,
                                 private val businessAppConfigurationRepository: BusinessAppConfigurationRepository) : CommandLineRunner {
 
-    @Value("\${publik.datacore.project}")
+    @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val datacoreModelEM: String? = null
-    @Value("\${publik.datacore.modelSVE}")
+    @Value("\${datacore.model.modelSVE}")
     private val datacoreModelSVE: String? = null
-    @Value("\${publik.datacore.modelORG}")
+    @Value("\${datacore.model.modelORG}")
     private val datacoreModelORG: String = "org:Organization_0"
     @Value("\${publik.formTypeEM}")
     private lateinit var formTypeEM: String

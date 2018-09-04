@@ -40,15 +40,15 @@ class PublikService(private val datacoreService: DatacoreService,
     private val algo: String? = null
     @Value("\${publik.orig}")
     private val orig: String = "ozwillo-dcimporter"
-    @Value("\${publik.datacore.project}")
+    @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val datacoreModelEM: String? = null
-    @Value("\${publik.datacore.modelSVE}")
+    @Value("\${datacore.model.modelSVE}")
     private val datacoreModelSVE: String? = null
-    @Value("\${publik.datacore.modelUser}")
+    @Value("\${datacore.model.modelUser}")
     private val datacoreModelUser: String = "citizenreq:user_0"
-    @Value("\${publik.datacore.modelORG}")
+    @Value("\${datacore.model.modelORG}")
     private val datacoreModelORG: String = "org:Organization_0"
     @Value("\${datacore.baseUri}")
     private val datacoreBaseUri: String? = null

@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono
 class PublikHandler(private val datacoreService: DatacoreService,
                     private val publikService: PublikService) {
 
-    @Value("\${publik.datacore.project}")
+    @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
 
     data class PublikDataResponse(@JsonProperty("data") val data: PublikDataEntryResponse)

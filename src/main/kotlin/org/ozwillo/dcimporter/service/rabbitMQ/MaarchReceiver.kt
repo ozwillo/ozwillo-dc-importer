@@ -19,7 +19,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
 
     private val logger: Logger = LoggerFactory.getLogger(MaarchReceiver::class.java)
 
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val elecmeetingType = "citizenreq:elecmeeting_0"
 
     @RabbitListener(queues = ["maarch"])

@@ -13,10 +13,10 @@ import org.springframework.web.reactive.function.server.bodyToMono
 @Component
 class MaarchHandler(private val datacoreService: DatacoreService) {
 
-    @Value("\${publik.datacore.project}")
+    @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
 
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val datacoreModelEM: String = "datacoreModelEM"
 
     data class MaarchStatusRequest(@JsonProperty("publikId") val dcId: String)

@@ -25,7 +25,7 @@ class MaarchService(private val businessMappingRepository: BusinessMappingReposi
         const val name: String = "maarch"
     }
 
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val type ="type"
 
     fun createCitizenRequest(siret: String, dcResource: DCBusinessResourceLight) {

@@ -41,10 +41,10 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     @Value("\${datacore.url: http://localhost:8080}")
     private val datacoreUrl: String = "datacoreUrl"
 
-    @Value("\${publik.datacore.project}")
+    @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
 
-    @Value("\${publik.datacore.modelORG}")
+    @Value("\${datacore.model.modelORG}")
     private val datacoreModelORG: String = "datacoreModelOrg"
 
     @Value("\${datacore.systemAdminUser.refreshToken}")
