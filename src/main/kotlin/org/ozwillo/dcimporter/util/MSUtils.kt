@@ -366,7 +366,7 @@ class MSUtils{
         }
 
         fun checkResponse(response: String, resourceRef: String): Boolean{
-            return response.contains("${SoapConsultationResponse.CREATION_OK.value}|${SoapLotResponse.CREATION_OK.value}$resourceRef|${SoapPieceResponse.CREATION_OK.value}$resourceRef|${SoapConsultationResponse.PROCESS_OK.value}|${SoapLotResponse.UPDATE_NO_CHANGE_OK.value}$resourceRef|${SoapLotResponse.UPDATE_CHANGE_OK.value}$resourceRef|${SoapConsultationResponse.DELETE_OK.value}|${SoapLotResponse.DELETE_OK.value}|${SoapLotResponse.DELETE_LAST_OK.value}|${SoapPieceResponse.DELETE_OK.value}".toRegex()) && !response.contains(SoapLotResponse.NOT_FOUND.value)
+            return response.contains("${SoapConsultationResponse.CREATION_OK.value}|${SoapLotResponse.CREATION_OK.value}$resourceRef|${SoapPieceResponse.CREATION_OK.value}$resourceRef|${SoapConsultationResponse.PROCESS_OK.value}|${SoapLotResponse.UPDATE_NO_CHANGE_OK.value}$resourceRef|${SoapLotResponse.UPDATE_CHANGE_OK.value}$resourceRef|${SoapConsultationResponse.DELETE_OK.value}|${SoapLotResponse.DELETE_OK.value}|${SoapGeneralResponse.DELETE_LAST_OK.value}|${SoapPieceResponse.DELETE_OK.value}".toRegex()) && !response.contains(SoapLotResponse.NOT_FOUND.value)
         }
 
         fun errorReturn(response: String): String{

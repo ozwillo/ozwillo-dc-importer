@@ -19,7 +19,7 @@ class PublikReceiver(private val publikService: PublikService) {
 
     private val logger: Logger = LoggerFactory.getLogger(PublikReceiver::class.java)
 
-    @Value("\${publik.datacore.modelEM}")
+    @Value("\${datacore.model.modelEM}")
     private val elecmeetingType = "citizenreq:elecmeeting_0"
 
     @RabbitListener(queues = ["publik"])

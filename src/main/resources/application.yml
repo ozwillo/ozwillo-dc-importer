@@ -40,12 +40,6 @@ publik:
   formTypeSVE: saisine-par-voie-electronique-new
   algo: sha256
   orig: ozwillo-dcimporter
-  datacore:
-    project: citizenreq_0
-    modelEM: citizenreq:elecmeeting_0
-    modelSVE: citizenreq:sve_0
-    modelORG: orgfr:Organisation_0
-    modelUser: citizenreq:user_0
 
 marchesecurise:
   url:
@@ -83,4 +77,10 @@ datacore:
     refreshToken: refreshToken
     nonce: changeit      #Set it when getting the refreshToken
   baseUri: http://data.ozwillo.com/dc/type
+  model:
+    project: citizenreq_0
+    modelEM: citizenreq:elecmeeting_0
+    modelSVE: citizenreq:sve_0
+    modelORG: orgfr:Organisation_0
+    modelUser: citizenreq:user_0
 

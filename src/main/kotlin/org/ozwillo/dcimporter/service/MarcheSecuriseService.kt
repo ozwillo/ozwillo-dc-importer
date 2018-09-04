@@ -6,7 +6,7 @@ import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.util.MSUtils
+import org.ozwillo.dcimporter.util.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -58,7 +58,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     }
 
     fun parseDceFromResponse(response:String):String{
-        return if (response.contains("<propriete nom=\"cle\" statut=\"changed\">")) {
+        return if (response.contains(SoapConsultationResponse.DCE_ATTRIBUTED.value)) {
             val parseResponse: List<String> = response.split("<propriete nom=\"cle\" statut=\"changed\">|</propriete>".toRegex())
             if(parseResponse.size >= 2){
                 val dce = parseResponse[1]
@@ -98,7 +98,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return if (existingBusinessMappings == null) {
             val creationResponse = createConsultationAndSaveDce(businessAppConfiguration.login!!, businessAppConfiguration.password!!,
                     businessAppConfiguration.instanceId!!, consultation, uri, "${businessAppConfiguration.baseUrl}/$createConsultationUrl")
-            if(creationResponse.contains("<propriete nom=\"cle\" statut=\"changed\">")) updateConsultation(siret, consultation, uri) else creationResponse
+            if(creationResponse.contains(SoapConsultationResponse.DCE_ATTRIBUTED.value)) updateConsultation(siret, consultation, uri) else creationResponse
         } else {
             logger.warn("Resource with ref '{}' already exists", consultation.reference)
             "No consultation creation request sent to Marche Securise because resource with ref ${consultation.reference} already exist"
@@ -163,7 +163,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 logger.warn("A problem occurred while generating soap request")
             }
             //Clean businessMapping
-            if (response.contains("suppression_consultation_ok")){
+            if (response.contains(SoapConsultationResponse.DELETE_OK.value)){
                 val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, name, CONSULTATION_TYPE).subscribe()
                 logger.debug("Deletion of businessMapping $deletedBusinessMapping")
             }else{
@@ -200,7 +200,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
             response = checkConsultationForPublication(dce, businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
                     businessAppConfiguration.baseUrl)
-            if (response.contains("<objet type=\"ms_v2__fullweb_dce\">")){
+            if (response.contains(SoapConsultationResponse.PROCESS_OK.value)){
                 soapMessage = MSUtils.generatePublishConsultationRequest(businessAppConfiguration.login, businessAppConfiguration.password, businessAppConfiguration.instanceId, dce)
                 //Sending soap request
                 if (!soapMessage.isEmpty()){
@@ -208,7 +208,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 }else{
                     logger.warn("A problem occured generating soap request")
                 }
-            }else if (response.contains("validation_erreur")){
+            }else if (response.contains(SoapConsultationResponse.PUBLICATION_REJECTED.value)){
                 val error = (response.split("<validation_erreur erreur_0=|cle=".toRegex()))[1]
                 logger.warn("Unable to procced with consultation publication because of following error : $error")
             }else{
@@ -227,11 +227,11 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 */
 
     fun parseCleLot(response: String, lot:Lot):String{
-        if (response.contains("<objet type=\"ms_v2__fullweb_lot\">")) {
-            val lotList = response.split("<objet type=\"ms_v2__fullweb_lot\">|</objet>".toRegex())
-            return if (response.contains("<propriete nom=\"cle_lot\">")) {
-                val targetLot = lotList.find { s -> s.contains("<propriete nom=\"ordre\">${lot.ordre}</propriete>") }
-                val parseResponse = targetLot!!.split("<propriete nom=\"cle_lot\">|</propriete>".toRegex())
+        if (response.contains(SoapLotResponse.DELETE_OK.value)) {
+            val lotList = response.split("${SoapLotResponse.DELETE_OK.value}|</objet>".toRegex())
+            return if (response.contains(SoapLotResponse.LOT_KEY_PROPERTY.value)) {
+                val targetLot = lotList.find { s -> s.contains("${SoapLotResponse.UPDATE_NO_CHANGE_OK.value}${lot.ordre}</propriete>") }
+                val parseResponse = targetLot!!.split("${SoapLotResponse.LOT_KEY_PROPERTY.value}|</propriete>".toRegex())
                 if (parseResponse.size >= 3) {
                    val cleLot = parseResponse[2]
                     cleLot
@@ -355,7 +355,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$lotUrl", soapMessage)
             }
             //Delete businessMapping
-            if (response.contains("<objet type=\"ms_v2__fullweb_lot\">|<objet lot=\"last\">|<propriete suppression=\"true\">supprime</propriete>".toRegex())){
+            if (response.contains("${SoapLotResponse.DELETE_OK.value}|${SoapGeneralResponse.DELETE_LAST_OK.value}".toRegex())){
                 val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, name, LOT_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
             }else{
@@ -387,9 +387,9 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
     fun parseClePiece(response:String, piece: Piece):String{
         if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
             val piecesList = response.split("<objet type=\"ms_v2__fullweb_piece\">|</objet>".toRegex())
-            return if (response.contains("<propriete nom=\"nom\">")){
-                val targetPiece = piecesList.find { s -> s.contains("<propriete nom=\"nom\">${piece.nom}.${piece.extension}</propriete>") }
-                val parseResponse = targetPiece!!.split("<propriete nom=\"cle_piece\">|</propriete>".toRegex())
+            return if (response.contains(SoapPieceResponse.CREATION_OK.value)){
+                val targetPiece = piecesList.find { s -> s.contains("${SoapPieceResponse.CREATION_OK.value}${piece.nom}.${piece.extension}</propriete>") }
+                val parseResponse = targetPiece!!.split("${SoapPieceResponse.PIECE_KEY_PROPERTY.value}|</propriete>".toRegex())
                 if (parseResponse.size >= 2){
                     val clePiece = parseResponse[1]
                     logger.debug("get clef Pièce {}", clePiece)
@@ -532,7 +532,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             if (!soapMessage.isEmpty()){
                 response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$pieceUrl", soapMessage)
             }
-            if (response.contains("<objet type=\"ms_v2__fullweb_piece\">")){
+            if (response.contains("${SoapPieceResponse.DELETE_OK.value}|${SoapGeneralResponse.DELETE_LAST_OK.value}".toRegex())){
                 //Delete businessMapping
                 val deletedBusinessMapping = businessMappingRepository.deleteByDcIdAndApplicationNameAndType(uri, name, PIECE_TYPE).subscribe()
                 logger.debug("deletion of $deletedBusinessMapping")
