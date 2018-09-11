@@ -22,9 +22,9 @@ class MSUtils{
 
         private val logger: Logger = LoggerFactory.getLogger(MSUtils::class.java)
 
-        private val CONSULTATION_TYPE = "marchepublic:consultation_0"
-        private val LOT_TYPE = "marchepublic:lot_0"
-        private val PIECE_TYPE = "marchepublic:piece_0"
+        const val CONSULTATION_TYPE = "marchepublic:consultation_0"
+        const val LOT_TYPE = "marchepublic:lot_0"
+        const val PIECE_TYPE = "marchepublic:piece_0"
 
         fun convertOctetToMo(size:Int):Float{
             return size.toFloat()/1024/1024

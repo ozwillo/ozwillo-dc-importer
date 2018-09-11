@@ -274,15 +274,15 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                         logger.debug("Delete successful")
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_lot_error" -> {
-                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad cleLot")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad cleLot")
                                         channel.basicReject(tag, false)
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
-                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Dce")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Dce")
                                         channel.basicReject(tag, false)
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Pa")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Pa")
                                         channel.basicReject(tag, false)
                                     }
                                     else -> channel.basicReject(tag, true)

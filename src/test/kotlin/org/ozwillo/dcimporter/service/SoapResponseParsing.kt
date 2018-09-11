@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.ozwillo.dcimporter.util.*
 
@@ -20,11 +19,11 @@ class SoapResponseParsing{
     private var pa: String = "instance pa"
 
     val dce = "1533297690p44lmzk2fidz"
-    val objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"
+    val objet = "Consultation WS Test"
     val enligne = MSUtils.booleanToInt(true).toString()
     val datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
     val dateCloture = LocalDateTime.now().plusMonths(3).atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
-    val reference = if("F-SICTIAM_06_20180622W2_01".toString().length > 255) ("F-SICTIAM_06_20180622W2_01".toString()).substring(0,255) else "F-SICTIAM_06_20180622W2_01".toString()
+    val reference = "F-SICTIAM_06_20180622W2_01"
     val finaliteMarche = FinaliteMarcheType.AUTRE.toString().toLowerCase()
     val typeMarche = TypeMarcheType.AUTRE.toString().toLowerCase()
     val prestation = TypePrestationType.AUTRES.toString().toLowerCase()
@@ -35,7 +34,7 @@ class SoapResponseParsing{
     val email = if(MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com")).length > 255) (MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))).substring(0,255) else MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))
 
     val cleLot = "1532963100xz12dzos6jyh"
-    val libelleLot = if("Un premier test".length > 255) "Un premier test".substring(0,255) else "Un premier test"
+    val libelleLot = "Un premier test"
     val ordreLot = 1.toString()
     val numeroLot = 1.toString()
 
@@ -45,9 +44,6 @@ class SoapResponseParsing{
     val ordrePiece = 1.toString()
     val nom = "NomDuFichierSansTiret6"
     val extension = "txt"
-    final val byteArrayContenu = "un contenu texte".toByteArray()
-    val contenu = Base64.getEncoder().encodeToString(byteArrayContenu)
-    val poids = 10.toString()
 
     @Test
     fun `correct consultation creation response parsing test`(){
@@ -93,7 +89,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CREATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.lotNbr).isEqualTo(0)
@@ -122,7 +118,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CREATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
 
         assertThat(responseObject.type).isEqualTo("error")
         assertThat(responseObject.properties!!.size).isEqualTo(1)
@@ -142,9 +138,9 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CREATE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -156,7 +152,7 @@ class SoapResponseParsing{
                 "        </SOAP-ENV:Fault>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CREATE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: SoapParsingUnexpectedError){
             assertThat(e.message).isEqualTo("An error occurs during soap response parsing from Marchés Sécurisés. Please check your request format.")
         }
@@ -205,7 +201,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.lotNbr).isEqualTo(0)
         assertThat(responseObject.properties!!.size).isEqualTo(20)
@@ -265,7 +261,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.lotNbr).isEqualTo(0)
         assertThat(responseObject.properties!!.size).isEqualTo(20)
@@ -290,7 +286,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
@@ -320,7 +316,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
 
         assertThat(responseObject.type).isEqualTo("error")
         assertThat(responseObject.properties!!.size).isEqualTo(1)
@@ -352,7 +348,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
 
         assertThat(responseObject.properties!!.size).isEqualTo(1)
         assertThat(responseObject.properties!![0].name).isEqualTo("load_consultation_fail")
@@ -385,7 +381,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
 
         assertThat(responseObject.properties!!.size).isEqualTo(1)
         assertThat(responseObject.properties!![0].name).isEqualTo("array_expected")
@@ -407,7 +403,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.DELETE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         assertThat(responseObject.consultationState).isEqualTo("supprimee")
     }
 
@@ -425,7 +421,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.DELETE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadDceError){
             assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Dce")
         }
@@ -445,7 +441,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.DELETE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadPaError){
             assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Pa")
         }
@@ -465,7 +461,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.DELETE.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : unknown login/password")
         }
@@ -507,7 +503,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CHECK.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isEqualTo(20)
@@ -530,7 +526,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CHECK.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: CheckConsultationRejectedError){
             assertThat(e.message).contains("La_date_de_cloture_n'est_pas_valide")
             assertThat(e.message).contains(dce)
@@ -553,7 +549,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CHECK.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadDceError){
             assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Dce")
         }
@@ -573,7 +569,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CHECK.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadPaError){
             assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Pa")
         }
@@ -593,7 +589,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.CHECK.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : unknown login/password")
         }
@@ -635,7 +631,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.PUBLISH.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.PUBLISH.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isEqualTo(20)
         assertThat(responseObject.properties!![0].name).isEqualTo("cle")
@@ -657,7 +653,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:consultation_0", BindingKeyAction.PUBLISH.value)
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.PUBLISH.value)
         }catch (e: PublishConsultationRejectedError){
             assertThat(e.message).contains(dce)
             assertThat(e.message).contains(reference)
@@ -695,7 +691,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.CREATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value, ordreLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.lotNbr).isEqualTo(2)
@@ -726,7 +722,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.CREATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value, ordreLot)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.type).isEqualTo("error")
         assertThat(responseObject.properties!!.size).isGreaterThan(0)
@@ -751,7 +747,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.CREATE.value)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.type).isEqualTo("error")
         assertThat(responseObject.properties!!.size).isGreaterThan(0)
@@ -771,7 +767,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.CREATE.value)
+            MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
@@ -798,7 +794,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.UPDATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.lotNbr).isEqualTo(2)
@@ -846,7 +842,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.UPDATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(7)
@@ -873,7 +869,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.UPDATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -898,7 +894,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.UPDATE.value, ordreLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -918,7 +914,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.UPDATE.value, ordreLot)
+            MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
@@ -946,7 +942,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(5)
@@ -975,7 +971,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -1003,7 +999,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -1028,7 +1024,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -1053,7 +1049,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isGreaterThanOrEqualTo(1)
@@ -1073,7 +1069,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:lot_0", BindingKeyAction.DELETE.value, cleLot)
+            MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password.")
         }
@@ -1119,7 +1115,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isEqualTo(11)
@@ -1152,7 +1148,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.type).isEqualTo("error")
@@ -1174,7 +1170,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: SoapParsingUnexpectedError){
             assertThat(e.message).isEqualTo("Unknown array type. Please check SOAP request.")
         }
@@ -1194,7 +1190,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: SoapParsingUnexpectedError){
             assertThat(e.message).isEqualTo("Array error, please check SOAP request format. Array name must be \"fichier\" and must contains 8 key/value items (keys : lot, libelle, la, ordre, nom, extension, contenu and poids)")
         }
@@ -1214,7 +1210,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadDceError){
             assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Dce")
         }
@@ -1234,7 +1230,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadPaError){
             assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Pa")
         }
@@ -1254,7 +1250,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.CREATE.value, "$nom.$extension")
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : unknown login/password")
         }
@@ -1298,7 +1294,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isEqualTo(10)
@@ -1326,7 +1322,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
 
         assertThat(responseObject).isNotNull
         assertThat(responseObject.properties!!.size).isEqualTo(1)
@@ -1351,7 +1347,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadClePiece){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : requested piece is not found")
         }
@@ -1371,7 +1367,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadDceError){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Dce")
         }
@@ -1391,7 +1387,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadPaError){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Pa")
         }
@@ -1411,7 +1407,7 @@ class SoapResponseParsing{
                 "</SOAP-ENV:Envelope>"
 
         try {
-            MSUtils.parseToResponseType(response, "marchepublic:piece_0", BindingKeyAction.DELETE.value, clePiece)
+            MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password")
         }

@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 
 @SpringBootApplication
 @EnableScheduling
-// Disabled for now, re-add later
+// Disabled for now, re-add later   //TODO: To re-think since we introduce @EnableWebFluxSecurity and a web security config class
 //@EnableWebSecurity
 class OzwilloDcImporterApplication
 
