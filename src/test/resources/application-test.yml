@@ -1,0 +1,14 @@
+kernel:
+  accountUri: http://localhost:8089
+
+datacore:
+  url: http://localhost:8089
+
+marchesecurise:
+  url:
+      createConsultation: http://localhost:8990/webserv/?module=dce|serveur_crea_dce
+      updateConsultation: http://localhost:8990/webserv/?module=dce|serveur_modif_dce
+      deleteConsultation: http://localhost:8990/webserv/?module=dce|serveur_suppr_dce
+      publishConsultation: http://localhost:8990/webserv/?module=dce|serveur_publication_dce
+      lot: http://localhost:8990/webserv/?module=dce|serveur_lot_dce
+      piece: http://localhost:8990/webserv/?module=dce|serveur_fichier_dce

@@ -58,65 +58,101 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        val response = marcheSecuriseService.createAndUpdateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
-
-                        when{
-                            MSUtils.checkResponse(response, consultation.reference.toString()) -> {
-                                if (response.contains("statut=\"not_changed\""))
-                                    logger.warn("An error occurs in consultation data saving, please check consultation and update with correct data if needed")
-                                channel.basicAck(tag, false)
-                                logger.debug("Creation of consultation ${consultation.reference} successful")
+                        try {
+                            val responseObject = marcheSecuriseService.createAndUpdateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
+                            when{
+                                responseObject.properties != null && responseObject.properties!!.size >= 8 && responseObject.properties!![8].value == consultation.reference && responseObject.properties!![8].status == "changed" -> {
+                                    for (i in responseObject.properties!!.indices){
+                                        if (responseObject.properties!![i].message == "value_not_allowed"){
+                                            logger.warn("An error occurs in consultation creation, value not allowed  for ${responseObject.properties!![i].name}. Please update it.")
+                                        }
+                                    }
+                                    channel.basicAck(tag, false)
+                                    logger.debug("Creation of consultation ${consultation.reference} successful")
+                                }
+                                responseObject.type == "error" && responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
+                                    logger.warn("Unable to process to consultation creation in Marchés Sécurisés because of following error : Bad Pa")
+                                    channel.basicReject(tag, false)
+                                }
+                                else -> channel.basicReject(tag, true)
                             }
-                            response.contains("ref ${consultation.reference} already exist") -> {
-                                channel.basicAck(tag, false)
-                                logger.warn("Unable to create consultation in Marchés Sécurisés because resource with ref ${consultation.reference} already exists.")
-                            }
-                            !MSUtils.errorReturn(response).isEmpty() -> {
-                                logger.warn(MSUtils.errorReturn(response))
-                                channel.basicReject(tag, false)
-                            }
-                            else -> channel.basicReject(tag, true)
+                        }catch (e: ConsultationDuplicateError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: BadLogError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: SoapParsingUnexpectedError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
                         }
                     }
 
                     routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
-                        val response = marcheSecuriseService.createLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
-                        when{
-                            MSUtils.checkResponse(response, lot.ordre.toString()) -> {
-                                channel.basicAck(tag, false)
-                                logger.debug("Creation of lot ${lot.libelle} successful")
+                        try {
+                            val responseObject = marcheSecuriseService.createLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
+                            when{
+                                responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && responseObject.properties!!.size >= 6 && responseObject.properties!!.find { p -> p.value.toString() == lot.ordre.toString() } != null -> {
+                                    channel.basicAck(tag, false)
+                                    logger.debug("Creation of lot ${lot.libelle} successful")
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
+                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Dce")
+                                    channel.basicReject(tag, false)
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
+                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Pa")
+                                    channel.basicReject(tag, false)
+                                }
+                                else -> channel.basicReject(tag, true)
                             }
-                            !MSUtils.errorReturn(response).isEmpty() -> {
-                                logger.warn(MSUtils.errorReturn(response))
-                                channel.basicReject(tag, false)
-                            }
-                            else -> channel.basicReject(tag, true)
+                        }catch (e: LotDuplicateError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: BadLogError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: SoapParsingUnexpectedError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
                         }
                     }
 
                     routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
                         val piece:Piece = Piece.toPiece(resource)
                         logger.debug("Binding $routingKey received piece ${piece.libelle}")
-                        val response = marcheSecuriseService.createPiece(routingBindingKeySiret(routingKey), piece, resource.getUri())
-                        when{
-                            MSUtils.checkResponse(response, "${piece.nom}.${piece.extension}") -> {
-                                channel.basicAck(tag, false)
-                                logger.debug("Creation of piece ${piece.libelle} successful")
+                        try {
+                            val responseObject = marcheSecuriseService.createPiece(routingBindingKeySiret(routingKey), piece, resource.getUri())
+                            when{
+                                responseObject.type != "error" && responseObject.properties != null && responseObject.properties!!.size >= 5 && responseObject.properties!![5].value == "${piece.nom}.${piece.extension}" -> {
+                                    channel.basicAck(tag, false)
+                                    logger.debug("Creation of piece ${piece.libelle} successful")
+                                }
+                                responseObject.type == "error" && responseObject.properties!![0].value == " file_exist" -> {
+                                    channel.basicAck(tag, false)
+                                    logger.warn("Unable to create piece ${piece.libelle} in Marchés Sécurisés because a file with the name ${piece.nom}.${piece.extension} already exist. Please delete piece uri ${resource.getUri()} and retry with a new Name")
+                                }
+                                else -> channel.basicReject(tag, true)
                             }
-                            response.contains(SoapPieceResponse.CREATION_FAILED_FILE_ALREADY_EXIST.value) -> {
-                                channel.basicAck(tag, false)
-                                logger.warn("Unable to create piece ${piece.libelle} in Marchés Sécurisés because a file with the name ${piece.nom}.${piece.extension} already exist. Please delete and retry with a new Name")
-                            }
-                            !MSUtils.errorReturn(response).isEmpty() -> {
-                                logger.warn(MSUtils.errorReturn(response))
-                                channel.basicReject(tag, false)
-                            }
-                            else -> channel.basicReject(tag, true)
+                        }catch (e: PieceSizeError){
+                            channel.basicAck(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: BadDceError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: BadPaError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: BadLogError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: SoapParsingUnexpectedError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
                         }
                     }
-
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                         channel.basicReject(tag, false)}
@@ -127,39 +163,73 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
-                        val response = marcheSecuriseService.updateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
-                        when {
-                            MSUtils.checkResponse(response, consultation.reference.toString()) -> {
-                                if (response.contains("statut=\"not_changed\""))
-                                    logger.warn("An error occurs in consultation data saving, please check consultation and update with correct data if needed")
-                                channel.basicAck(tag, false)
-                                logger.debug("Update of consultation ${consultation.reference} successful")
+                        try {
+                            val responseObject = marcheSecuriseService.updateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
+                            when {
+                                responseObject.properties != null && responseObject.properties!!.size >= 8 && responseObject.properties!![8].value == consultation.reference -> {
+                                    for (i in responseObject.properties!!.indices){
+                                        if (responseObject.properties!![i].message == "value_not_allowed"){
+                                            logger.warn("An error occurs in consultation updating, value not allowed  for ${responseObject.properties!![i].name}. Please update it.")
+                                        }
+                                    }
+                                    channel.basicAck(tag, false)
+                                    logger.debug("Update of consultation ${consultation.reference} successful")
+                                }
+                                responseObject.type == "error" && responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Pa")
+                                    channel.basicReject(tag, false)
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "load_consultation_fail" && responseObject.properties!![0].message == "no_consultation" -> {
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Dce")
+                                    channel.basicReject(tag, false)
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "array_expected" && responseObject.properties!![0].message == "no_array" -> {
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad array format. Please check request format")
+                                    channel.basicReject(tag, false)
+                                }
+                                else -> channel.basicReject(tag, true)
                             }
-                            !MSUtils.errorReturn(response).isEmpty() -> {
-                                logger.warn(MSUtils.errorReturn(response))
-                                channel.basicReject(tag, false)
-                            }
-                            else -> channel.basicReject(tag, true)
+                        }catch (e: BadLogError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: SoapParsingUnexpectedError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
                         }
                     }
 
                     routingBindingKeyOfType(routingKey,"marchepublic:lot_0") -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
-                        val response = marcheSecuriseService.updateLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
-                        when{
-                            MSUtils.checkResponse(response, lot.ordre.toString())-> {
-                                channel.basicAck(tag, false)
-                                logger.debug("Update of lot ${lot.libelle} successful")
+                        try {
+                            val responseObject = marcheSecuriseService.updateLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
+                            when{
+                                responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && responseObject.properties!!.find { p -> p.value.toString() == lot.ordre.toString() } != null -> {
+                                    channel.basicAck(tag, false)
+                                    logger.debug("Update of lot ${lot.libelle} successful")
+                                }
+                                responseObject.properties != null && responseObject.properties!!.size >= 6 && responseObject.properties!![6].name == "load_lot_error" -> {
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad cleLot")
+                                    channel.basicReject(tag, false)
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Dce")
+                                    channel.basicReject(tag, false)
+                                }
+                                responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Pa")
+                                    channel.basicReject(tag, false)
+                                }
+                                else -> channel.basicReject(tag, true)
                             }
-                            !MSUtils.errorReturn(response).isEmpty() -> {
-                                logger.warn(MSUtils.errorReturn(response))
-                                channel.basicReject(tag, false)
-                            }
-                            else -> channel.basicReject(tag, true)
+                        }catch (e: BadLogError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
+                        }catch (e: SoapParsingUnexpectedError){
+                            channel.basicReject(tag, false)
+                            logger.warn(e.message)
                         }
                     }
-
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                         channel.basicReject(tag, false)
@@ -170,49 +240,91 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     when {
                         routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
                             logger.debug("Binding $routingKey received deletion order for consultation ${resource.getUri()}")
-                            val response = marcheSecuriseService.deleteConsultation(routingBindingKeySiret(routingKey), resource.getUri())
-                            when {
-                                MSUtils.checkResponse(response, resource.getUri()) -> {
-                                    channel.basicAck(tag, false)
-                                    logger.debug("Delete successful")
+                            try {
+                                val responseObject = marcheSecuriseService.deleteConsultation(routingBindingKeySiret(routingKey), resource.getUri())
+                                when {
+                                    responseObject.consultationState == "supprimee" -> {
+                                        channel.basicAck(tag, false)
+                                        logger.debug("Delete successful")
+                                    }
+                                    else -> channel.basicReject(tag, true)
                                 }
-                                !MSUtils.errorReturn(response).isEmpty() -> {
-                                    logger.warn(MSUtils.errorReturn(response))
-                                    channel.basicReject(tag, false)
-                                }
-                                else -> channel.basicReject(tag, true)
+                            }catch (e: BadDceError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadPaError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadLogError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: SoapParsingUnexpectedError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
                             }
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
                             logger.debug("Binding $routingKey received deletion order for lot ${resource.getUri()}")
-                            val response = marcheSecuriseService.deleteLot(routingBindingKeySiret(routingKey), resource.getUri())
-                            when {
-                                MSUtils.checkResponse(response, resource.getUri()) -> {
-                                    channel.basicAck(tag, false)
-                                    logger.debug("Delete successful")
+                            try {
+                                val responseObject = marcheSecuriseService.deleteLot(routingBindingKeySiret(routingKey), resource.getUri())
+                                when {
+                                    responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && (responseObject.properties!!.size >= 5 || responseObject.properties!![0].value == "supprime") -> {
+                                        channel.basicAck(tag, false)
+                                        logger.debug("Delete successful")
+                                    }
+                                    responseObject.properties != null && responseObject.properties!![0].name == "load_lot_error" -> {
+                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad cleLot")
+                                        channel.basicReject(tag, false)
+                                    }
+                                    responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
+                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Dce")
+                                        channel.basicReject(tag, false)
+                                    }
+                                    responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
+                                        logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Pa")
+                                        channel.basicReject(tag, false)
+                                    }
+                                    else -> channel.basicReject(tag, true)
                                 }
-                                !MSUtils.errorReturn(response).isEmpty() -> {
-                                    logger.warn(MSUtils.errorReturn(response))
-                                    channel.basicReject(tag, false)
-                                }
-                                else -> channel.basicReject(tag, true)
+                            }catch (e: BadLogError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: DeletionError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: SoapParsingUnexpectedError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
                             }
                         }
 
                         routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
                             logger.debug("Binding $routingKey received deletion order for piece ${resource.getUri()}")
-                            val response = marcheSecuriseService.deletePiece(routingBindingKeySiret(routingKey), resource.getUri())
-                            when {
-                                MSUtils.checkResponse(response, resource.getUri()) -> {
-                                    channel.basicAck(tag, false)
-                                    logger.debug("Delete successful")
+                            try {
+                                val responseObject = marcheSecuriseService.deletePiece(routingBindingKeySiret(routingKey), resource.getUri())
+                                when {
+                                    responseObject.properties != null && (responseObject.properties!![0].name == "cle_piece" || responseObject.properties!![0].value == "supprime") -> {
+                                        channel.basicAck(tag, false)
+                                        logger.debug("Delete successful")
+                                    }
+                                    else -> channel.basicReject(tag, true)
                                 }
-                                !MSUtils.errorReturn(response).isEmpty() -> {
-                                    logger.warn(MSUtils.errorReturn(response))
-                                    channel.basicReject(tag, false)
-                                }
-                                else -> channel.basicReject(tag, true)
+                            }catch (e: BadClePiece){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadDceError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadPaError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadLogError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: SoapParsingUnexpectedError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
                             }
                         }
 
@@ -226,21 +338,33 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     when{
                         routingBindingKeyOfType(routingKey, "marchepublic:consultation_0") -> {
                             logger.debug("Binding $routingKey received publication order for consultation ${resource.getUri()}")
-                            val response = marcheSecuriseService.publishConsultation(routingBindingKeySiret(routingKey), resource.getUri())
-                            when{
-                                MSUtils.checkResponse(response, resource.getUri()) -> {
-                                    channel.basicAck(tag, false)
-                                    logger.debug("Publication successful")
+                            try {
+                                val responseObject = marcheSecuriseService.publishConsultation(routingBindingKeySiret(routingKey), resource.getUri())
+                                when{
+                                    responseObject.properties != null && responseObject.properties!!.size == 20 -> {
+                                        channel.basicAck(tag, false)
+                                        logger.debug("Publication successful")
+                                    }
+                                    else -> channel.basicReject(tag, true)
                                 }
-                                response.contains(SoapConsultationResponse.PUBLICATION_REJECTED.value) -> {
-                                    channel.basicAck(tag, false)
-                                    logger.warn("Publication rejected. Please update with correct data and retry")
-                                }
-                                !MSUtils.errorReturn(response).isEmpty() -> {
-                                    logger.warn(MSUtils.errorReturn(response))
-                                    channel.basicReject(tag, false)
-                                }
-                                else -> channel.basicReject(tag, true)
+                            }catch (e: CheckConsultationRejectedError){
+                                channel.basicAck(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: PublishConsultationRejectedError){
+                                channel.basicAck(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadDceError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadPaError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: BadLogError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
+                            }catch (e: SoapParsingUnexpectedError){
+                                channel.basicReject(tag, false)
+                                logger.warn(e.message)
                             }
                         }
                         else -> {
