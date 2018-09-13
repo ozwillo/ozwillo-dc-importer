@@ -248,11 +248,14 @@ class MSUtils{
                             val unmarshaller: Unmarshaller = jc.createUnmarshaller()
                             val dataJAXB: JAXBElement<Data> = unmarshaller.unmarshal(xsr, Data::class.java)
 
-                            return when(dataJAXB.value.responseObject!!.size){
-                                1 -> dataJAXB.value.responseObject!![0]
+                            val responseObjectList = dataJAXB.value.responseObject
+
+                            return when(responseObjectList!!.size){
+                                1 -> responseObjectList[0]
                                 else -> {
-                                    val index = dataJAXB.value.responseObject!!.indexOf(dataJAXB.value.responseObject!!.find { o -> o.properties!!.find { p -> (p.value.toString() == ref && (p.name == "ordre" || p.name == "nom"))} != null })
-                                    if (index >= 0) dataJAXB.value.responseObject!![index] else throw SoapParsingUnexpectedError("An unexpected error occurs during SOAP response parsing preventing from processing request to Marchés Sécurisés. Please Check SOAP response.")
+                                    val targetedResponseObject = responseObjectList.find { o -> o.properties!!.find { p -> (p.value.toString() == ref && (p.name == "ordre" || p.name == "nom"))} != null }
+                                    val index = responseObjectList.indexOf(targetedResponseObject)
+                                    if (index >= 0) responseObjectList[index] else throw SoapParsingUnexpectedError("An unexpected error occurs during SOAP response parsing preventing from processing request to Marchés Sécurisés. Please Check SOAP response.")
                                 }
                             }
                         }
@@ -264,13 +267,16 @@ class MSUtils{
                             val unmarshaller: Unmarshaller = jc.createUnmarshaller()
                             val dataJAXB: JAXBElement<Data> = unmarshaller.unmarshal(xsr, Data::class.java)
 
+                            val responseObjectList = dataJAXB.value.responseObject
+
                             return when(dataJAXB.name.toString()){
                                 "{interbat/framwork-exportation}data" -> {
-                                    when(dataJAXB.value.responseObject!!.size){
-                                        1 -> dataJAXB.value.responseObject!![0]
+                                    when(responseObjectList!!.size){
+                                        1 -> responseObjectList[0]
                                         else -> {
-                                            val index = dataJAXB.value.responseObject!!.indexOf(dataJAXB.value.responseObject!!.find { o -> o.properties!!.find { p -> (p.value.toString() == ref && (p.name == "ordre" || p.name == "nom"))} != null })
-                                            if (index >= 0) dataJAXB.value.responseObject!![index] else throw SoapParsingUnexpectedError("An unexpected error occurs during SOAP response parsing preventing from processing request to Marchés Sécurisés. Please Check SOAP response.")
+                                            val targetedResponseObject = responseObjectList.find { o -> o.properties!!.find { p -> (p.value.toString() == ref && (p.name == "ordre" || p.name == "nom"))} != null }
+                                            val index = responseObjectList.indexOf(targetedResponseObject)
+                                            if (index >= 0) responseObjectList[index] else throw SoapParsingUnexpectedError("An unexpected error occurs during SOAP response parsing preventing from processing request to Marchés Sécurisés. Please Check SOAP response.")
                                         }
                                     }
                                 }
@@ -357,7 +363,7 @@ class MSUtils{
                             val jcCheckRejected: JAXBContext = JAXBContext.newInstance(CheckConsultationRejectedState::class.java)
                             val unmarshallerCheckRejected: Unmarshaller = jcCheckRejected.createUnmarshaller()
                             val dataJAXBCheckRejected: JAXBElement<CheckConsultationRejectedState> = unmarshallerCheckRejected.unmarshal(xsrCheckRejected, CheckConsultationRejectedState::class.java)
-                            throw CheckConsultationRejectedError("Consultation publication request was rejected because of the following error : ${dataJAXBCheckRejected.value.errorState}\n" +
+                            throw ConsultationRejectedError("Consultation publication request was rejected because of the following error : ${dataJAXBCheckRejected.value.errorState}\n" +
                                     "Consultation saved data : \n" +
                                     "dce : ${dataJAXBCheckRejected.value.dce}\n" +
                                     "object : ${dataJAXBCheckRejected.value.objet}\n" +
@@ -398,7 +404,7 @@ class MSUtils{
                             val jcPublishRejected: JAXBContext = JAXBContext.newInstance(PublishConsultationRejectedState::class.java)
                             val unmarshallerPublishRejected: Unmarshaller = jcPublishRejected.createUnmarshaller()
                             val dataJAXBPublishRejected: JAXBElement<PublishConsultationRejectedState> = unmarshallerPublishRejected.unmarshal(xsrPublishRejected, PublishConsultationRejectedState::class.java)
-                            throw PublishConsultationRejectedError("Consultation publication request was rejected \n" +
+                            throw ConsultationRejectedError("Consultation publication request was rejected \n" +
                                     "Consultation saved data : \n" +
                                     "dce : ${dataJAXBPublishRejected.value.dce}\n" +
                                     "object : ${dataJAXBPublishRejected.value.objet}\n" +
@@ -416,6 +422,64 @@ class MSUtils{
                                     "invisible : ${dataJAXBPublishRejected.value.invisible}\n")
                         }
                         else -> throw SoapParsingUnexpectedError("Unable to process to consultation publication in Marchés Sécurisés beacause of unexpected error")
+                    }
+                }
+                else -> throw SoapParsingUnexpectedError("Unable to recognize requested action")
+            }
+        }
+
+        fun checkSoapResponse(responseObject: ResponseType, type: String, action: String, ref: String = ""): Boolean{
+            when(action){
+                BindingKeyAction.CREATE.value -> {
+                    when(type){
+                        MSUtils.CONSULTATION_TYPE -> {
+                            return responseObject.properties != null
+                                    && responseObject.properties!!.size >= 8
+                                    && responseObject.properties!![8].value == ref
+                                    && responseObject.properties!![8].status == "changed"
+                        }
+                        MSUtils.LOT_TYPE -> {
+                            return responseObject.properties != null
+                                    && responseObject.properties!!.find { p -> p.value == "error" } == null
+                                    && responseObject.properties!!.size >= 6
+                                    && responseObject.properties!!.find { p -> p.value.toString() == ref } != null
+                        }
+                        MSUtils.PIECE_TYPE -> {
+                            return responseObject.type != "error"
+                                    && responseObject.properties != null
+                                    && responseObject.properties!!.size >= 5
+                                    && responseObject.properties!![5].value == ref
+                        }
+                        else -> throw SoapParsingUnexpectedError("Unable to recognize type")
+                    }
+                }
+                BindingKeyAction.UPDATE.value -> {
+                    when(type){
+                        MSUtils.CONSULTATION_TYPE -> {
+                            return responseObject.properties != null
+                                    && responseObject.properties!!.size >= 8
+                                    && responseObject.properties!![8].value == ref
+                        }
+                        MSUtils.LOT_TYPE -> {
+                            return responseObject.properties != null
+                                    && responseObject.properties!!.find { p -> p.value == "error" } == null
+                                    && responseObject.properties!!.find { p -> p.value.toString() == ref } != null
+                        }
+                        else -> throw SoapParsingUnexpectedError("Unable to recognize type")
+                    }
+                }
+                BindingKeyAction.DELETE.value -> {
+                    when(type){
+                        MSUtils.LOT_TYPE -> {
+                            return responseObject.properties != null
+                                    && responseObject.properties!!.find { p -> p.value == "error" } == null
+                                    && (responseObject.properties!!.size >= 5 || responseObject.properties!![0].value == "supprime")
+                        }
+                        MSUtils.PIECE_TYPE -> {
+                            return responseObject.properties != null
+                                    && (responseObject.properties!![0].name == "cle_piece" || responseObject.properties!![0].value == "supprime")
+                        }
+                        else -> throw SoapParsingUnexpectedError("Unable to recognize type")
                     }
                 }
                 else -> throw SoapParsingUnexpectedError("Unable to recognize requested action")
@@ -693,10 +757,8 @@ class MSUtils{
 class BadDceError (override val message: String): Exception(message)
 class BadPaError (override val message: String): Exception(message)
 class BadLogError (override val message: String): Exception(message)
-class CheckConsultationRejectedError (override val message: String): Exception(message)
-class PublishConsultationRejectedError (override val message: String): Exception(message)
-class ConsultationDuplicateError (override val message: String): Exception(message)
-class LotDuplicateError (override val message: String): Exception(message)
+class ConsultationRejectedError (override val message: String): Exception(message)
+class DuplicateError (override val message: String): Exception(message)
 class DeletionError (override val message: String): Exception(message)
 class BadClePiece (override val message: String): Exception(message)
 class PieceSizeError (override val message: String): Exception(message)

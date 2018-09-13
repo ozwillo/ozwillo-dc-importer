@@ -55,13 +55,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
         when {
             routingBindingKeyOfAction(routingKey, BindingKeyAction.CREATE) ->
                 when {
-                    routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
+                    routingBindingKeyOfType(routingKey,MSUtils.CONSULTATION_TYPE) -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         try {
                             val responseObject = marcheSecuriseService.createAndUpdateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
                             when{
-                                responseObject.properties != null && responseObject.properties!!.size >= 8 && responseObject.properties!![8].value == consultation.reference && responseObject.properties!![8].status == "changed" -> {
+                                MSUtils.checkSoapResponse(responseObject, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value, consultation.reference.toString()) -> {
                                     for (i in responseObject.properties!!.indices){
                                         if (responseObject.properties!![i].message == "value_not_allowed"){
                                             logger.warn("An error occurs in consultation creation, value not allowed  for ${responseObject.properties!![i].name}. Please update it.")
@@ -76,7 +76,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
-                        }catch (e: ConsultationDuplicateError){
+                        }catch (e: DuplicateError){
                             channel.basicReject(tag, false)
                             logger.warn(e.message)
                         }catch (e: BadLogError){
@@ -88,13 +88,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                         }
                     }
 
-                    routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
+                    routingBindingKeyOfType(routingKey, MSUtils.LOT_TYPE) -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
                         try {
                             val responseObject = marcheSecuriseService.createLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                             when{
-                                responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && responseObject.properties!!.size >= 6 && responseObject.properties!!.find { p -> p.value.toString() == lot.ordre.toString() } != null -> {
+                                MSUtils.checkSoapResponse(responseObject, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value, lot.ordre.toString()) -> {
                                     channel.basicAck(tag, false)
                                     logger.debug("Creation of lot ${lot.libelle} successful")
                                 }
@@ -108,7 +108,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                 }
                                 else -> channel.basicReject(tag, true)
                             }
-                        }catch (e: LotDuplicateError){
+                        }catch (e: DuplicateError){
                             channel.basicReject(tag, false)
                             logger.warn(e.message)
                         }catch (e: BadLogError){
@@ -120,13 +120,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                         }
                     }
 
-                    routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
+                    routingBindingKeyOfType(routingKey, MSUtils.PIECE_TYPE) -> {
                         val piece:Piece = Piece.toPiece(resource)
                         logger.debug("Binding $routingKey received piece ${piece.libelle}")
                         try {
                             val responseObject = marcheSecuriseService.createPiece(routingBindingKeySiret(routingKey), piece, resource.getUri())
                             when{
-                                responseObject.type != "error" && responseObject.properties != null && responseObject.properties!!.size >= 5 && responseObject.properties!![5].value == "${piece.nom}.${piece.extension}" -> {
+                                MSUtils.checkSoapResponse(responseObject, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "${piece.nom}.${piece.extension}") -> {
                                     channel.basicAck(tag, false)
                                     logger.debug("Creation of piece ${piece.libelle} successful")
                                 }
@@ -160,13 +160,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
                 when {
-                    routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
+                    routingBindingKeyOfType(routingKey,MSUtils.CONSULTATION_TYPE) -> {
                         val consultation:Consultation = Consultation.fromDCObject(resource)
                         logger.debug("Binding $routingKey received consultation ${consultation.objet}")
                         try {
                             val responseObject = marcheSecuriseService.updateConsultation(routingBindingKeySiret(routingKey), consultation, resource.getUri())
                             when {
-                                responseObject.properties != null && responseObject.properties!!.size >= 8 && responseObject.properties!![8].value == consultation.reference -> {
+                                MSUtils.checkSoapResponse(responseObject, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value, consultation.reference.toString()) -> {
                                     for (i in responseObject.properties!!.indices){
                                         if (responseObject.properties!![i].message == "value_not_allowed"){
                                             logger.warn("An error occurs in consultation updating, value not allowed  for ${responseObject.properties!![i].name}. Please update it.")
@@ -198,13 +198,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                         }
                     }
 
-                    routingBindingKeyOfType(routingKey,"marchepublic:lot_0") -> {
+                    routingBindingKeyOfType(routingKey,MSUtils.LOT_TYPE) -> {
                         val lot: Lot = Lot.toLot(resource)
                         logger.debug("Binding $routingKey received lot ${lot.libelle}")
                         try {
                             val responseObject = marcheSecuriseService.updateLot(routingBindingKeySiret(routingKey), lot, resource.getUri())
                             when{
-                                responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && responseObject.properties!!.find { p -> p.value.toString() == lot.ordre.toString() } != null -> {
+                                MSUtils.checkSoapResponse(responseObject, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, lot.ordre.toString()) -> {
                                     channel.basicAck(tag, false)
                                     logger.debug("Update of lot ${lot.libelle} successful")
                                 }
@@ -238,7 +238,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.DELETE) ->
                     when {
-                        routingBindingKeyOfType(routingKey,"marchepublic:consultation_0") -> {
+                        routingBindingKeyOfType(routingKey,MSUtils.CONSULTATION_TYPE) -> {
                             logger.debug("Binding $routingKey received deletion order for consultation ${resource.getUri()}")
                             try {
                                 val responseObject = marcheSecuriseService.deleteConsultation(routingBindingKeySiret(routingKey), resource.getUri())
@@ -264,12 +264,12 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                             }
                         }
 
-                        routingBindingKeyOfType(routingKey, "marchepublic:lot_0") -> {
+                        routingBindingKeyOfType(routingKey, MSUtils.LOT_TYPE) -> {
                             logger.debug("Binding $routingKey received deletion order for lot ${resource.getUri()}")
                             try {
                                 val responseObject = marcheSecuriseService.deleteLot(routingBindingKeySiret(routingKey), resource.getUri())
                                 when {
-                                    responseObject.properties != null && responseObject.properties!!.find { p -> p.value == "error" } == null && (responseObject.properties!!.size >= 5 || responseObject.properties!![0].value == "supprime") -> {
+                                    MSUtils.checkSoapResponse(responseObject, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value) -> {
                                         channel.basicAck(tag, false)
                                         logger.debug("Delete successful")
                                     }
@@ -299,12 +299,12 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                             }
                         }
 
-                        routingBindingKeyOfType(routingKey, "marchepublic:piece_0") -> {
+                        routingBindingKeyOfType(routingKey, MSUtils.PIECE_TYPE) -> {
                             logger.debug("Binding $routingKey received deletion order for piece ${resource.getUri()}")
                             try {
                                 val responseObject = marcheSecuriseService.deletePiece(routingBindingKeySiret(routingKey), resource.getUri())
                                 when {
-                                    responseObject.properties != null && (responseObject.properties!![0].name == "cle_piece" || responseObject.properties!![0].value == "supprime") -> {
+                                    MSUtils.checkSoapResponse(responseObject, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value) -> {
                                         channel.basicAck(tag, false)
                                         logger.debug("Delete successful")
                                     }
@@ -347,10 +347,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                     }
                                     else -> channel.basicReject(tag, true)
                                 }
-                            }catch (e: CheckConsultationRejectedError){
-                                channel.basicAck(tag, false)
-                                logger.warn(e.message)
-                            }catch (e: PublishConsultationRejectedError){
+                            }catch (e: ConsultationRejectedError){
                                 channel.basicAck(tag, false)
                                 logger.warn(e.message)
                             }catch (e: BadDceError){

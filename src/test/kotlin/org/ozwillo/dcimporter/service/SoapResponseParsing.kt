@@ -527,7 +527,7 @@ class SoapResponseParsing{
 
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
-        }catch (e: CheckConsultationRejectedError){
+        }catch (e: ConsultationRejectedError){
             assertThat(e.message).contains("La_date_de_cloture_n'est_pas_valide")
             assertThat(e.message).contains(dce)
             assertThat(e.message).contains(reference)
@@ -654,7 +654,7 @@ class SoapResponseParsing{
 
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.PUBLISH.value)
-        }catch (e: PublishConsultationRejectedError){
+        }catch (e: ConsultationRejectedError){
             assertThat(e.message).contains(dce)
             assertThat(e.message).contains(reference)
             assertThat(e.message).contains(objet)

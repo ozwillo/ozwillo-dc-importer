@@ -80,10 +80,13 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         return if (existingBusinessMappings == null) {
             val creationResponse = createConsultationAndSaveDce(businessAppConfiguration.login!!, businessAppConfiguration.password!!,
                     businessAppConfiguration.instanceId!!, consultation, uri, "${businessAppConfiguration.baseUrl}/$createConsultationUrl")
-            if(creationResponse.properties!!.size == 20 && creationResponse.properties!![0].status == "changed") updateConsultation(siret, consultation, uri) else creationResponse
+            if(creationResponse.properties!!.size == 20 && creationResponse.properties!![0].status == "changed")
+                updateConsultation(siret, consultation, uri)
+            else
+                creationResponse
         } else {
             logger.warn("Resource with ref '{}' already exists in local database", consultation.reference)
-            throw ConsultationDuplicateError("No consultation creation request sent to Marchés Securisés because resource with ref ${consultation.reference} already exist in local database")
+            throw DuplicateError("No consultation creation request sent to Marchés Securisés because resource with ref ${consultation.reference} already exist in local database")
         }
     }
 
@@ -112,7 +115,8 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         try {
             val savedMonoBusinessMapping = businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, name, MSUtils.CONSULTATION_TYPE).blockOptional()
             val dce = savedMonoBusinessMapping.map { businessMapping -> businessMapping.businessId }.orElse("")
-            soapMessage = MSUtils.generateModifyConsultationLogRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
+            soapMessage = MSUtils.generateModifyConsultationLogRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+                    dce, objet, enligne, datePublication, dateCloture, reference, finaliteMarche, typeMarche, prestation, passation, informatique, alloti, departement, email)
             logger.debug("get dce {}", dce)
         } catch (e: IllegalArgumentException) {
             logger.warn("error on finding dce from BusinessMapping")
@@ -217,7 +221,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 businessMappingRepository.save(businessMappingLot).subscribe()
                 logger.debug("saved businessMapping {} ", businessMappingLot)
             }else{
-                throw LotDuplicateError("Unable to save cleLot because resource with uri $uri already exist in local database")
+                throw DuplicateError("Unable to save cleLot because resource with uri $uri already exist in local database")
             }
         }else{
             logger.warn("An error occurred while saving Lot $uri")
@@ -243,7 +247,8 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             val dce = savedMonoBusinessMapping.map { businessMapping -> businessMapping.businessId }.orElse("")
             logger.debug("get dce {} ", dce)
             //  SOAP request
-            soapMessage = MSUtils.generateCreateLotLogRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce, libelle, ordre, numero)
+            soapMessage = MSUtils.generateCreateLotLogRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+                    dce, libelle, ordre, numero)
         }catch (e:IllegalArgumentException){
             logger.warn("error on finding dce from businessMapping, ${e.message}")
         }
@@ -283,7 +288,8 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             val cleLot = savedCleLotBusinessMapping.map { businessMapping -> businessMapping.businessId }.orElse("")
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             //soap request and response
-            soapMessage = MSUtils.generateModifyLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce, cleLot, libelle, ordre, numero)
+            soapMessage = MSUtils.generateModifyLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+                    dce, cleLot, libelle, ordre, numero)
         }catch (e:IllegalArgumentException){
             logger.warn("error on finding dce and cleLot from businessMapping, ${e.message}")
         }
@@ -311,7 +317,8 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             logger.debug("get dce {} and cleLot {} ", dce, cleLot)
             val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
             //SOAP request and response
-            soapMessage = MSUtils.generateDeleteLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce, cleLot)
+            soapMessage = MSUtils.generateDeleteLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
+                    dce, cleLot)
             if(!soapMessage.isEmpty()){
                 response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$lotUrl", soapMessage)
             }
