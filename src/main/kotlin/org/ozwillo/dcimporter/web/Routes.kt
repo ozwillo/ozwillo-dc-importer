@@ -10,7 +10,8 @@ class Routes(private val statusHandler: StatusHandler,
              private val publikHandler: PublikHandler,
              private val maarchHandler: MaarchHandler,
              private val marchePublicHandler: MarchePublicHandler,
-             private val connectorsHandler: ConnectorsHandler) {
+             private val connectorsHandler: ConnectorsHandler,
+             private val datacoreHandler: DatacoreHandler) {
 
     @Bean
     fun router() = router {
@@ -42,6 +43,11 @@ class Routes(private val statusHandler: StatusHandler,
                     PUT("/{siret}/consultation/{reference}/piece/{uuid}", marchePublicHandler::updatePiece)
                     DELETE("/{siret}/consultation/{reference}/piece/{uuid}", marchePublicHandler::deletePiece)
                 }
+        }
+
+        "/dc".nest{
+            POST("/type/{type}", datacoreHandler::createAndCheckOrCreateOrg)
+            //TODO: PUT
         }
 
         "/configuration".nest {

@@ -31,7 +31,7 @@ class WebSecurityConfig{
 
         return http
 
-        .authorizeExchange().pathMatchers( "/api/**").permitAll()
+        .authorizeExchange().pathMatchers( "/api/**", "/dc/**").permitAll()
                 .and()
                 .authorizeExchange().anyExchange().authenticated()
                 .and()
