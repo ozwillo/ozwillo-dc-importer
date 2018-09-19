@@ -90,5 +90,5 @@ insee:
       baseUri: https://api.insee.fr
       tokenUrl: /token
       siretUrl: /entreprises/sirene/V3/siret
-      siretParameters: ?champs=codePostalEtablissement,libelleCommuneEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret
+      siretParameters: ?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret
       secretClient: secret  #insee account Base64(cryptLogin:cryptPassword) : see https://api.insee.fr - get key section
