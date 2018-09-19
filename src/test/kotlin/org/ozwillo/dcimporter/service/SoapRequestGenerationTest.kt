@@ -7,9 +7,7 @@ import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
 import org.ozwillo.dcimporter.util.MSUtils
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -24,11 +22,11 @@ class SoapRequestGenerationTest{
     private var pa: String = "instance pa"
 
     val dce = "1533297690p44lmzk2fidz"
-    val objet = if("Consultation WS Test".length > 255) "Consultation WS Test".substring(0,255) else "Consultation WS Test"
+    val objet = "Consultation WS Test"
     val enligne = MSUtils.booleanToInt(true).toString()
     val datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
     val dateCloture = LocalDateTime.now().plusMonths(3).atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
-    val reference = if("F-SICTIAM_06_20180622W2_01".toString().length > 255) ("F-SICTIAM_06_20180622W2_01".toString()).substring(0,255) else "F-SICTIAM_06_20180622W2_01".toString()
+    val reference = "F-SICTIAM_06_20180622W2_01"
     val finaliteMarche = FinaliteMarcheType.AUTRE.toString().toLowerCase()
     val typeMarche = TypeMarcheType.AUTRE.toString().toLowerCase()
     val prestation = TypePrestationType.AUTRES.toString().toLowerCase()
@@ -39,7 +37,7 @@ class SoapRequestGenerationTest{
     val email = if(MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com")).length > 255) (MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))).substring(0,255) else MSUtils.stringListToString(listOf("test1@test.com", "test2@test.com", "test3@test.com"))
 
     val cleLot = "1532963100xz12dzos6jyh"
-    val libelleLot = if("Un premier test".length > 255) "Un premier test".substring(0,255) else "Un premier test"
+    val libelleLot = "Un premier test"
     val ordreLot = 1.toString()
     val numeroLot = 1.toString()
 
@@ -49,8 +47,8 @@ class SoapRequestGenerationTest{
     val ordrePiece = 1.toString()
     val nom = "NomDuFichierSansTiret6"
     val extension = "txt"
-    val byteArrayContenu = "un contenu texte".toByteArray()
-    val contenu = Base64.getEncoder().encodeToString(byteArrayContenu)
+    private final val byteArrayContenu = "un contenu texte".toByteArray()
+    val contenu = Base64.getEncoder().encodeToString(byteArrayContenu)!!
     val poids = 10.toString()
 
     @Test

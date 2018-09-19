@@ -4,5 +4,6 @@ enum class BindingKeyAction(val value: String) {
     CREATE("create"),
     UPDATE("update"),
     DELETE("delete"),
-    PUBLISH("publish");
+    PUBLISH("publish"),
+    CHECK("check");
 }
