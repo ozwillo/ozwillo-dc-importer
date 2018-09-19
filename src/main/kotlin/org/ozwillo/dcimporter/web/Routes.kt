@@ -46,8 +46,8 @@ class Routes(private val statusHandler: StatusHandler,
         }
 
         "/dc".nest{
-            POST("/type/{type}", datacoreHandler::createAndCheckOrCreateOrg)
-            //TODO: PUT
+            POST("/type/{type}", datacoreHandler::createResourceWithOrganization)
+            PUT("/type/{type}", datacoreHandler::updateResourceWithOrganization)
         }
 
         "/configuration".nest {

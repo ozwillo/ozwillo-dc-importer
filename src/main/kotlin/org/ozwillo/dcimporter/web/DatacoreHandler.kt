@@ -1,85 +1,167 @@
 package org.ozwillo.dcimporter.web
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.ozwillo.dcimporter.config.ApplicationProperties
+import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.kernel.TokenResponse
+import org.ozwillo.dcimporter.model.sirene.Organization
+import org.ozwillo.dcimporter.model.sirene.Response
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.web.reactive.error.DefaultErrorWebExceptionHandler
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Component
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.ServerResponse.status
+import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
-import sun.security.validator.ValidatorException
 import java.net.URI
 
 @Component
-class DatacoreHandler (private val datacoreService: DatacoreService){
+class DatacoreHandler (private val datacoreService: DatacoreService,
+                       private val datacoreProperties: DatacoreProperties,
+                       private val applicationProperties: ApplicationProperties){
 
     companion object {
         private val logger = LoggerFactory.getLogger(DatacoreHandler::class.java)
     }
 
-    fun createAndCheckOrCreateOrg(req: ServerRequest): Mono<ServerResponse> {
+    @Value("\${insee.api.sirene.baseUri}")
+    private val baseUri = ""
+    @Value("\${insee.api.sirene.tokenUrl}")
+    private val tokenUrl = ""
+    @Value("\${insee.api.sirene.siretUrl}")
+    private val siretUrl = ""
+    @Value("\${insee.api.sirene.siretParameters}")
+    private val siretParameters = ""
+    @Value("\${insee.api.sirene.secretClient}")
+    private val secretClient = ""
+
+    fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
         val project = extractProject(req.headers())
         val bearer = extractBearer(req.headers())
 
         return req.bodyToMono<DCBusinessResourceLight>()
                 .flatMap { resource: DCBusinessResourceLight ->
-                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("http://data.ozwillo.com/dc/type/orgfr:Organisation_0") }
+                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/orgfr:Organisation_0") }
                     if (!filteredResource.isEmpty()){
-                        filteredResource.forEach { key, value ->
-                            val siret = value.toString().substringAfterLast("/")
-                            try {
-                                val dcOrg = datacoreService.getResourceFromIRI(project, "orgfr:Organisation_0", "FR/$siret", bearer)
-                                logger.debug("Find organization $dcOrg")
-                            }catch (e: HttpClientErrorException){
-                                logger.debug("No organization dcObject found in datacore for siret $siret")
-                                try {
-                                    val dcOrg = getOrgFromSireneAPI(siret)
-                                    logger.debug("Found organization $dcOrg on Insee database")
-                                }catch (e: HttpClientErrorException){
-                                    val body = when(e.statusCode){
-                                        HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                                        HttpStatus.NOT_FOUND -> "No organization found for siret $siret on Insee database"
-                                        else -> "Unexpected error"
-                                    }
-                                    status(e.statusCode).body(BodyInserters.fromObject(body))
+                        findOrCreateDCOrganization(project, bearer, filteredResource)
+                        datacoreService.saveResource(project, type, resource, bearer)
+                                .flatMap {result ->
+                                    val savedResult = datacoreService.getResourceFromIRI(project, type, result.resource.getIri(), bearer)
+                                    status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(savedResult))
                                 }
-                            }
-                        }
-                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(filteredResource))
                     }else{
-                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(resource.getValues()))
+                        badRequest().body(BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
+                    }
+                }
+                .onErrorResume { error ->
+                    when{
+                        error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED -> status(error.statusCode).body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
+                        else -> this.throwableToResponse(error)
                     }
                 }
     }
 
+    fun updateResourceWithOrganization(req: ServerRequest): Mono<ServerResponse>{
+        val type = req.pathVariable("type")
+        val project = extractProject(req.headers())
+        val bearer = extractBearer(req.headers())
+
+        return req.bodyToMono<DCBusinessResourceLight>()
+                .flatMap { resource: DCBusinessResourceLight ->
+                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/orgfr:Organisation_0") }
+                    if (!filteredResource.isEmpty()){
+                        findOrCreateDCOrganization(project, bearer, filteredResource)
+                        datacoreService.updateResource(project, type, resource, bearer)
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
+                    }else{
+                        badRequest().body(BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
+                    }
+                }
+                .onErrorResume { error ->
+                    when{
+                        error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED -> status(error.statusCode).body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
+                        else -> this.throwableToResponse(error)
+                    }
+                }
+    }
+
+    private fun findOrCreateDCOrganization(project: String, bearer: String, filteredMap: Map<String, Any>){
+        var dcOrg: DCBusinessResourceLight
+        filteredMap.forEach { _, value ->
+            val siret = value.toString().substringAfterLast("/")
+            try {
+                dcOrg = datacoreService.getResourceFromIRI(project, "orgfr:Organisation_0", "FR/$siret", bearer)
+                logger.debug("Find organization $dcOrg")
+            }catch (e: HttpClientErrorException){
+                if(e.statusCode == HttpStatus.NOT_FOUND){
+                    logger.debug("No organization dcObject found in datacore for siret $siret")
+                    dcOrg = getOrgFromSireneAPI(siret)
+                    logger.debug("Found organization $dcOrg on Insee database")
+                    datacoreService.saveResource(project, "orgfr:Organisation_0", dcOrg, bearer)
+                }else{
+                    throw e
+                }
+            }
+        }
+    }
+
+    private fun getSireneToken():String{
+        val restTemplate = RestTemplate()
+
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
+        headers.set("Authorization", "Basic $secretClient")
+        val map = LinkedMultiValueMap<String, String>()
+        map.add("grant_type", "client_credentials")
+
+        val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
+
+        val response :ResponseEntity<TokenResponse> = restTemplate.postForEntity("$baseUri$tokenUrl", request, TokenResponse::class.java)
+        return response.body!!.accessToken!!
+    }
+
     private fun getOrgFromSireneAPI(siret:String): DCBusinessResourceLight{
-        val encodedUri = UriComponentsBuilder.fromUriString("http://api.insee.fr/entreprises/sirene/V3/siret/$siret").build().encode().toUriString()
+        val sireneToken = "Bearer "+getSireneToken()
+        val encodedUri = UriComponentsBuilder.fromUriString("$baseUri$siretUrl/$siret$siretParameters").build().encode().toUriString()
         val restTemplate = RestTemplate()
 
         val headers = LinkedMultiValueMap<String, String>()
-        headers.set("Authorization", "Bearer xxxx")
+        headers.set("Authorization", sireneToken)
 
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-         return try {
-            val response: ResponseEntity<DCBusinessResourceLight> = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
-            response.body!!
-        }catch (e: ResourceAccessException){
-            throw e;
+        try {
+            val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
+            restTemplate.interceptors.add(FullLoggingInterceptor())
+            val response: ResponseEntity<String> = restTemplate.exchange(request, String::class.java)
+            logger.debug(response.body!!)
+
+            val mapper = jacksonObjectMapper()
+            mapper.findAndRegisterModules()
+            val fakeResponseObject = mapper.readValue(response.body, Response::class.java)
+            val cp = fakeResponseObject.etablissement!!.adresse!!.cp!!
+            val numero = fakeResponseObject.etablissement.adresse!!.numero
+            val typeVoie = fakeResponseObject.etablissement.adresse.typeVoie
+            val libelleVoie = fakeResponseObject.etablissement.adresse.libelleVoie
+            val fakeOrg = Organization(cp = cp,
+                    voie = "$numero $typeVoie $libelleVoie",
+                    pays = "${datacoreProperties.baseUri}/geocofr:Pays_0/FR",
+                    denominationUniteLegale = fakeResponseObject.etablissement.uniteLegale!!.denominationUniteLegale ?: fakeResponseObject.etablissement.uniteLegale.nomUniteLegale!!,
+                    siret = fakeResponseObject.etablissement.siret!!)
+
+            return fakeOrg.toDcObject(datacoreProperties.baseUri, siret)
+        }catch (e: Throwable){
+            throw e
         }
     }
 
@@ -97,5 +179,16 @@ class DatacoreHandler (private val datacoreService: DatacoreService){
             return ""
 
         return authorizationHeader[0].split(" ")[1]
+    }
+
+    private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
+        DatacoreHandler.logger.error("Operation failed with error $throwable")
+        return when (throwable) {
+            is HttpClientErrorException -> ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.responseBodyAsString))
+            else -> {
+                ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
+            }
+        }
+
     }
 }

@@ -6,7 +6,6 @@ import org.mockito.BDDMockito.given
 import org.mockito.BDDMockito.willReturn
 import org.mockito.Mockito.mock
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory
 import org.springframework.amqp.rabbit.connection.Connection
 import org.springframework.amqp.rabbit.connection.ConnectionFactory
