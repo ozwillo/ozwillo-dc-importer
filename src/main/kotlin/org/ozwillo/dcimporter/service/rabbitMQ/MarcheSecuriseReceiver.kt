@@ -26,27 +26,6 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
         routingByBindingKey(incoming, channel, tag)
     }
 
-    @RabbitListener(queues = ["ms.deadletter"])
-    @Throws(InterruptedException::class)
-    fun dealFailedMessage(failedMessage: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long){
-        val retriesHeader:Int = if(failedMessage.messageProperties.headers["x-retries"] == null) 0 else (failedMessage.messageProperties.headers["x-retries"] as Int)
-        val delayFactor = if(failedMessage.messageProperties.headers["x-delay-factor"] == null) 1 else (failedMessage.messageProperties.headers["x-delay-factor"] as Int)
-        val messageId = failedMessage.messageProperties.headers["message-id"]
-
-        when{
-            retriesHeader < 50 -> {
-                failedMessage.messageProperties.headers["x-retries"] = retriesHeader+1
-                failedMessage.messageProperties.headers["x-delay-factor"] = delayFactor * 2
-                failedMessage.messageProperties.delay = delayFactor * 900000   // delay 1/4 hour -> *2 each try for 50 tries
-                val routingKey = failedMessage.messageProperties.headers["original-routing-key"].toString()
-                this.template.convertAndSend("dcimporter", routingKey, failedMessage)
-                logger.debug("Failed message ${failedMessage.body} with routing key $routingKey about to be re-send to marchesecurise in ${failedMessage.messageProperties.delay} ms (${failedMessage.messageProperties.delay/3600000} hours)")
-                channel.basicAck(tag, false)
-            }
-            else -> logger.warn("Unable to finalize message treatment. Please check Dead Letter queue for message with id $messageId.")
-        }
-    }
-
     fun routingByBindingKey(incoming: Message, channel: Channel, tag: Long) {
         val message = String(incoming.body)
         val routingKey: String = incoming.messageProperties.headers["original-routing-key"].toString()
@@ -71,7 +50,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                     logger.debug("Creation of consultation ${consultation.reference} successful")
                                 }
                                 responseObject.type == "error" && responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                    logger.warn("Unable to process to consultation creation in Marchés Sécurisés because of following error : Bad Pa")
+                                    logger.warn("Unable to process to consultation creation in Marchés Sécurisés because of following error : Bad Pa. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 else -> channel.basicReject(tag, true)
@@ -99,11 +78,11 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                     logger.debug("Creation of lot ${lot.libelle} successful")
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
-                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Dce")
+                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Dce. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Pa")
+                                    logger.warn("Unable to process to lot creation in Marchés Sécurisés because of following error : Bad Pa. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 else -> channel.basicReject(tag, true)
@@ -176,15 +155,15 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                     logger.debug("Update of consultation ${consultation.reference} successful")
                                 }
                                 responseObject.type == "error" && responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Pa")
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "load_consultation_fail" && responseObject.properties!![0].message == "no_consultation" -> {
-                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Dce")
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "array_expected" && responseObject.properties!![0].message == "no_array" -> {
-                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad array format. Please check request format")
+                                    logger.warn("Unable to process to consultation updating in Marchés Sécurisés beacause of following error : Bad array format. Please check request format. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 else -> channel.basicReject(tag, true)
@@ -209,15 +188,15 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                     logger.debug("Update of lot ${lot.libelle} successful")
                                 }
                                 responseObject.properties != null && responseObject.properties!!.size >= 6 && responseObject.properties!![6].name == "load_lot_error" -> {
-                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad cleLot")
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad cleLot. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
-                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Dce")
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Dce. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Pa")
+                                    logger.warn("Unable to process to lot updating in Marchés Sécurisés because of following error : Bad Pa. Please check ms.deadletter queue")
                                     channel.basicReject(tag, false)
                                 }
                                 else -> channel.basicReject(tag, true)
@@ -274,15 +253,15 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                                         logger.debug("Delete successful")
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_lot_error" -> {
-                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad cleLot")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad cleLot. Please check ms.deadletter queue")
                                         channel.basicReject(tag, false)
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_dce_error" -> {
-                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Dce")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Dce. Please check ms.deadletter queue")
                                         channel.basicReject(tag, false)
                                     }
                                     responseObject.properties != null && responseObject.properties!![0].name == "load_pa_error" -> {
-                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Pa")
+                                        logger.warn("Unable to process to lot deletion in Marchés Sécurisés because of following error : Bad Pa. Please check ms.deadletter queue")
                                         channel.basicReject(tag, false)
                                     }
                                     else -> channel.basicReject(tag, true)

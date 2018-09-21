@@ -117,7 +117,7 @@ class MSUtils{
 
         fun parseToResponseType (response: String, type: String, action: String, ref: String = ""): ResponseType{
             val returnResponse = parseToReturn(response, type, action)
-            return if (!returnResponse.isEmpty()) parseReturnToObject(returnResponse, type, action, ref) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password.")
+            return if (!returnResponse.isEmpty()) parseReturnToObject(returnResponse, type, action, ref) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
 
         private fun parseToReturn(response: String, type: String, action: String): String{
@@ -281,7 +281,7 @@ class MSUtils{
                                     }
                                 }
                                 "{interbat/erreur_tableau}creation_piece_error" -> throw SoapParsingUnexpectedError("Array error, please check SOAP request format. Array name must be \"fichier\" and must contains 8 key/value items (keys : lot, libelle, la, ordre, nom, extension, contenu and poids)")
-                                "{interbat/erreur_identification}identification_file_error" -> throw BadLogError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : unknown login/password")
+                                "{interbat/erreur_identification}identification_file_error" -> throw BadLogError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
                                 "{interbat/erreur_crea_file}creation_file_error" -> {
                                     val xsrCreationPieceError = initiliazeStreamReader(response)
                                     xsrCreationPieceError.nextTag()
@@ -291,9 +291,9 @@ class MSUtils{
                                     val unmarshallerCreationPieceError: Unmarshaller = jcCreationPieceError.createUnmarshaller()
                                     val dataJAXBCreationPieceError: JAXBElement<Data> = unmarshallerCreationPieceError.unmarshal(xsrCreationPieceError, Data::class.java)
                                     when(dataJAXBCreationPieceError.name.toString()){
-                                        "{interbat/erreur_crea_file}consultation_non_trouvee" -> throw BadDceError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Dce")
-                                        "{interbat/erreur_crea_file}pa_non_trouvee" -> throw BadPaError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Pa")
-                                        else -> throw SoapParsingUnexpectedError("Unable to process to piece creation in Marchés Sécurisés beacause of unexpected error")
+                                        "{interbat/erreur_crea_file}consultation_non_trouvee" -> throw BadDceError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
+                                        "{interbat/erreur_crea_file}pa_non_trouvee" -> throw BadPaError("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
+                                        else -> throw SoapParsingUnexpectedError("Unable to process to piece creation in Marchés Sécurisés beacause of unexpected error. Please check ms.deadletter queue")
                                     }
                                 }
                                 else -> throw SoapParsingUnexpectedError("An unexpected error occurs during SOAP response parsing preventing from processing request to Marchés Sécurisés. Please Check SOAP response.")
@@ -316,10 +316,10 @@ class MSUtils{
 
                             when(dataJAXB.name.toString()){
                                 "{interbat/suppression_effectuee}consultation_suppr_ok" ->  deleteConsultationOkState
-                                "{interbat/suppression_refusee}consultation_cle_error" -> throw BadDceError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Dce")
-                                "{interbat/pa_refuse}pa_suppr_dce_error" -> throw BadPaError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Pa")
-                                "{interbat/log_refuse}log_error" -> throw BadLogError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : unknown login/password")
-                                else -> throw SoapParsingUnexpectedError("Unable to process to consultation deletion in Marchés Sécurisés because of unexpected error")
+                                "{interbat/suppression_refusee}consultation_cle_error" -> throw BadDceError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
+                                "{interbat/pa_refuse}pa_suppr_dce_error" -> throw BadPaError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
+                                "{interbat/log_refuse}log_error" -> throw BadLogError("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
+                                else -> throw SoapParsingUnexpectedError("Unable to process to consultation deletion in Marchés Sécurisés because of unexpected error. Please check ms.deadletter queue")
                             }
                         }
                         LOT_TYPE, PIECE_TYPE -> {
@@ -335,11 +335,11 @@ class MSUtils{
                                     val checkDeletion = dataJAXB.value.responseObject!!.find { o -> o.properties!!.find { p -> p.value.toString() == ref } != null }
                                     if (checkDeletion == null) dataJAXB.value.responseObject!![0] else throw DeletionError("An unexpected error occurs preventing from delete object from Marchés Sécurisés. Please check SOAP response.")
                                 }
-                                "{interbat/erreur_cle_piece}cle_piece_error" -> throw BadClePiece("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : requested piece is not found")
-                                "{interbat/erreur_cle_dce}cle_dce_error" -> throw BadDceError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Dce")
-                                "{interbat/erreur_crea_lot}creation_lot_error" -> throw BadPaError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Pa")
-                                "{interbat/erreur_identification}identification_lot_error" -> throw BadLogError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password")
-                                else -> throw SoapParsingUnexpectedError("Unable to process to object deletion in Marchés Sécurisés because of unexpected error")
+                                "{interbat/erreur_cle_piece}cle_piece_error" -> throw BadClePiece("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : requested piece is not found. Please check ms.deadletter queue")
+                                "{interbat/erreur_cle_dce}cle_dce_error" -> throw BadDceError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
+                                "{interbat/erreur_crea_lot}creation_lot_error" -> throw BadPaError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
+                                "{interbat/erreur_identification}identification_lot_error" -> throw BadLogError("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
+                                else -> throw SoapParsingUnexpectedError("Unable to process to object deletion in Marchés Sécurisés because of unexpected error. Please check ms.deadletter queue")
                             }
                         }
                         else -> throw SoapParsingUnexpectedError("Unable to recognize type")
@@ -378,12 +378,13 @@ class MSUtils{
                                     "emails list : ${dataJAXBCheckRejected.value.emails}\n" +
                                     "online : ${dataJAXBCheckRejected.value.enLigne}\n" +
                                     "with lots : ${dataJAXBCheckRejected.value.alloti}\n" +
-                                    "invisible : ${dataJAXBCheckRejected.value.invisible}\n")
+                                    "invisible : ${dataJAXBCheckRejected.value.invisible}\n" +
+                                    "Please check ms.deadletter queue")
                         }
-                        "{interbat/dce_refusee}dce_error" -> throw BadDceError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Dce")
-                        "{interbat/pa_refusee}pa_error" -> throw BadPaError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Pa")
-                        "{interbat/identification_refusee}identification_error" -> throw BadLogError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : unknown login/password")
-                        else -> throw SoapParsingUnexpectedError("Unable to check consultation for publication in Marchés Sécurisés beacause of unexpected error")
+                        "{interbat/dce_refusee}dce_error" -> throw BadDceError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
+                        "{interbat/pa_refusee}pa_error" -> throw BadPaError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
+                        "{interbat/identification_refusee}identification_error" -> throw BadLogError("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
+                        else -> throw SoapParsingUnexpectedError("Unable to check consultation for publication in Marchés Sécurisés beacause of unexpected error. Please check ms.deadletter queue")
                     }
                 }
                 BindingKeyAction.PUBLISH.value -> {
@@ -419,9 +420,10 @@ class MSUtils{
                                     "emails list : ${dataJAXBPublishRejected.value.emails}\n" +
                                     "online : ${dataJAXBPublishRejected.value.enLigne}\n" +
                                     "with lots : ${dataJAXBPublishRejected.value.alloti}\n" +
-                                    "invisible : ${dataJAXBPublishRejected.value.invisible}\n")
+                                    "invisible : ${dataJAXBPublishRejected.value.invisible}\n" +
+                                    "Please check ms.deadletter queue")
                         }
-                        else -> throw SoapParsingUnexpectedError("Unable to process to consultation publication in Marchés Sécurisés beacause of unexpected error")
+                        else -> throw SoapParsingUnexpectedError("Unable to process to consultation publication in Marchés Sécurisés beacause of unexpected error. Please check ms.deadletter queue.")
                     }
                 }
                 else -> throw SoapParsingUnexpectedError("Unable to recognize requested action")

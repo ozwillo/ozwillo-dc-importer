@@ -140,7 +140,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -288,7 +288,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -423,7 +423,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadDceError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Dce")
+            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
         }
     }
 
@@ -443,7 +443,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadPaError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Pa")
+            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
         }
     }
 
@@ -463,7 +463,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.DELETE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : unknown login/password")
+            assertThat(e.message).isEqualTo("Unable to process to consultation deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -551,7 +551,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadDceError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Dce")
+            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
         }
     }
 
@@ -571,7 +571,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadPaError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Pa")
+            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
         }
     }
 
@@ -591,7 +591,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CHECK.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : unknown login/password")
+            assertThat(e.message).isEqualTo("Unable to process to consultation publication in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -769,7 +769,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -916,7 +916,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -1071,7 +1071,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password.")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -1212,7 +1212,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadDceError){
-            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Dce")
+            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
         }
     }
 
@@ -1232,7 +1232,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadPaError){
-            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Pa")
+            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
         }
     }
 
@@ -1252,7 +1252,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.CREATE.value, "$nom.$extension")
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : unknown login/password")
+            assertThat(e.message).isEqualTo("Unable to process to piece creation in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
     }
 
@@ -1349,7 +1349,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadClePiece){
-            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : requested piece is not found")
+            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : requested piece is not found. Please check ms.deadletter queue")
         }
     }
 
@@ -1369,7 +1369,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadDceError){
-            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Dce")
+            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Dce. Please check ms.deadletter queue")
         }
     }
 
@@ -1389,7 +1389,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadPaError){
-            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Pa")
+            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : Bad Pa. Please check ms.deadletter queue")
         }
     }
 
@@ -1409,7 +1409,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password")
+            assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
     }
 }
