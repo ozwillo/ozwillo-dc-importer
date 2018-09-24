@@ -2,10 +2,10 @@ package org.ozwillo.dcimporter.model.datacore
 
 import java.util.ArrayList
 
-class DCQueryParameters(subject: String,    //type orga
-                        operator: DCOperator,   //opérateur = > <
-                        ordering: DCOrdering,   //asc ou desc
-                        target: String) : Iterable<DCQueryParameters.DCQueryParam> { //uri orga
+class DCQueryParameters(subject: String,
+                        operator: DCOperator,
+                        ordering: DCOrdering,
+                        target: String) : Iterable<DCQueryParameters.DCQueryParam> {
 
     class DCQueryParam(val subject: String,
                        val operator: DCOperator,
