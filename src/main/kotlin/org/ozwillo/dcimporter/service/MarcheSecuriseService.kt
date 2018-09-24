@@ -61,8 +61,9 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
         //saving dce (=consultation id in MS)
         val dce = if (responseObject.properties!!.size == 20 && responseObject.properties!![0].status == "changed")responseObject.properties!![0].value else ""
+        val msReference = if (responseObject.properties!!.size == 20 && responseObject.properties!![2].name == "reference")responseObject.properties!![2].value!! else ""
         if (!dce!!.isEmpty()){
-            val businessMapping = BusinessMapping(applicationName = name, businessId = dce, dcId = uri, type = MSUtils.CONSULTATION_TYPE)
+            val businessMapping = BusinessMapping(applicationName = name, businessId = dce, businessId2 = msReference, dcId = uri, type = MSUtils.CONSULTATION_TYPE)
             businessMappingRepository.save(businessMapping).subscribe()
             logger.debug("saved BusinessMapping : {}", businessMapping)
         }else{

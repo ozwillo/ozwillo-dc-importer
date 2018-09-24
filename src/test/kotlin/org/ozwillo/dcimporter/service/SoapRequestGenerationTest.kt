@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
+import org.ozwillo.dcimporter.model.marchesecurise.SensOrdre
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -21,7 +22,11 @@ class SoapRequestGenerationTest{
     private var password: String = "password"
     private var pa: String = "instance pa"
 
+    val ordre: String = ""
+    val sensOrdre: SensOrdre = SensOrdre.ASC
+
     val dce = "1533297690p44lmzk2fidz"
+    val msReference = "F-SICTIAM_06_20180921W2_01"
     val objet = "Consultation WS Test"
     val enligne = MSUtils.booleanToInt(true).toString()
     val datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
@@ -391,6 +396,40 @@ class SoapRequestGenerationTest{
                 "</soapenv:Envelope>"
 
         val request = MSUtils.generateDeletePieceRequest(login, password, pa, dce, clePiece)
+        assertThat(request).isEqualTo(goodRequest)
+    }
+
+    @Test
+    fun `correct listing e_response request generation test`(){
+        val goodRequest = "<soapenv:Envelope\n" +
+                "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                "    xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n" +
+                "    xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n" +
+                "    xmlns:web=\"https://www.marches-securises.fr/webserv/\">\n" +
+                "    <soapenv:Header/>\n" +
+                "    <soapenv:Body>\n" +
+                "        <web:lister_reponses_electroniques soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "            <login xsi:type=\"xsd:string\">$login</login>\n" +
+                "            <password xsi:type=\"xsd:string\">$password</password>\n" +
+                "            <dce xsi:type=\"xsd:string\">$msReference</dce>\n" +
+                "            <idpa xsi:type=\"xsd:string\"></idpa>\n" +
+                "            <ref xsi:type=\"xsd:string\"></ref>\n" +
+                "            <params xsi:type=\"Map\"\n" +
+                "                xmlns=\"http://xml.apache.org/xml-soap\">\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">ordre</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$ordre</value>\n" +
+                "                </item>\n" +
+                "                <item>\n" +
+                "                    <key xsi:type=\"xsd:string\">sensordre</key>\n" +
+                "                    <value xsi:type=\"xsd:string\">$sensOrdre</value>\n" +
+                "                </item>\n" +
+                "            </params>\n" +
+                "        </web:lister_reponses_electroniques>\n" +
+                "    </soapenv:Body>\n" +
+                "</soapenv:Envelope>"
+
+        val request = MSUtils.generateListElecResponseRequest(login, password, msReference,ordre, sensOrdre.toString())
         assertThat(request).isEqualTo(goodRequest)
     }
 }

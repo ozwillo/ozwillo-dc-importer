@@ -10,7 +10,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.assertj.core.api.Assertions.assertThat
+import org.ozwillo.dcimporter.model.marchesecurise.ConsultationReponsesE
+import org.ozwillo.dcimporter.model.marchesecurise.Entreprise
+import org.ozwillo.dcimporter.model.marchesecurise.ReponseE
+import org.ozwillo.dcimporter.model.marchesecurise.SensOrdre
 import org.ozwillo.dcimporter.util.*
+import java.time.Instant
+import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -44,6 +50,22 @@ class SoapResponseParsing{
     val ordrePiece = 1.toString()
     val nom = "NomDuFichierSansTiret6"
     val extension = "txt"
+
+    val cleReponse = "1533048729cetzyl2xvn78"
+    val cleEntreprise = "12678986288x531"
+    val nomEntreprise = "Compte entreprise pour F-SICTIAM_06"
+    val contact = "Bugs Bunny"
+    val emailContact = "test1@test.com"
+    val dateDepot = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+    val poidsReponse = 4105705.toString()
+    val adresse = "Une adresse"
+    val codePostal = 11111.toString()
+    val commune = "Vallauris"
+    val pays = "FR"
+    val tel = "un numéro de téléphone"
+    val fax = "un numéro de fax"
+    val naf = "un code naf"
+    val url = "www.unurldesite.fr"
 
     @Test
     fun `correct consultation creation response parsing test`(){
@@ -1411,5 +1433,82 @@ class SoapResponseParsing{
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
+    }
+
+    @Test
+    fun `correct e_reponse listing response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_reponses_electroniquesResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms__reponse\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleReponse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_entreprise_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"contact\"&gt;$contact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email_contact\"&gt;$emailContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_depot\"&gt;$dateDepot&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_depot_f\"&gt;vendredi 03 août 2018 - 14:47&lt;/propriete&gt;\n" +
+                "  &lt;propriete nom=\"taille_reponse\"&gt;$poidsReponse&lt;/propriete&gt;&lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"&gt;$url&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "&lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;&lt;reponses nb_total=\"1\"/&gt;&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_reponses_electroniquesResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.E_RESPONSE_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject).isNotNull
+        assertThat(responseObject.size).isEqualTo(1)
+        assertThat(responseObject[0].properties!!.size).isEqualTo(9)
+        assertThat(responseObject[0].responseObject!!.size).isEqualTo(1)
+        assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
+        assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
+        assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
+
+        val dateDepot = LocalDateTime.ofInstant(Instant.ofEpochMilli((responseObject[0].properties!![6].value!!).toLong()), TimeZone.getDefault().toZoneId())
+
+        val entreprise = Entreprise(nom = responseObject[0].responseObject!![0].properties!![0].value!!,
+                adresse1 = responseObject[0].responseObject!![0].properties!![1].value!!,
+                adresse2 = responseObject[0].responseObject!![0].properties!![2].value!!,
+                codePostal = (responseObject[0].responseObject!![0].properties!![3].value!!).toInt(),
+                commune = responseObject[0].responseObject!![0].properties!![4].value!!,
+                pays = responseObject[0].responseObject!![0].properties!![5].value!!,
+                telephone = responseObject[0].responseObject!![0].properties!![6].value!!,
+                fax = responseObject[0].responseObject!![0].properties!![7].value!!,
+                siret = responseObject[0].responseObject!![0].properties!![8].value!!,
+                siren = responseObject[0].responseObject!![0].properties!![9].value!!,
+                naf = responseObject[0].responseObject!![0].properties!![10].value!!,
+                url = responseObject[0].responseObject!![0].properties!![11].value!!)
+
+        val reponseE = ReponseE(cleReponse = responseObject[0].properties!![0].value!!,
+                dce = responseObject[0].properties!![1].value!!,
+                cleEntreprise = responseObject[0].properties!![2].value!!,
+                nomEntreprise = responseObject[0].properties!![3].value!!,
+                nomContact = responseObject[0].properties!![4].value!!,
+                emailContact = responseObject[0].properties!![5].value!!,
+                dateDepot = dateDepot,
+                poids = (responseObject[0].properties!![8].value!!).toInt(),
+                entreprise = entreprise)
+
+        val consultationReponseE = ConsultationReponsesE(
+                consultationId = "",
+                reponses = listOf(reponseE)
+        )
     }
 }
