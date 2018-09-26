@@ -29,7 +29,7 @@ class PublikHandler(private val datacoreService: DatacoreService,
 
     fun publish(req: ServerRequest): Mono<ServerResponse> =
             req.bodyToMono<FormModel>()
-                    .map { formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel) }
+                    .flatMap { formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel) }
                     .flatMap { dcResourceWithProject ->
                         datacoreService.saveResource(datacoreProject, dcResourceWithProject.first, dcResourceWithProject.second, null)
                     }

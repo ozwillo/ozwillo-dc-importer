@@ -23,7 +23,6 @@ import org.springframework.web.util.DefaultUriBuilderFactory
 import reactor.core.publisher.Mono
 import java.net.*
 import java.text.SimpleDateFormat
-import java.time.Duration
 import java.util.*
 
 // TODO : needs a lot of cleanup and refactoring !!!!
@@ -53,7 +52,7 @@ class PublikService(private val datacoreService: DatacoreService,
     @Value("\${datacore.baseUri}")
     private val datacoreBaseUri: String? = null
 
-    private fun getForm(url: String, secret: String): FormModel? {
+    private fun getForm(url: String, secret: String): Mono<FormModel> {
 
         val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", secret)
         LOGGER.debug("Getting Publik form at URL $url?$signedQuery")
@@ -71,7 +70,6 @@ class PublikService(private val datacoreService: DatacoreService,
                             RuntimeException(it.toString())
                         } })
                 .bodyToMono(FormModel::class.java)
-                .block(Duration.ofSeconds(10))
     }
 
     fun syncPublikForms(businessAppConfiguration: BusinessAppConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
@@ -92,9 +90,9 @@ class PublikService(private val datacoreService: DatacoreService,
                     RuntimeException(it.toString())}
                 }
                 .bodyToFlux(ListFormsModel::class.java)
-                .map { getForm(formatUrl(it.url), businessAppConfiguration.secretOrToken) }
-                .map { convertToDCResource(dcOrganization, it!!) }
-                .flatMap { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
+                .flatMap { listFormsModel -> getForm(formatUrl(listFormsModel.url), businessAppConfiguration.secretOrToken) }
+                .flatMap { formModel -> convertToDCResource(dcOrganization, formModel) }
+                .map { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
                 .count()
                 .map { DCResult(HttpStatus.OK) }
     }
@@ -103,57 +101,58 @@ class PublikService(private val datacoreService: DatacoreService,
                          @JsonProperty("err_desc") val errDesc: String,
                          @JsonProperty("err") val err: Int)
 
-    fun formToDCResource(organizationSiret: String, form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
+    fun formToDCResource(organizationSiret: String, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
         LOGGER.debug("Got form from Publik : $form")
         LOGGER.debug("Form has URL ${form.url}")
 
         val orgResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
-        val result: Pair<DCModelType, DCBusinessResourceLight> = convertToDCResource(orgResource, form)
+        return convertToDCResource(orgResource, form).map { result ->
+            val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
+                    dcId = result.second.getUri(), type = result.first)
+            businessMappingRepository.save(businessMapping).subscribe()
 
-        val businessMapping = BusinessMapping(applicationName = "Publik", businessId = form.url,
-                dcId = result.second.getUri(), type = result.first)
-        businessMappingRepository.save(businessMapping).subscribe()
-
-        return result
+            result
+        }
     }
 
-    private fun convertToDCResource(dcOrganization: DCResourceLight, form: FormModel): Pair<DCModelType, DCBusinessResourceLight> {
+    private fun convertToDCResource(dcOrganization: DCResourceLight, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
-        val userUri = getOrCreateUser(form).block()!!
+        return getOrCreateUser(form).map { userUri ->
+            val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
+            val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
 
-        val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
-        val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
+            dcResource.baseUri = datacoreBaseUri
+            dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
 
-        dcResource.baseUri = datacoreBaseUri
-        dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
+            val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
 
-        val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
+            dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
+            dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
+            dcFormResource.setStringValue("citizenreq:displayName", form.display_name)
+            dcFormResource.setStringValue("citizenreq:submissionChannel", form.submission.channel)
+            dcFormResource.setStringValue("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
+            dcFormResource.setStringValue("citizenreq:url", form.url)
+            dcFormResource.setStringValue("citizenreq:receiptTime", form.receipt_time)
+            dcFormResource.setStringValue("citizenreq:workflowStatus", form.workflowStatus.orEmpty())
 
-        dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
-        dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
-        dcFormResource.setStringValue("citizenreq:displayName", form.display_name)
-        dcFormResource.setStringValue("citizenreq:submissionChannel", form.submission.channel)
-        dcFormResource.setStringValue("citizenreq:submissionBackoffice", form.submission.backoffice.toString())
-        dcFormResource.setStringValue("citizenreq:url", form.url)
-        dcFormResource.setStringValue("citizenreq:receiptTime", form.receipt_time)
-        dcFormResource.setStringValue("citizenreq:workflowStatus", form.workflowStatus.orEmpty())
+            dcFormResource.setStringValue("citizenreq:criticalityLevel", form.criticality_level.toString())
+            dcFormResource.setStringValue("citizenreq:id", form.id)
+            dcFormResource.setStringValue("citizenreq:organization", dcOrganization.getUri())
 
-        dcFormResource.setStringValue("citizenreq:criticalityLevel", form.criticality_level.toString())
-        dcFormResource.setStringValue("citizenreq:id", form.id)
-        dcFormResource.setStringValue("citizenreq:organization", dcOrganization.getUri())
+            // TODO shouldn't user be instead the guy who issued the request ?
+            // Currently it is the agent who triggered the status change
+            dcFormResource.setStringValue("citizenreq:user", userUri)
 
-        // TODO shouldn't user be instead the guy who issued the request ?
-        // Currently it is the agent who triggered the status change
-        dcFormResource.setStringValue("citizenreq:user", userUri)
+            if (isEMrequest(form)) {
+                convertToDCResourceEM(dcFormResource, form)
+            } else if (isSVErequest(form)) {
+                convertToDCResourceSVE(dcFormResource, form)
+            }
 
-        if (isEMrequest(form)) {
-            convertToDCResourceEM(dcFormResource, form)
-        } else if (isSVErequest(form)) {
-            convertToDCResourceSVE(dcFormResource, form)
+            Pair(type, dcFormResource)
         }
 
-        return Pair(type, dcFormResource)
     }
 
     private fun convertToDCResourceEM(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {

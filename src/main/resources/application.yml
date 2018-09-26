@@ -21,6 +21,11 @@ management:
     web:
       exposure:
         include: httptrace, health, info
+info: #Informations displayed on actuator/info endpoint TODO: Complete if needed with other useful information
+  application:
+    name: DC Importer
+    version: 0.0.3
+    description: See README.md for further information
 
 security:
   basicAuth:

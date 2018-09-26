@@ -15,9 +15,7 @@ class RabbitMQConfig {
 
     @Bean
     fun topic(): TopicExchange {
-        val topic =  TopicExchange(EXCHANGER_NAME)
-        topic.isDelayed = true
-        return topic
+        return TopicExchange(EXCHANGER_NAME)
     }
 
     private class MarcheSecuriseReceiverConfig {
