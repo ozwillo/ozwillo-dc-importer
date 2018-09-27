@@ -24,6 +24,7 @@ import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URI
+import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.*
 
@@ -140,7 +141,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     }
 
     fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
-        val resourceUri = dcResourceUri(type, iri)
+        val resourceUri = checkEncoding(dcResourceUri(type, iri))   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         LOGGER.debug("Fetching resource from URI $encodedUri")
@@ -156,6 +157,15 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
         LOGGER.debug("Got response : ${response.body}")
         return response.body!!
+    }
+
+    private fun checkEncoding(iri: String): String{
+        val decodedIri = URLDecoder.decode(iri, "UTF-8")
+        return if (decodedIri.length < iri.length){
+            decodedIri
+        }else{
+            iri
+        }
     }
 
     fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
