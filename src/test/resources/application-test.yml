@@ -1,5 +1,5 @@
 kernel:
-  accountUri: http://localhost:8089
+  baseUri: http://localhost:8089
 
 datacore:
   url: http://localhost:8089

@@ -2,8 +2,9 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.marchepublic.Consultation
+import org.ozwillo.dcimporter.model.marchepublic.Etat
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
 import org.ozwillo.dcimporter.service.DatacoreService
@@ -19,8 +20,10 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.net.URI
+import java.time.LocalDateTime
 
 @Component
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
@@ -36,6 +39,28 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         private val CONSULTATION_TYPE = "marchepublic:consultation_0"
         private val LOT_TYPE = "marchepublic:lot_0"
         private val PIECE_TYPE = "marchepublic:piece_0"
+    }
+
+    fun getAllConsultationsForSiret(req: ServerRequest): Mono<ServerResponse>{
+        val bearer = extractBearer(req.headers())
+        val siret = req.pathVariable("siret")
+        val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
+        val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
+
+        return try {
+            val dcOrg = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+            val uri = dcOrg.getUri()
+            val consultations: Flux<DCBusinessResourceLight> = datacoreService.findResources(MP_PROJECT, CONSULTATION_TYPE, DCQueryParameters("mpconsultation:organization", DCOperator.EQ, DCOrdering.DESCENDING, uri), startParam, maxParam)
+            ok().contentType(MediaType.APPLICATION_JSON).body(consultations, DCBusinessResourceLight::class.java)
+        }catch (e: HttpClientErrorException){
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organisation with siret $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
     }
 
     fun get(req: ServerRequest): Mono<ServerResponse> {
@@ -89,6 +114,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                         }
                     }
                     //if resource already exist saveResource trigger an error 400 catched in onErrorResume
+                    consultation.etat = Etat.CREATED
                     val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
                     datacoreService.saveResource("marchepublic_0", "marchepublic:consultation_0",
                             dcConsultation, bearer)
@@ -140,7 +166,8 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         return req.bodyToMono<Consultation>()
                 .flatMap { consultation ->
-                    val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"))
+                   consultation.etat = if (consultation.dateCloture.isBefore(LocalDateTime.now())) Etat.CLOSED else consultation.etat
+                   val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"))
                     datacoreService.updateResource("marchepublic_0", "marchepublic:consultation_0", dcConsultation, bearer)
                 }
                 .flatMap { _ ->
@@ -170,6 +197,8 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val currentDcResource:DCBusinessResourceLight
         return try {
             currentDcResource = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, "FR/${req.pathVariable("siret")}/${req.pathVariable("reference")}", bearer)
+            currentDcResource.setStringValue("mpconsultation:etat", Etat.PUBLISHED.toString())
+            datacoreService.updateResource("marchepublic_0", "marchepublic:consultation_0", currentDcResource, bearer)
             sender.send(currentDcResource, MP_PROJECT, CONSULTATION_TYPE, BindingKeyAction.PUBLISH)
             ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
         } catch (e: HttpClientErrorException) {
