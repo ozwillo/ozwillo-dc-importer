@@ -28,6 +28,7 @@ class Routes(private val statusHandler: StatusHandler,
                     GET("/", statusHandler::status)
                 }
                 "/marche-public".nest {
+                    GET("/{siret}/consultation", marchePublicHandler::getAllConsultationsForSiret)
                     GET("/{siret}/consultation/{reference}", marchePublicHandler::get)
                     POST("/{siret}/consultation", marchePublicHandler::create)
                     PUT("/{siret}/consultation/{reference}", marchePublicHandler::update)
