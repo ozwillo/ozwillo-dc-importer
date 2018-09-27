@@ -1,13 +1,13 @@
 package org.ozwillo.dcimporter.web
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.model.sirene.Organization
-import org.ozwillo.dcimporter.model.sirene.Response
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -37,14 +37,16 @@ class DatacoreHandler (private val datacoreService: DatacoreService,
 
     @Value("\${insee.api.sirene.baseUri}")
     private val baseUri = ""
-    @Value("\${insee.api.sirene.tokenUrl}")
-    private val tokenUrl = ""
-    @Value("\${insee.api.sirene.siretUrl}")
-    private val siretUrl = ""
+    @Value("\${insee.api.sirene.tokenPath}")
+    private val tokenPath = ""
+    @Value("\${insee.api.sirene.siretPath}")
+    private val siretPath = ""
     @Value("\${insee.api.sirene.siretParameters}")
     private val siretParameters = ""
     @Value("\${insee.api.sirene.secretClient}")
     private val secretClient = ""
+    @Value("\${datacore.model.modelORG}")
+    private val modelOrg = ""
 
     fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
@@ -53,7 +55,7 @@ class DatacoreHandler (private val datacoreService: DatacoreService,
 
         return req.bodyToMono<DCBusinessResourceLight>()
                 .flatMap { resource: DCBusinessResourceLight ->
-                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/orgfr:Organisation_0") }
+                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
                     if (!filteredResource.isEmpty()){
                         findOrCreateDCOrganization(project, bearer, filteredResource)
                         datacoreService.saveResource(project, type, resource, bearer)
@@ -80,7 +82,7 @@ class DatacoreHandler (private val datacoreService: DatacoreService,
 
         return req.bodyToMono<DCBusinessResourceLight>()
                 .flatMap { resource: DCBusinessResourceLight ->
-                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/orgfr:Organisation_0") }
+                    val filteredResource = resource.getValues().filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
                     if (!filteredResource.isEmpty()){
                         findOrCreateDCOrganization(project, bearer, filteredResource)
                         datacoreService.updateResource(project, type, resource, bearer)
@@ -98,18 +100,22 @@ class DatacoreHandler (private val datacoreService: DatacoreService,
     }
 
     private fun findOrCreateDCOrganization(project: String, bearer: String, filteredMap: Map<String, Any>){
+
         var dcOrg: DCBusinessResourceLight
+
         filteredMap.forEach { _, value ->
+
             val siret = value.toString().substringAfterLast("/")
+
             try {
-                dcOrg = datacoreService.getResourceFromIRI(project, "orgfr:Organisation_0", "FR/$siret", bearer)
+                dcOrg = datacoreService.getResourceFromIRI(project, modelOrg, "FR/$siret", bearer)
                 logger.debug("Find organization $dcOrg")
             }catch (e: HttpClientErrorException){
                 if(e.statusCode == HttpStatus.NOT_FOUND){
                     logger.debug("No organization dcObject found in datacore for siret $siret")
                     dcOrg = getOrgFromSireneAPI(siret)
                     logger.debug("Found organization $dcOrg on Insee database")
-                    datacoreService.saveResource(project, "orgfr:Organisation_0", dcOrg, bearer)
+                    datacoreService.saveResource(project, modelOrg, dcOrg, bearer)
                 }else{
                     throw e
                 }
@@ -128,41 +134,42 @@ class DatacoreHandler (private val datacoreService: DatacoreService,
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
 
-        val response :ResponseEntity<TokenResponse> = restTemplate.postForEntity("$baseUri$tokenUrl", request, TokenResponse::class.java)
+        val response :ResponseEntity<TokenResponse> = restTemplate.postForEntity("$baseUri$tokenPath", request, TokenResponse::class.java)
         return response.body!!.accessToken!!
     }
 
     private fun getOrgFromSireneAPI(siret:String): DCBusinessResourceLight{
         val sireneToken = "Bearer "+getSireneToken()
-        val encodedUri = UriComponentsBuilder.fromUriString("$baseUri$siretUrl/$siret$siretParameters").build().encode().toUriString()
+        val encodedUri = UriComponentsBuilder.fromUriString("$baseUri$siretPath/$siret$siretParameters").build().encode().toUriString()
         val restTemplate = RestTemplate()
 
         val headers = LinkedMultiValueMap<String, String>()
         headers.set("Authorization", sireneToken)
 
-        try {
-            val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
-            restTemplate.interceptors.add(FullLoggingInterceptor())
-            val response: ResponseEntity<String> = restTemplate.exchange(request, String::class.java)
-            logger.debug(response.body!!)
+        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
+        restTemplate.interceptors.add(FullLoggingInterceptor())
+        val response: ResponseEntity<String> = restTemplate.exchange(request, String::class.java)
+        logger.debug(response.body!!)
 
-            val mapper = jacksonObjectMapper()
-            mapper.findAndRegisterModules()
-            val ResponseObject = mapper.readValue(response.body, Response::class.java)
-            val cp = ResponseObject.etablissement!!.adresse!!.cp!!
-            val numero = ResponseObject.etablissement.adresse!!.numero
-            val typeVoie = ResponseObject.etablissement.adresse.typeVoie
-            val libelleVoie = ResponseObject.etablissement.adresse.libelleVoie
-            val Org = Organization(cp = cp,
-                    voie = "$numero $typeVoie $libelleVoie",
-                    pays = "${datacoreProperties.baseUri}/geocofr:Pays_0/FR",
-                    denominationUniteLegale = ResponseObject.etablissement.uniteLegale!!.denominationUniteLegale ?: ResponseObject.etablissement.uniteLegale.nomUniteLegale!!,
-                    siret = ResponseObject.etablissement.siret!!)
+        val mapper = ObjectMapper()
+        val responseObject: JsonNode = mapper.readTree(response.body)
 
-            return Org.toDcObject(datacoreProperties.baseUri, siret)
-        }catch (e: Throwable){
-            throw e
-        }
+        val cp = responseObject.get("etablissement").get("adresseEtablissement").get("codePostalEtablissement").textValue()
+        val numero = responseObject.get("etablissement").get("adresseEtablissement").get("numeroVoieEtablissement").textValue()
+        val typeVoie = responseObject.get("etablissement").get("adresseEtablissement").get("typeVoieEtablissement").textValue()
+        val libelleVoie = responseObject.get("etablissement").get("adresseEtablissement").get("libelleVoieEtablissement").textValue()
+        val denominationUniteLegale = responseObject.get("etablissement").get("uniteLegale").get("denominationUniteLegale")
+        val nomUniteLegale = responseObject.get("etablissement").get("uniteLegale").get("nomUniteLegale")
+        val finalDenomination = if (!denominationUniteLegale.isNull) denominationUniteLegale.textValue() else nomUniteLegale.textValue()
+        val siretEtablissement = responseObject.get("etablissement").get("siret").textValue()
+
+        val organization = Organization(cp = cp,
+                voie = "$numero $typeVoie $libelleVoie",
+                pays = "${datacoreProperties.baseUri}/geocofr:Pays_0/FR",
+                denominationUniteLegale = finalDenomination,
+                siret = siretEtablissement)
+
+        return organization.toDcObject(datacoreProperties.baseUri, siret)
     }
 
     private fun extractProject(headers: org.springframework.web.reactive.function.server.ServerRequest.Headers): String {
