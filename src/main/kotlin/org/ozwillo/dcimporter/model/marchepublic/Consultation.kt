@@ -20,7 +20,8 @@ data class Consultation(
         val enLigne: Boolean,
         val alloti: Boolean,
         val invisible: Boolean,
-        val nbLots: Int
+        val nbLots: Int,
+        var etat: Etat = Etat.CREATED
 ) {
     fun toDcObject(baseUri: String, siret: String, reference: String): DCBusinessResourceLight {
         val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "marchepublic:consultation_0",
@@ -43,6 +44,7 @@ data class Consultation(
         resourceLight.setBooleanValue("mpconsultation:alloti", alloti)
         resourceLight.setBooleanValue("mpconsultation:invisible", invisible)
         resourceLight.setIntegerValue("mpconsultation:nbLots", nbLots)
+        resourceLight.setStringValue("mpconsultation:etat", etat.toString())
 
         return resourceLight
     }
@@ -67,7 +69,8 @@ data class Consultation(
                         enLigne = dcConsultation.getBooleanValue("mpconsultation:enLigne"),
                         alloti = dcConsultation.getBooleanValue("mpconsultation:alloti"),
                         invisible = dcConsultation.getBooleanValue("mpconsultation:invisible"),
-                        nbLots = dcConsultation.getIntValue("mpconsultation:nbLots"))
+                        nbLots = dcConsultation.getIntValue("mpconsultation:nbLots"),
+                        etat = Etat.valueOf(dcConsultation.getStringValue("mpconsultation:etat")))
     }
 }
 
@@ -90,4 +93,10 @@ enum class TypePrestationType {
     SERVICES,
     FOURNITURES,
     AUTRES
+}
+
+enum class Etat {
+    CREATED,
+    PUBLISHED,
+    CLOSED
 }

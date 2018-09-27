@@ -1,7 +1,7 @@
 buildscript {
     ext {
         springBootVersion = '2.0.1.RELEASE'
-        kotlinVersion = '1.2.61'
+        kotlinVersion = '1.2.71'
     }
     repositories {
         mavenCentral()
@@ -28,7 +28,7 @@ noArg {
 }
 
 group = 'com.ozwillo'
-version = '0.0.3'
+version = '0.0.4'
 sourceCompatibility = 1.8
 
 compileKotlin {
