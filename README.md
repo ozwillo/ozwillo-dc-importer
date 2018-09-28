@@ -23,7 +23,7 @@ Activated actuator endpoint :
 
 Following external applications and plugins are needed for the DC Importer application to work : 
 *  [RabbitMQ](http://www.rabbitmq.com/)
-** Recommended version : 3.7.6
-** Recommended plugins : `rabbitmq_management`, `rabbitmq_shovel` and `rabbitmq_shovel_management`
+ * Recommended version : 3.7.6
+ * Recommended plugins : `rabbitmq_management`, `rabbitmq_shovel` and `rabbitmq_shovel_management`
 *[Erlang](http://www.erlang.org/downloads)
-** Recommended version : 8.3 
+ * Recommended version : 8.3 
