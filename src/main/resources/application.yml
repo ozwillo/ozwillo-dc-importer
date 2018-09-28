@@ -1,55 +1,79 @@
 spring:
   output.ansi.enabled: DETECT
   session.store-type: none
+  data:
+    mongodb:
+      database: dcimporter
+  rabbitmq:
+    addresses: localhost
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
 
 server:
   compression.enabled: true
+  address: 127.0.0.1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: httptrace, health, info
+info: #Informations displayed on actuator/info endpoint TODO: Complete if needed with other useful information
+  application:
+    name: DC Importer
+    version: 0.0.4
+    description: See README.md for further information
+
+security:
+  basicAuth:
+    connexion:
+      user: user
+      password: changeme
+      role: DEV
 
 application:
   url: http://localhost:3000
   security:
     fetchUserInfo: true
   syncDelay: 10000
-  
+
 publik:
-  instance: 
-    - baseUrl: https://demarches-sve.test-demarches.sictiam.fr
-      organization: sictiam
-  formTypeEM: demande-de-rendez-vous-avec-un-elu
+  formTypeEM: demande-de-rendez-vous
   formTypeSVE: saisine-par-voie-electronique-new
-  secret: secret
   algo: sha256
   orig: ozwillo-dcimporter
-  datacore:
-    project: citizenreq_0
-    modelEM: citizenreq:elecmeeting_0
-    modelSVE: citizenreq:sve_0
-    modelORG: org:Organization_0
-    modelUser: citizenreq:user_0
 
-# TODO : Copied pasted from portal configuration, check if we really need all of them
+marchesecurise:
+  url:
+    createConsultation: /webserv/?module=dce|serveur_crea_dce
+    updateConsultation: /webserv/?module=dce|serveur_modif_dce
+    deleteConsultation: /webserv/?module=dce|serveur_suppr_dce
+    publishConsultation: /webserv/?module=dce|serveur_publication_dce
+    lot: /webserv/?module=dce|serveur_lot_dce
+    piece: /webserv/?module=dce|serveur_fichier_dce
+
+amqp:
+  config:
+      exchangerName: dcimporter
+      marchesecurise:
+        queueName: marchesecurise
+        deadLetterQueue: ms.deadletter
+        bindingKey: marchepublic_0.#
+      maarch:
+        queueName: maarch
+        bindingKey: citizenreq_0.#
+      publik:
+        queueName: publik
+        bindingKey: citizenreq_0.#
+
 kernel:
-  base_uri: https://kernel.ozwillo-preprod.eu
-  alt_uri: ${kernel.base_uri}
-  auth:
-    issuer: ${kernel.base_uri}/
-    auth_endpoint: ${kernel.alt_uri}/a/auth
-    token_endpoint: ${kernel.base_uri}/a/token
-    keys_endpoint: ${kernel.base_uri}/a/keys
-    userinfo_endpoint: ${kernel.base_uri}/a/userinfo
-    profile_endpoint: ${kernel.base_uri}/d/user
-    password_change_endpoint: ${kernel.alt_uri}/a/password
-    revoke_endpoint: ${kernel.base_uri}/a/revoke
-    logout_endpoint: ${kernel.alt_uri}/a/logout
-    callback_uri: ${application.url}/callback
-    home_uri: ${application.url}
-  user_directory_endpoint: ${kernel.base_uri}/d
-  event_bus_endpoint: ${kernel.base_uri}/e
-  notifications_endpoint: ${kernel.base_uri}/n
-  client_id: dcimporter
-  client_secret: secret
-  # NB. once Datacore cache is in place, move datacore scope to its dedicated system user
-  scopes_to_require: openid profile email address phone datacore
+  baseUri: https://kernel.ozwillo-preprod.eu
+  tokenEndpoint: ${kernel.baseUri}/a/token
+  clientId: dcimporter
+  clientSecret: secret
 
 datacore:
   containerUrl: http://data.ozwillo.com
@@ -58,3 +82,18 @@ datacore:
     refreshToken: refreshToken
     nonce: changeit      #Set it when getting the refreshToken
   baseUri: http://data.ozwillo.com/dc/type
+  model:
+    project: citizenreq_0
+    modelEM: citizenreq:elecmeeting_0
+    modelSVE: citizenreq:sve_0
+    modelORG: orgfr:Organisation_0
+    modelUser: citizenreq:user_0
+
+insee:
+  api:
+    sirene:
+      baseUri: https://api.insee.fr
+      tokenPath: /token
+      siretPath: /entreprises/sirene/V3/siret
+      siretParameters: ?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret
+      secretClient: secret  #insee account Base64(cryptLogin:cryptPassword) : see https://api.insee.fr - get key section

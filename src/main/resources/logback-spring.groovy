@@ -6,9 +6,9 @@ appender("CONSOLE", ConsoleAppender) {
     }
 }
 
-logger("org.oasis_eu.spring", DEBUG)
 logger("org.ozwillo.dcimporter", DEBUG)
-logger("org.oasis_eu.spring.util.KernelLoggingInterceptor", DEBUG) // ERROR, WARN (prod), INFO (preprod, dev), DEBUG
-logger("kernelLogging.logFullErrorResponses", DEBUG) // DEBUG logs any response, INFO only errors
+logger("reactor.ipc.netty.channel.ChannelOperationsHandler", DEBUG)
+logger("org.springframework.web.client", DEBUG)
+//logger("reactor.ipc.netty", DEBUG)
 
 root(WARN, ["CONSOLE"])
