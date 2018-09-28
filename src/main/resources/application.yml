@@ -89,3 +89,11 @@ datacore:
     modelORG: orgfr:Organisation_0
     modelUser: citizenreq:user_0
 
+insee:
+  api:
+    sirene:
+      baseUri: https://api.insee.fr
+      tokenPath: /token
+      siretPath: /entreprises/sirene/V3/siret
+      siretParameters: ?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret
+      secretClient: secret  #insee account Base64(cryptLogin:cryptPassword) : see https://api.insee.fr - get key section
