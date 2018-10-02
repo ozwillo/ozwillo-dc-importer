@@ -25,7 +25,7 @@ class MSUtils{
         const val CONSULTATION_TYPE = "marchepublic:consultation_0"
         const val LOT_TYPE = "marchepublic:lot_0"
         const val PIECE_TYPE = "marchepublic:piece_0"
-        const val E_RESPONSE_TYPE = "marchesecurise:e_reponse_0"
+        const val RESPONSE_TYPE = "marchepublic:reponse_0"
 
         fun convertOctetToMo(size:Int):Float{
             return size.toFloat()/1024/1024
@@ -136,6 +136,13 @@ class MSUtils{
                 return when(type){
                     CONSULTATION_TYPE -> {
                         when(action){
+                            BindingKeyAction.GET.value -> {
+                                val jc: JAXBContext = JAXBContext.newInstance(ReadConsultationResponse::class.java)
+                                val unmarshaller: Unmarshaller = jc.createUnmarshaller()
+                                val readConsultationResponse: JAXBElement<ReadConsultationResponse> = unmarshaller.unmarshal(xsr, ReadConsultationResponse::class.java)
+
+                                readConsultationResponse.value.soapReturn.toString()
+                            }
                             BindingKeyAction.CREATE.value -> {
                                 val jc: JAXBContext = JAXBContext.newInstance(CreateConsultationLogResponse::class.java)
                                 val unmarshaller: Unmarshaller = jc.createUnmarshaller()
@@ -232,9 +239,9 @@ class MSUtils{
                             }
                         }
                     }
-                    E_RESPONSE_TYPE -> {
+                    RESPONSE_TYPE -> {
                         when(action){
-                            BindingKeyAction.GET.value -> {
+                            BindingKeyAction.UPDATE.value -> {
                                 val jc: JAXBContext = JAXBContext.newInstance(ListEResponseResponse::class.java)
                                 val unmarshaller: Unmarshaller = jc.createUnmarshaller()
                                 val listEResponseResponse: JAXBElement<ListEResponseResponse> = unmarshaller.unmarshal(xsr, ListEResponseResponse::class.java)
@@ -270,7 +277,7 @@ class MSUtils{
 
         private fun parseReturnToObject(response: String, type: String, action: String, ref: String): ResponseType{
             return when (action) {
-                BindingKeyAction.CREATE.value, BindingKeyAction.UPDATE.value -> {
+                BindingKeyAction.CREATE.value, BindingKeyAction.UPDATE.value, BindingKeyAction.GET.value -> {
                     when (type){
                         CONSULTATION_TYPE, LOT_TYPE -> {
                             val xsr = initiliazeStreamReader(response)
@@ -778,6 +785,25 @@ class MSUtils{
             var result = ""
             try {
                 result = engine.createTemplate(templateToString("template/templatePublishConsultation.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        fun generateReadConsultationRequest(login: String, password: String, pa: String, dce: String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["pa"] = pa
+            model["dce"] = dce
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templateReadConsultationRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){

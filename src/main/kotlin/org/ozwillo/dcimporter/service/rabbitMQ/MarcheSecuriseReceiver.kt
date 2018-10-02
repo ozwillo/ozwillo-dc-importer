@@ -134,7 +134,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     }
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
-                        channel.basicReject(tag, false)}
+                        channel.basicAck(tag, false)}
                 }
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
@@ -211,7 +211,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     }
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
-                        channel.basicReject(tag, false)
+                        channel.basicAck(tag, false)
                     }
                 }
 
@@ -309,7 +309,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
 
                         else -> {
                             logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
-                            channel.basicReject(tag, false)
+                            channel.basicAck(tag, false)
                         }
                     }
 
@@ -345,13 +345,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                         }
                         else -> {
                             logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
-                            channel.basicReject(tag, false)
+                            channel.basicAck(tag, false)
                         }
                     }
 
             else -> {
                 logger.warn("Unable to recognize action (create, update, delete) from routing key $routingKey")
-                channel.basicReject(tag, false)
+                channel.basicAck(tag, false)
             }
         }
     }

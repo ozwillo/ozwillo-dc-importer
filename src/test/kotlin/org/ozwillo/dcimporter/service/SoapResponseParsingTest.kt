@@ -10,21 +10,19 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.assertj.core.api.Assertions.assertThat
-import org.ozwillo.dcimporter.model.marchesecurise.ConsultationReponsesE
-import org.ozwillo.dcimporter.model.marchesecurise.Entreprise
-import org.ozwillo.dcimporter.model.marchesecurise.ReponseE
-import org.ozwillo.dcimporter.model.marchesecurise.SensOrdre
+import org.ozwillo.dcimporter.model.marchepublic.RegistreReponse
 import org.ozwillo.dcimporter.util.*
 import java.time.Instant
 import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class SoapResponseParsing{
+class SoapResponseParsingTest{
 
     private var pa: String = "instance pa"
 
     val dce = "1533297690p44lmzk2fidz"
+    val msReference = "F-SICTIAM_06_20180925W2_01"
     val objet = "Consultation WS Test"
     val enligne = MSUtils.booleanToInt(true).toString()
     val datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
@@ -85,7 +83,7 @@ class SoapResponseParsing{
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\" statut=\"changed\"&gt;$dce&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"cle_pa\" statut=\"changed\"&gt;$pa&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180904W2_02&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication_f\" statut=\"changed\"&gt;${LocalDateTime.now()}&lt;/propriete&gt;\n" +
@@ -196,7 +194,7 @@ class SoapResponseParsing{
                 "                xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -256,7 +254,7 @@ class SoapResponseParsing{
                 "                xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -499,7 +497,7 @@ class SoapResponseParsing{
                 "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -627,7 +625,7 @@ class SoapResponseParsing{
                 "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -1436,7 +1434,47 @@ class SoapResponseParsing{
     }
 
     @Test
-    fun `correct e_reponse listing response parsing test`(){
+    fun `correct read consultation from marche securise response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_publication_f\"&gt;jeudi 13 septembre 2018 - 00:00&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_cloture\"&gt;$dateCloture&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_cloture_f\"&gt;dimanche 30 décembre 2018 - 00:00&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"ref_interne\"&gt;$reference&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"finalite_marche\"&gt;$finaliteMarche&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"type_marche\"&gt;$typeMarche&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"type_prestation\"&gt;$prestation&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"departements_prestation\"&gt;$departement&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"passation\"&gt;$passation&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"informatique\"&gt;$informatique&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"passe\"&gt;passe&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"emails\"&gt;$email&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"en_ligne\"&gt;$enligne&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"a_lots\"&gt;$alloti&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"invisible\"&gt;0&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![1].value).isEqualTo(msReference)
+        assertThat(responseObject.properties!![1].name).isEqualTo("reference")
+    }
+
+    @Test
+    fun `correct reponse listing response parsing test`(){
         val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
                 "    <SOAP-ENV:Body>\n" +
@@ -1472,7 +1510,7 @@ class SoapResponseParsing{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.E_RESPONSE_TYPE, BindingKeyAction.GET.value)
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RESPONSE_TYPE, BindingKeyAction.UPDATE.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.size).isEqualTo(1)
         assertThat(responseObject[0].properties!!.size).isEqualTo(9)
@@ -1481,34 +1519,12 @@ class SoapResponseParsing{
         assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
         assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
 
-        val dateDepot = LocalDateTime.ofInstant(Instant.ofEpochMilli((responseObject[0].properties!![6].value!!).toLong()), TimeZone.getDefault().toZoneId())
+        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0])
 
-        val entreprise = Entreprise(nom = responseObject[0].responseObject!![0].properties!![0].value!!,
-                adresse1 = responseObject[0].responseObject!![0].properties!![1].value!!,
-                adresse2 = responseObject[0].responseObject!![0].properties!![2].value!!,
-                codePostal = (responseObject[0].responseObject!![0].properties!![3].value!!).toInt(),
-                commune = responseObject[0].responseObject!![0].properties!![4].value!!,
-                pays = responseObject[0].responseObject!![0].properties!![5].value!!,
-                telephone = responseObject[0].responseObject!![0].properties!![6].value!!,
-                fax = responseObject[0].responseObject!![0].properties!![7].value!!,
-                siret = responseObject[0].responseObject!![0].properties!![8].value!!,
-                siren = responseObject[0].responseObject!![0].properties!![9].value!!,
-                naf = responseObject[0].responseObject!![0].properties!![10].value!!,
-                url = responseObject[0].responseObject!![0].properties!![11].value!!)
-
-        val reponseE = ReponseE(cleReponse = responseObject[0].properties!![0].value!!,
-                dce = responseObject[0].properties!![1].value!!,
-                cleEntreprise = responseObject[0].properties!![2].value!!,
-                nomEntreprise = responseObject[0].properties!![3].value!!,
-                nomContact = responseObject[0].properties!![4].value!!,
-                emailContact = responseObject[0].properties!![5].value!!,
-                dateDepot = dateDepot,
-                poids = (responseObject[0].properties!![8].value!!).toInt(),
-                entreprise = entreprise)
-
-        val consultationReponseE = ConsultationReponsesE(
-                consultationId = "",
-                reponses = listOf(reponseE)
-        )
+        assertThat(registreReponse.cleReponse).isEqualTo(cleReponse)
+        assertThat(registreReponse.nomContact).isEqualTo(contact)
+        assertThat(registreReponse.emailContact).isEqualTo(emailContact)
+        assertThat(registreReponse.dateDepot).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDepot).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(registreReponse.poids).isEqualTo(poidsReponse.toInt())
     }
 }

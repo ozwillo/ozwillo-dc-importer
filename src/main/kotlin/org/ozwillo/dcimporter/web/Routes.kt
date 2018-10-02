@@ -43,6 +43,9 @@ class Routes(private val statusHandler: StatusHandler,
                     POST("/{siret}/consultation/{reference}/piece", marchePublicHandler::createPiece)
                     PUT("/{siret}/consultation/{reference}/piece/{uuid}", marchePublicHandler::updatePiece)
                     DELETE("/{siret}/consultation/{reference}/piece/{uuid}", marchePublicHandler::deletePiece)
+
+                    //Registres
+                    POST("/{siret}/type/{type}/{reference}", marchePublicHandler::refreshDatacoreRegistreReponseForGivenConsultation)
                 }
         }
 

@@ -54,6 +54,7 @@ marchesecurise:
     publishConsultation: /webserv/?module=dce|serveur_publication_dce
     lot: /webserv/?module=dce|serveur_lot_dce
     piece: /webserv/?module=dce|serveur_fichier_dce
+    registre: /webserv/?module=registres|serveur_registres
 
 amqp:
   config:

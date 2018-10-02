@@ -7,10 +7,15 @@ import org.ozwillo.dcimporter.model.marchepublic.Consultation
 import org.ozwillo.dcimporter.model.marchepublic.Etat
 import org.ozwillo.dcimporter.model.marchepublic.Lot
 import org.ozwillo.dcimporter.model.marchepublic.Piece
+import org.ozwillo.dcimporter.model.marchepublic.Ordre
+import org.ozwillo.dcimporter.model.marchepublic.SensOrdre
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
+import org.ozwillo.dcimporter.util.MSUtils
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -29,7 +34,8 @@ import java.time.LocalDateTime
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val applicationProperties: ApplicationProperties,
-                          private val sender: Sender) {
+                          private val sender: Sender,
+                          private val marcheSecuriseListingService: MarcheSecuriseListingService) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -40,6 +46,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         private val LOT_TYPE = "marchepublic:lot_0"
         private val PIECE_TYPE = "marchepublic:piece_0"
     }
+
+    @Value("\${marchesecurise.url.registre}")
+    private val registreUrl = ""
 
     fun getAllConsultationsForSiret(req: ServerRequest): Mono<ServerResponse>{
         val bearer = extractBearer(req.headers())
@@ -476,6 +485,71 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             }
         }
     }
+
+    /*
+    *   REGISTRES
+    */
+
+    fun refreshDatacoreRegistreReponseForGivenConsultation(req: ServerRequest):Mono<ServerResponse>{
+        val bearer = extractBearer(req.headers())
+        val siret = req.pathVariable("siret")
+        val iri = "FR/$siret/${req.pathVariable("reference")}"
+
+        val ordreParam: String = if (req.queryParam("ordre").isPresent) req.queryParam("ordre").get() else Ordre.DATE_PREMIER_RETRAIT.toString()
+        val sensOrdreParam = if (req.queryParam("sensOrdre").isPresent) req.queryParam("sensOrdre").get() else SensOrdre.ASC.toString()
+
+        val dcConsultation: DCBusinessResourceLight
+
+        try {
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
+        try {
+            dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference ${req.pathVariable("reference")} does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
+        return marcheSecuriseListingService.getRegistreReponse(siret, dcConsultation.getUri(), ordreParam, sensOrdreParam)
+                .flatMap {registreReponses ->
+                        registreReponses    //TODO:De-comment when dc models are availables
+                                .onEach {registreReponse ->
+                                    val dcRegistreReponse = registreReponse.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"), registreReponse.cleReponse)
+                                    try {
+                                        datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.RESPONSE_TYPE, "FR/$siret/${req.pathVariable("reference")}/${registreReponse.cleReponse}", bearer)
+                                        datacoreService.updateResource(MP_PROJECT, MSUtils.RESPONSE_TYPE, dcRegistreReponse, bearer)
+                                    }catch (e: HttpClientErrorException){
+                                        when(e.statusCode){
+                                            HttpStatus.NOT_FOUND -> {
+                                                datacoreService.saveResource(MP_PROJECT, MSUtils.RESPONSE_TYPE, dcRegistreReponse, bearer)
+                                            }
+                                            else -> throw e
+                                        }
+                                    }
+                                }
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(registreReponses))
+                    }
+                .onErrorResume(this::throwableToResponse)
+    }
+
+
+    /*
+    *   UTILS
+    */
 
     private fun extractBearer(headers: ServerRequest.Headers): String {
         val authorizationHeader = headers.header("Authorization")

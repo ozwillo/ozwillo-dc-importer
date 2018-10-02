@@ -6,7 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
 import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
-import org.ozwillo.dcimporter.model.marchesecurise.SensOrdre
+import org.ozwillo.dcimporter.model.marchepublic.SensOrdre
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -430,6 +430,24 @@ class SoapRequestGenerationTest{
                 "</soapenv:Envelope>"
 
         val request = MSUtils.generateListElecResponseRequest(login, password, msReference,ordre, sensOrdre.toString())
+        assertThat(request).isEqualTo(goodRequest)
+    }
+
+    @Test
+    fun `correct read consultation request generation test`(){
+        val goodRequest = "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+                "        <soapenv:Header/>\n" +
+                "        <soapenv:Body>\n" +
+                "            <web:lire_consultation_log soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "                <login xsi:type=\"xsd:string\">$login</login>\n" +
+                "                <password xsi:type=\"xsd:string\">$password</password>\n" +
+                "                <pa xsi:type=\"xsd:string\">$pa</pa>\n" +
+                "                <dce xsi:type=\"xsd:string\">$dce</dce>\n" +
+                "            </web:lire_consultation_log>\n" +
+                "    </soapenv:Body>\n" +
+                "</soapenv:Envelope>"
+
+        val request = MSUtils.generateReadConsultationRequest(login, password, pa, dce)
         assertThat(request).isEqualTo(goodRequest)
     }
 }
