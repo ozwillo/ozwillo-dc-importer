@@ -11,10 +11,18 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.config.RabbitMockConfig
+import org.ozwillo.dcimporter.model.BusinessAppConfiguration
+import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
+import org.ozwillo.dcimporter.repository.BusinessMappingRepository
+import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
+import org.ozwillo.dcimporter.service.MarcheSecuriseService
+import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
+import org.springframework.boot.test.web.client.getForEntity
 import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.context.annotation.Import
 import org.springframework.http.*
@@ -34,6 +42,14 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
     private val referenceConsultation = "ref-consultation"
     private val uuidLot = UUID.randomUUID().toString()
     private val uuidPiece = UUID.randomUUID().toString()
+    private val cleRegistre = "1533048729cetzyl2xvn78"
+
+    private lateinit var businessMapping: BusinessMapping
+    private lateinit var businessAppConfiguration: BusinessAppConfiguration
+    @Autowired
+    private lateinit var businessMappingRepository: BusinessMappingRepository
+    @Autowired
+    private lateinit var businessAppConfigurationRepository: BusinessAppConfigurationRepository
 
     private val tokenInfoResponse = """
         {
@@ -61,7 +77,22 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         ]
         """
 
-    private val dcGetAllConsultationResponseEmpty = """
+    private val dcGetAllRegisterResponse = """
+        [
+            {
+                "@id": "http://data.ozwillo.com/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre"
+            }
+        ]
+        """
+
+    private val dcGetRegisterResponse = """
+        {
+                "@id": "http://data.ozwillo.com/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre",
+                "o:version": 0
+        }
+        """
+
+    private val dcGetAllResponseEmpty = """
         []
         """
 
@@ -106,6 +137,41 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
             }
             """
 
+    private val msRegistreReponseXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+            "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+            "    <SOAP-ENV:Body>\n" +
+            "        <ns1:lister_reponses_electroniquesResponse>\n" +
+            "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+            "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+            "  &lt;objet type=\"ms__reponse\"&gt;\n" +
+            "    &lt;propriete nom=\"cle\"&gt;$cleRegistre&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"cle_dce\"&gt;dce&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"cle_entreprise_ms\"&gt;cleEntreprise&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"denomination_ent\"&gt;nomEntreprise&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"contact\"&gt;contact&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"email_contact\"&gt;emailContact&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"date_depot\"&gt;1533300425&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"date_depot_f\"&gt;vendredi 03 août 2018 - 14:47&lt;/propriete&gt;\n" +
+            "  &lt;propriete nom=\"taille_reponse\"&gt;4105705&lt;/propriete&gt;&lt;objet type=\"entreprise\"&gt;\n" +
+            "    &lt;propriete nom=\"nom\"&gt;nomEntreprise&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"adresse_1\"&gt;adresse&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"adresse_2\"/&gt;\n" +
+            "    &lt;propriete nom=\"code_postal\"&gt;codePostal&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"commune\"&gt;commune&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"pays\"&gt;pays&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"tel\"&gt;tel&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"fax\"&gt;fax&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"siret\"/&gt;\n" +
+            "    &lt;propriete nom=\"siren\"/&gt;\n" +
+            "    &lt;propriete nom=\"code_naf\"&gt;naf&lt;/propriete&gt;\n" +
+            "    &lt;propriete nom=\"url\"&gt;url&lt;/propriete&gt;\n" +
+            "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+            "&lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;&lt;reponses nb_total=\"1\"/&gt;&lt;/ifw:data&gt;\n" +
+            "</return>\n" +
+            "        </ns1:lister_reponses_electroniquesResponse>\n" +
+            "    </SOAP-ENV:Body>\n" +
+            "</SOAP-ENV:Envelope>"
+
     @BeforeAll
     fun beforeAll() {
         wireMockServer = WireMockServer(wireMockConfig().port(8089))
@@ -118,6 +184,11 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         })
 
         WireMock.configureFor(8089)
+
+        businessMapping = BusinessMapping(id = "testId", dcId = "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation", businessId = "businessIdTest", businessId2 = "msReference", applicationName = MarcheSecuriseService.name, type = MSUtils.CONSULTATION_TYPE)
+        businessAppConfiguration = BusinessAppConfiguration(applicationName = MarcheSecuriseService.name, baseUrl = "http://localhost:8089", organizationSiret = siret, instanceId = "pa", password = "password", login = "login")
+        businessMappingRepository.save(businessMapping).subscribe()
+        businessAppConfigurationRepository.save(businessAppConfiguration).subscribe()
     }
 
     @AfterAll
@@ -160,7 +231,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
                 .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0\\?start=0&limit=50&mpconsultation:organization=https://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret-"))
-                .willReturn(WireMock.okJson(dcGetAllConsultationResponseEmpty).withStatus(200)))
+                .willReturn(WireMock.okJson(dcGetAllResponseEmpty).withStatus(200)))
 
 
         val entity = restTemplate.getForEntity("/api/marche-public/$siret/consultation", String::class.java)
@@ -467,5 +538,87 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 WireMock.deleteRequestedFor(
                         WireMock.urlEqualTo("/dc/type/marchepublic:lot_0/FR/$siret/$referenceConsultation/$uuidLot"))
                         .withHeader("If-Match", EqualToPattern("1")))
+    }
+
+    @Test
+    fun `get response register list from datacore`(){
+
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
+                .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
+        stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+                .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
+                .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-"))
+                .willReturn(WireMock.okJson(dcGetAllRegisterResponse).withStatus(200)))
+
+
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        assertThat(entity.body).contains(cleRegistre)
+
+        WireMock.verify(WireMock.getRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-")))
+
+    }
+
+    @Test
+    fun `get response register empty list from datacore`(){
+
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
+                .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
+        stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+                .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
+                .willReturn(WireMock.okJson(tokenInfoResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-"))
+                .willReturn(WireMock.okJson(dcGetAllResponseEmpty).withStatus(200)))
+
+
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        assertThat(entity.body).isEqualTo("[]")
+
+        WireMock.verify(WireMock.getRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-")))
+
+    }
+
+    @Test
+    fun `test datacore register response create for given consultation`(){
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
+                .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
+        stubFor(WireMock.post(WireMock.urlMatching("/webserv/\\?module=registres%7Cserveur_registres"))
+                .willReturn(WireMock.okTextXml(msRegistreReponseXml).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre"))
+                .willReturn(WireMock.aResponse().withStatus(404)))
+        stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:reponse_0"))
+                .willReturn(WireMock.okJson(dcGetRegisterResponse).withStatus(201)))
+
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+
+        assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
+
+        WireMock.verify(WireMock.postRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0")))
+    }
+
+    @Test
+    fun `test datacore register response update for given consultation`(){
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
+                .willReturn(WireMock.okJson(dcExistingResponse).withStatus(200)))
+        stubFor(WireMock.post(WireMock.urlMatching("/webserv/\\?module=registres%7Cserveur_registres"))
+                .willReturn(WireMock.okTextXml(msRegistreReponseXml).withStatus(200)))
+        stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre"))
+                .willReturn(WireMock.okJson(dcGetRegisterResponse).withStatus(200)))
+        stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:reponse_0"))
+                .willReturn(WireMock.okJson(dcGetRegisterResponse).withStatus(200)))
+
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+
+        assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
+
+        WireMock.verify(WireMock.putRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0")))
     }
 }

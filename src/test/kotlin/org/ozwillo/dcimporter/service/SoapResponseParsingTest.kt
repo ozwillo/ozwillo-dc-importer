@@ -160,7 +160,7 @@ class SoapResponseParsingTest{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -308,7 +308,7 @@ class SoapResponseParsingTest{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -789,7 +789,7 @@ class SoapResponseParsingTest{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -936,7 +936,7 @@ class SoapResponseParsingTest{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -1091,7 +1091,7 @@ class SoapResponseParsingTest{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -1474,6 +1474,66 @@ class SoapResponseParsingTest{
     }
 
     @Test
+    fun `read consultation from marche securise with bad log response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:nil=\"true\"/>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        try{
+           MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        }catch (e: BadLogError){
+           assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 get request for following reason : Unknown login/password.")
+        }
+    }
+
+    @Test
+    fun `read consultation from marche securise with bad pa response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"error\"&gt;\n" +
+                "    &lt;propriete nom=\"load_pa_error\"&gt;error&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![0].name).isEqualTo("load_pa_error")
+    }
+
+    @Test
+    fun `read consultation from marche securise with bad dce response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
+                "    &lt;propriete nom=\"load_consultation_fail\" statut=\"not_changed\" message=\"no_consultation\"&gt;no_consultation&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![0].name).isEqualTo("load_consultation_fail")
+    }
+
+    @Test
     fun `correct reponse listing response parsing test`(){
         val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
@@ -1521,10 +1581,30 @@ class SoapResponseParsingTest{
 
         val registreReponse = RegistreReponse.fromSoapObject(responseObject[0])
 
-        assertThat(registreReponse.cleReponse).isEqualTo(cleReponse)
+        assertThat(registreReponse.cle).isEqualTo(cleReponse)
         assertThat(registreReponse.nomContact).isEqualTo(contact)
         assertThat(registreReponse.emailContact).isEqualTo(emailContact)
         assertThat(registreReponse.dateDepot).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDepot).toLong()), TimeZone.getDefault().toZoneId()))
         assertThat(registreReponse.poids).isEqualTo(poidsReponse.toInt())
+    }
+
+    @Test
+    fun `correct response listing empty response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_reponses_electroniquesResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;\n" +
+                "  &lt;reponses nb_total=\"0\"/&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_reponses_electroniquesResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RESPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        assertThat(responseObject).isEmpty()
     }
 }

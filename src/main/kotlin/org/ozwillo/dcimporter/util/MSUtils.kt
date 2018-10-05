@@ -118,12 +118,12 @@ class MSUtils{
 
         fun parseToResponseType (response: String, type: String, action: String, ref: String = ""): ResponseType{
             val returnResponse = parseToReturn(response, type, action)
-            return if (!returnResponse.isEmpty()) parseReturnToObject(returnResponse, type, action, ref) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            return if (!returnResponse.isEmpty()) parseReturnToObject(returnResponse, type, action, ref) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password.")
         }
 
         fun parseToResponseObjectList(response: String, type: String, action: String): List<ResponseObject>{
             val returnResponse = parseToReturn(response, type, action)
-            return if (!returnResponse.isEmpty()) parseReturnToObjectList(returnResponse) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password and/or consultation dce. Please check ms.deadletter queue")
+            return if (!returnResponse.isEmpty()) parseReturnToObjectList(returnResponse) else throw BadLogError("Unable to process $type $action request for following reason : Unknown login/password and/or consultation dce.")
         }
 
         private fun parseToReturn(response: String, type: String, action: String): String{
@@ -272,7 +272,11 @@ class MSUtils{
             val unmarshaller: Unmarshaller = jc.createUnmarshaller()
             val dataJAXB: JAXBElement<Data> = unmarshaller.unmarshal(xsr, Data::class.java)
 
-            return dataJAXB.value.responseObject!!
+            return if (dataJAXB.value.responseObject != null){
+                dataJAXB.value.responseObject!!
+            }else{
+                emptyList()
+            }
         }
 
         private fun parseReturnToObject(response: String, type: String, action: String, ref: String): ResponseType{

@@ -61,7 +61,9 @@ class RabbitMockConfig {
                 ".987654321.grant:association_0.create",
                 ".987654321.orgfr:Organisation_0.create",
                 ".123456789.grant:association_0.update",
-                ".987654321.grant:association_0.update")
+                ".987654321.grant:association_0.update",
+                "marchepublic_0.123456789.marchepublic:reponse_0.create",
+                "marchepublic_0.123456789.marchepublic:reponse_0.update")
         container.setMessageListener(MessageListenerAdapter( object {
             fun handleMessage(message: Any) {
                 LOGGER.debug("Got message $message")

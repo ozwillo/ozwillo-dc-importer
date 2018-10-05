@@ -132,9 +132,13 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                             logger.warn(e.message)
                         }
                     }
+
+                    routingBindingKeyOfType(routingKey, MSUtils.RESPONSE_TYPE) -> channel.basicAck(tag, false)
+
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
-                        channel.basicAck(tag, false)}
+                        channel.basicAck(tag, false)
+                    }
                 }
 
             routingBindingKeyOfAction(routingKey, BindingKeyAction.UPDATE) ->
@@ -209,6 +213,9 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                             logger.warn(e.message)
                         }
                     }
+
+                    routingBindingKeyOfType(routingKey, MSUtils.RESPONSE_TYPE) -> channel.basicAck(tag, false)
+
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
                         channel.basicAck(tag, false)
