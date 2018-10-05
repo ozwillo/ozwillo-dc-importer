@@ -7,8 +7,10 @@ appender("CONSOLE", ConsoleAppender) {
 }
 
 logger("org.ozwillo.dcimporter", DEBUG)
-logger("reactor.ipc.netty.channel.ChannelOperationsHandler", DEBUG)
-logger("org.springframework.web.client", DEBUG)
-//logger("reactor.ipc.netty", DEBUG)
+logger("org.springframework.web.client", WARN)
+logger("org.springframework.web.reactive.function.client", WARN)
+logger("reactor.ipc.netty", WARN)
+logger("io.reactivex.netty.protocol.http.client", WARN)
+logger("io.netty.handler", WARN)
 
 root(WARN, ["CONSOLE"])
