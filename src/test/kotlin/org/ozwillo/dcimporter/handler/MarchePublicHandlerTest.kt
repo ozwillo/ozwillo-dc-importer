@@ -16,7 +16,6 @@ import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
-import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
 import org.ozwillo.dcimporter.service.MarcheSecuriseService
 import org.ozwillo.dcimporter.util.MSUtils
 import org.springframework.beans.factory.annotation.Autowired
@@ -554,7 +553,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 .willReturn(WireMock.okJson(dcGetAllRegisterResponse).withStatus(200)))
 
 
-        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.REPONSE_TYPE}/$referenceConsultation")
         assertThat(entity.body).contains(cleRegistre)
 
         WireMock.verify(WireMock.getRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-")))
@@ -575,7 +574,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
                 .willReturn(WireMock.okJson(dcGetAllResponseEmpty).withStatus(200)))
 
 
-        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.REPONSE_TYPE}/$referenceConsultation")
         assertThat(entity.body).isEqualTo("[]")
 
         WireMock.verify(WireMock.getRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:reponse_0\\?start=0&limit=50&mpreponse:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-")))
@@ -595,7 +594,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.post(WireMock.urlMatching("/dc/type/marchepublic:reponse_0"))
                 .willReturn(WireMock.okJson(dcGetRegisterResponse).withStatus(201)))
 
-        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.REPONSE_TYPE}/$referenceConsultation")
 
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
 
@@ -615,7 +614,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:reponse_0"))
                 .willReturn(WireMock.okJson(dcGetRegisterResponse).withStatus(200)))
 
-        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.RESPONSE_TYPE}/$referenceConsultation")
+        val entity = restTemplate.postForEntity<String>("/api/marche-public/$siret/registre/type/${MSUtils.REPONSE_TYPE}/$referenceConsultation")
 
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
 

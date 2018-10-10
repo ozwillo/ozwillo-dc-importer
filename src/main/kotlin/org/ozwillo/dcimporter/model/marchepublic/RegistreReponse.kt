@@ -1,7 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
-import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
@@ -14,13 +13,13 @@ data class RegistreReponse(override val cle: String,
                     override val emailContact: String,
                     override val dateDepot: LocalDateTime,
                     override val poids: Int,
-                    override val siret: String = "",
-                    override val consultationReference: String = ""): Registre() {
+                    override val siret: String,
+                    override val consultationReference: String): Registre() {
 
-    override fun toDcObject(baseUri: String, siret: String, reference: String, msCle: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, MSUtils.RESPONSE_TYPE,
-                "FR/$siret/$reference/$msCle"))
-        val consultationUri = DCUtils.getUri(baseUri, MSUtils.CONSULTATION_TYPE, "FR/$siret/$reference")
+    override fun toDcObject(baseUri: String, msCle: String): DCBusinessResourceLight {
+        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, MSUtils.REPONSE_TYPE,
+                "FR/$siret/$consultationReference/$msCle"))
+        val consultationUri = DCUtils.getUri(baseUri, MSUtils.CONSULTATION_TYPE, "FR/$siret/$consultationReference")
         resourceLight.setStringValue("mpreponse:mscle", msCle)
         resourceLight.setStringValue("mpreponse:consultation", consultationUri)
         resourceLight.setStringValue("mpreponse:contact", nomContact)
@@ -33,7 +32,7 @@ data class RegistreReponse(override val cle: String,
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject, siret: String = "", consultationReference: String = ""): RegistreReponse =
+        fun fromSoapObject(responseObject: ResponseObject, siret: String, consultationReference: String): RegistreReponse =
                 RegistreReponse(cle = responseObject.properties!![0].value!!,
                         nomContact = responseObject.properties[4].value!!,
                         emailContact = responseObject.properties[5].value!!,
@@ -49,18 +48,9 @@ data class RegistreReponse(override val cle: String,
                     nomContact = dcRegistreReponse.getStringValue("mpreponse:contact"),
                     emailContact = dcRegistreReponse.getStringValue("mpreponse:email"),
                     dateDepot = dcRegistreReponse.getDateValue("mpreponse:dateDepot"),
-                    poids = dcRegistreReponse.getIntValue("mpreponse:poids"))
+                    poids = dcRegistreReponse.getIntValue("mpreponse:poids"),
+                    siret = dcRegistreReponse.getIri().split("/")[1],
+                    consultationReference = dcRegistreReponse.getIri().split("/")[2])
         }
     }
-}
-
-enum class Ordre(val value: String){
-    DATE_PREMIER_RETRAIT("date_retrait"),
-    DATE_DERNIER_RETRAIT("date_retrait_r"),
-    ENTREPRISE("denomination_ent")
-}
-
-enum class SensOrdre{
-    ASC,
-    DESC
 }

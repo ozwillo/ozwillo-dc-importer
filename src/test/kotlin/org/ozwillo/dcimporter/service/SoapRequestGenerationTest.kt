@@ -429,7 +429,39 @@ class SoapRequestGenerationTest{
                 "    </soapenv:Body>\n" +
                 "</soapenv:Envelope>"
 
-        val request = MSUtils.generateListElecResponseRequest(login, password, msReference,ordre, sensOrdre.toString())
+        val request = MSUtils.generateListRegistreReponseRequest(login, password, msReference,ordre, sensOrdre.toString())
+        assertThat(request).isEqualTo(goodRequest)
+    }
+
+    @Test
+    fun `correct listing e_retrait request generation test`(){
+        val goodRequest = "<soapenv:Envelope\n" +
+                "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\n" +
+                "xmlns:web=\"https://www.marches-securises.fr/webserv/\"\n" +
+                "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"\n" +
+                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
+                "        <soapenv:Header/>\n" +
+                "        <soapenv:Body>\n" +
+                "            <web:lister_retraits_electroniques_details soapenv:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "                <login xsi:type=\"xsd:string\">$login</login>\n" +
+                "                <password xsi:type=\"xsd:string\">$password</password>\n" +
+                "                <dce xsi:type=\"xsd:string\">$msReference</dce>\n" +
+                "                <params\n" +
+                "                    xmlns=\"http://xml.apache.org/xml-soap\" xsi:type=\"Map\">\n" +
+                "                    <item>\n" +
+                "                        <key xsi:type=\"xsd:string\">ordre</key>\n" +
+                "                        <value xsi:type=\"xsd:string\">$ordre</value>\n" +
+                "                    </item>\n" +
+                "                    <item>\n" +
+                "                        <key xsi:type=\"xsd:string\">sensordre</key>\n" +
+                "                        <value xsi:type=\"xsd:string\">$sensOrdre</value>\n" +
+                "                    </item>\n" +
+                "                </params>\n" +
+                "            </web:lister_retraits_electroniques_details>\n" +
+                "        </soapenv:Body>\n" +
+                "</soapenv:Envelope>"
+
+        val request = MSUtils.generateListRegistreRetraitRequest(login, password, msReference, ordre, sensOrdre.toString())
         assertThat(request).isEqualTo(goodRequest)
     }
 

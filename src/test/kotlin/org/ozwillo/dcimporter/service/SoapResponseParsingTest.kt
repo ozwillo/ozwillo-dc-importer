@@ -2,15 +2,12 @@ package org.ozwillo.dcimporter.service
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.assertj.core.api.Assertions.assertThat
-import org.ozwillo.dcimporter.model.marchepublic.RegistreReponse
+import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.util.*
 import java.time.Instant
 import java.util.*
@@ -20,6 +17,8 @@ import java.util.*
 class SoapResponseParsingTest{
 
     private var pa: String = "instance pa"
+
+    private val siret = "123456789"
 
     val dce = "1533297690p44lmzk2fidz"
     val msReference = "F-SICTIAM_06_20180925W2_01"
@@ -48,6 +47,16 @@ class SoapResponseParsingTest{
     val ordrePiece = 1.toString()
     val nom = "NomDuFichierSansTiret6"
     val extension = "txt"
+
+    val clePersonne = "1335945366ODE0aP0Xgd"
+    val genre = "m"
+    val nomContact = "Bugs"
+    val prenomContact = "Bunny"
+    val telephoneContact = "numéro de téléphone du contact"
+
+    val cleRetrait = "1533743662n9qa4hxbnjhs"
+    val dateDebut = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+    val dateFin = LocalDateTime.now().plusMonths(3).atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
 
     val cleReponse = "1533048729cetzyl2xvn78"
     val cleEntreprise = "12678986288x531"
@@ -1570,7 +1579,7 @@ class SoapResponseParsingTest{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RESPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
         assertThat(responseObject).isNotNull
         assertThat(responseObject.size).isEqualTo(1)
         assertThat(responseObject[0].properties!!.size).isEqualTo(9)
@@ -1579,17 +1588,19 @@ class SoapResponseParsingTest{
         assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
         assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
 
-        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0])
+        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0], siret, reference)
 
         assertThat(registreReponse.cle).isEqualTo(cleReponse)
         assertThat(registreReponse.nomContact).isEqualTo(contact)
         assertThat(registreReponse.emailContact).isEqualTo(emailContact)
         assertThat(registreReponse.dateDepot).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDepot).toLong()), TimeZone.getDefault().toZoneId()))
         assertThat(registreReponse.poids).isEqualTo(poidsReponse.toInt())
+        assertThat(registreReponse.siret).isEqualTo(siret)
+        assertThat(registreReponse.consultationReference).isEqualTo(reference)
     }
 
     @Test
-    fun `correct response listing empty response parsing test`(){
+    fun `correct reponse listing empty response parsing test`(){
         val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
                 "    <SOAP-ENV:Body>\n" +
@@ -1604,7 +1615,243 @@ class SoapResponseParsingTest{
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RESPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
         assertThat(responseObject).isEmpty()
+    }
+
+    @Test
+    fun `correct retrait listing response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_retraits_electroniques_detailsResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;E$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;$dateDebut&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;$dateFin&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;$prenomContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;$emailContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$telephoneContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-2.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-2&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;${genre}me&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-3.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() - 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() - 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt; un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;un fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-4.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-4&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;FR&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;Un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-5.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() - 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() - 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-5&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;Un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-6.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 60000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 60000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-6&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;Un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "&lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;&lt;retraits nb_total=\"6\"/&gt;&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_retraits_electroniques_detailsResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RETRAIT_TYPE, BindingKeyAction.UPDATE.value)
+        assertThat(responseObject.size).isEqualTo(6)
+        assertThat(responseObject[0].responseObject!!.size).isEqualTo(2)
+        assertThat(responseObject[0].type).isEqualTo("ms__retrait")
+        assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
+        assertThat(responseObject[0].responseObject!![1].type).isEqualTo("personne")
+
+        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject(responseObject[0], siret, reference, "pieceUuid")
+        assertThat(retrait.cle).isEqualTo(cleRetrait)
+        assertThat(retrait.consultationReference).isEqualTo(reference)
+        assertThat(retrait.siret).isEqualTo(siret)
+        assertThat(retrait.nomPiece).isEqualTo("$nom.$extension")
+        assertThat(retrait.libellePiece).isEqualTo(libellePiece)
+        assertThat(retrait.dateDebut).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDebut).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(retrait.dateFin).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateFin).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(retrait.personne!!.cle).isEqualTo(clePersonne)
+        assertThat(retrait.personne!!.genre).isEqualTo(genre)
+        assertThat(retrait.personne!!.nom).isEqualTo(nomContact)
+        assertThat(retrait.personne!!.prenom).isEqualTo(prenomContact)
+        assertThat(retrait.personne!!.email).isEqualTo(emailContact)
+        assertThat(retrait.personne!!.telephone).isEqualTo(telephoneContact)
+        assertThat(retrait.personne!!.fax).isEmpty()
     }
 }

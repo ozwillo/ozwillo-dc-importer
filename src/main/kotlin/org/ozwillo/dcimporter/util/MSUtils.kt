@@ -25,7 +25,9 @@ class MSUtils{
         const val CONSULTATION_TYPE = "marchepublic:consultation_0"
         const val LOT_TYPE = "marchepublic:lot_0"
         const val PIECE_TYPE = "marchepublic:piece_0"
-        const val RESPONSE_TYPE = "marchepublic:reponse_0"
+        const val REPONSE_TYPE = "marchepublic:reponse_0"
+        const val RETRAIT_TYPE = "marchepublic:retrait_0"
+        const val PERSONNE_TYPE = "marchepublic:personne_0"
 
         fun convertOctetToMo(size:Int):Float{
             return size.toFloat()/1024/1024
@@ -239,20 +241,19 @@ class MSUtils{
                             }
                         }
                     }
-                    RESPONSE_TYPE -> {
-                        when(action){
-                            BindingKeyAction.UPDATE.value -> {
-                                val jc: JAXBContext = JAXBContext.newInstance(ListEResponseResponse::class.java)
-                                val unmarshaller: Unmarshaller = jc.createUnmarshaller()
-                                val listEResponseResponse: JAXBElement<ListEResponseResponse> = unmarshaller.unmarshal(xsr, ListEResponseResponse::class.java)
+                    REPONSE_TYPE -> {
+                       val jc: JAXBContext = JAXBContext.newInstance(ListRegistreReponseResponse::class.java)
+                       val unmarshaller: Unmarshaller = jc.createUnmarshaller()
+                       val listRegistreReponseResponse: JAXBElement<ListRegistreReponseResponse> = unmarshaller.unmarshal(xsr, ListRegistreReponseResponse::class.java)
 
-                                listEResponseResponse.value.soapReturn.toString()
-                            }
-                            else -> {
-                                logger.warn("Unable to recognize requested action")
-                                ""
-                            }
-                        }
+                       listRegistreReponseResponse.value.soapReturn.toString()
+                    }
+                    RETRAIT_TYPE -> {
+                        val jc: JAXBContext = JAXBContext.newInstance(ListRegistreRetraitResponse::class.java)
+                        val unmarshaller: Unmarshaller = jc.createUnmarshaller()
+                        val listRegistreRetraitResponse: JAXBElement<ListRegistreRetraitResponse> = unmarshaller.unmarshal(xsr, ListRegistreRetraitResponse::class.java)
+
+                        listRegistreRetraitResponse.value.soapReturn.toString()
                     }
                     else -> {
                         logger.warn("Unable to recognize type")
@@ -769,7 +770,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(templateToString("template/generateCheckConsultationRequest.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateCheckConsultationRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -788,7 +789,7 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(templateToString("template/templatePublishConsultation.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templatePublishConsultationRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){
@@ -816,7 +817,7 @@ class MSUtils{
             return result
         }
 
-        fun generateListElecResponseRequest(login: String, password: String, msReference: String, ordre: String, sensOrdre: String):String{
+        fun generateListRegistreReponseRequest(login: String, password: String, msReference: String, ordre: String, sensOrdre: String):String{
             val model = HashMap<String, String>()
             model["login"] = login
             model["password"] = password
@@ -827,7 +828,27 @@ class MSUtils{
             val engine = SimpleTemplateEngine()
             var result = ""
             try {
-                result = engine.createTemplate(templateToString("template/templateListElecResponse.groovy")).make(model).toString()
+                result = engine.createTemplate(templateToString("template/templateListRegistreReponseRequest.groovy")).make(model).toString()
+            }catch (e:ClassNotFoundException){
+                e.printStackTrace()
+            }catch (e: IOException){
+                e.printStackTrace()
+            }
+            return result
+        }
+
+        fun generateListRegistreRetraitRequest(login: String, password: String, msReference: String, ordre: String, sensOrdre: String):String{
+            val model = HashMap<String, String>()
+            model["login"] = login
+            model["password"] = password
+            model["msReference"] = msReference
+            model["ordre"] = ordre
+            model["sensOrdre"] = sensOrdre
+
+            val engine = SimpleTemplateEngine()
+            var result = ""
+            try {
+                result = engine.createTemplate(templateToString("template/templateListRetraitsRequest.groovy")).make(model).toString()
             }catch (e:ClassNotFoundException){
                 e.printStackTrace()
             }catch (e: IOException){

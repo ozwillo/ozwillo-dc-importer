@@ -4,6 +4,7 @@ import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
@@ -30,7 +31,8 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val applicationProperties: ApplicationProperties,
                           private val sender: Sender,
-                          private val marcheSecuriseListingService: MarcheSecuriseListingService) {
+                          private val marcheSecuriseListingService: MarcheSecuriseListingService,
+                          private val businessMappingRepository: BusinessMappingRepository) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -520,30 +522,56 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }
 
         return marcheSecuriseListingService.getRegistre(siret, type, dcConsultation.getUri(), ordreParam, sensOrdreParam)
-                .flatMap {registres ->
-                        registres    //TODO:De-comment when dc models are availables
-                                .onEach {registre ->
+                .flatMap {registre ->
 
-                                    val registreType = when(type){
-                                        MSUtils.RESPONSE_TYPE -> registre as RegistreReponse
-                                        else -> registre
-                                    }
-
-                                    val dcRegistre = registreType.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"), registreType.cle!!)
-                                    try {
-                                        datacoreService.getResourceFromIRI(MP_PROJECT, type, "FR/$siret/${req.pathVariable("reference")}/${registreType.cle}", bearer)
-                                        datacoreService.updateResource(MP_PROJECT, type, dcRegistre, bearer)
-                                    }catch (e: HttpClientErrorException){
-                                        when(e.statusCode){
-                                            HttpStatus.NOT_FOUND -> {
-                                                datacoreService.saveResource(MP_PROJECT, MSUtils.RESPONSE_TYPE, dcRegistre, bearer)
-                                            }
-                                            else -> throw e
-                                        }
-                                    }
-                                }
-                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(registres))
+                    val registreType = when(type){
+                        MSUtils.REPONSE_TYPE -> registre as RegistreReponse
+                        MSUtils.RETRAIT_TYPE -> registre as RegistreRetrait
+                        else -> registre
                     }
+
+                    val dcRegistre = when(type){
+
+                        MSUtils.REPONSE_TYPE -> (registreType as RegistreReponse).toDcObject(datacoreProperties.baseUri, registreType.cle)
+
+                        MSUtils.RETRAIT_TYPE -> {
+
+                            val dcPersonne = (registreType.personne!!).toDcObject(datacoreProperties.baseUri)
+                            try {
+                                val currentResource = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType!!.personne!!.cle, bearer)
+
+                                if (currentResource.getStringValue("mppersonne:email") != registreType.personne!!.email
+                                || currentResource.getStringValue("mppersonne:tel") != registreType.personne!!.telephone
+                                || currentResource.getStringValue("mppersonne:fax") != registreType.personne!!.fax)
+                                    datacoreService.updateResource(MP_PROJECT, MSUtils.PERSONNE_TYPE, dcPersonne, bearer)
+
+                            }catch (e: HttpClientErrorException){
+                                when(e.statusCode){
+                                    HttpStatus.NOT_FOUND -> datacoreService.saveResource(MP_PROJECT, MSUtils.PERSONNE_TYPE, dcPersonne, bearer)
+                                    else -> throw e
+                                }
+                            }
+
+                            (registreType as RegistreRetrait).toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
+
+                        }
+                        else -> registreType.toDcObject(datacoreProperties.baseUri, registreType.cle!!)
+                    }
+
+                    try {
+                        datacoreService.getResourceFromIRI(MP_PROJECT, type, "FR/$siret/${req.pathVariable("reference")}/${registreType.cle}", bearer)
+                        datacoreService.updateResource(MP_PROJECT, type, dcRegistre, bearer)
+                    }catch (e: HttpClientErrorException){
+                        when(e.statusCode){
+                            HttpStatus.NOT_FOUND -> datacoreService.saveResource(MP_PROJECT, type, dcRegistre, bearer)
+                            else -> throw e
+                        }
+                    }
+                }
+                .collectList()
+                .flatMap {
+                    ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
+                }
                 .onErrorResume(this::throwableToResponse)
     }
 
@@ -552,6 +580,11 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val siret = req.pathVariable("siret")
         val iri = "FR/$siret/${req.pathVariable("reference")}"
         val type = req.pathVariable("type")
+        val subject = when(type){
+            MSUtils.REPONSE_TYPE -> "mpreponse:consultation"
+            MSUtils.RETRAIT_TYPE -> "mpretrait:consultation"
+            else -> throw HttpClientErrorException(HttpStatus.BAD_REQUEST, "Unable to recognize register type from request : reponse_0 or retrait_0")
+        }
 
         val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
         val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
@@ -570,7 +603,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
         return try {
             val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
-            val registres: Flux<DCBusinessResourceLight> = datacoreService.findResources(MP_PROJECT, type, DCQueryParameters("mpreponse:consultation", DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
+            val registres: Flux<DCBusinessResourceLight> = datacoreService.findResources(MP_PROJECT, type, DCQueryParameters(subject, DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
             ok().contentType(MediaType.APPLICATION_JSON).body(registres, DCBusinessResourceLight::class.java)
         }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {
