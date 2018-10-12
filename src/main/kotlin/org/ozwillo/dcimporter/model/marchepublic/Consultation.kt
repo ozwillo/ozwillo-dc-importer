@@ -70,7 +70,9 @@ data class Consultation(
                         alloti = dcConsultation.getBooleanValue("mpconsultation:alloti"),
                         invisible = dcConsultation.getBooleanValue("mpconsultation:invisible"),
                         nbLots = dcConsultation.getIntValue("mpconsultation:nbLots"),
-                        etat = Etat.valueOf(dcConsultation.getStringValue("mpconsultation:etat")))
+                        etat = if (!dcConsultation.getStringValue("mpconsultation:etat").isEmpty()) Etat.valueOf(dcConsultation.getStringValue("mpconsultation:etat")) else
+                            if ((dcConsultation.getDateValue("mpconsultation:dateCloture")).isAfter(LocalDateTime.now())) Etat.CREATED else Etat.CLOSED
+                )
     }
 }
 

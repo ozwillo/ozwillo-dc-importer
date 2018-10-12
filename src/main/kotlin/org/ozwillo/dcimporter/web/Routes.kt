@@ -47,6 +47,7 @@ class Routes(private val statusHandler: StatusHandler,
                     //Registres
                     POST("/{siret}/registre/type/{type}/{reference}", marchePublicHandler::refreshDatacoreRegistreForGivenConsultation)
                     GET("/{siret}/registre/type/{type}/{reference}", marchePublicHandler::getRegistreForConsultation)
+                    GET("/{siret}/registre/retrait_resume/{reference}", marchePublicHandler::getRegistreRetraitResumeForConsultation)
                 }
         }
 

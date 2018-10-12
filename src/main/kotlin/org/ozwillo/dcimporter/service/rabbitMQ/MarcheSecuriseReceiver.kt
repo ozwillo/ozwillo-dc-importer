@@ -12,6 +12,7 @@ import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.amqp.support.AmqpHeaders
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
@@ -19,6 +20,9 @@ import org.springframework.stereotype.Service
 class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, private val template: RabbitTemplate) {
 
     private val logger:Logger = LoggerFactory.getLogger(MarcheSecuriseReceiver::class.java)
+
+    @Value("\${datacore.model.modelORG}")
+    private val modelOrg = ""
 
     @RabbitListener(queues = ["marchesecurise"])
     @Throws(InterruptedException::class)
@@ -136,6 +140,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     routingBindingKeyOfType(routingKey, MSUtils.REPONSE_TYPE) -> channel.basicAck(tag, false)
                     routingBindingKeyOfType(routingKey, MSUtils.RETRAIT_TYPE) -> channel.basicAck(tag, false)
                     routingBindingKeyOfType(routingKey, MSUtils.PERSONNE_TYPE) -> channel.basicAck(tag, false)
+                    routingBindingKeyOfType(routingKey, modelOrg) -> channel.basicAck(tag, false)
 
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")
@@ -219,6 +224,7 @@ class MarcheSecuriseReceiver (val marcheSecuriseService: MarcheSecuriseService, 
                     routingBindingKeyOfType(routingKey, MSUtils.REPONSE_TYPE) -> channel.basicAck(tag, false)
                     routingBindingKeyOfType(routingKey, MSUtils.RETRAIT_TYPE) -> channel.basicAck(tag, false)
                     routingBindingKeyOfType(routingKey, MSUtils.PERSONNE_TYPE) -> channel.basicAck(tag, false)
+                    routingBindingKeyOfType(routingKey, modelOrg) -> channel.basicAck(tag, false)
 
                     else -> {
                         logger.warn("Unable to recognize type (consultation, lot or piece) from routing key $routingKey")

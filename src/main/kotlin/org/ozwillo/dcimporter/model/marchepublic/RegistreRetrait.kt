@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
@@ -10,21 +11,27 @@ import java.util.*
 
 data class RegistreRetrait(override val cle: String,
                            override val siret: String,
-                           override val consultationReference: String,
-                           override val pieceId: String,
-                           override val nomPiece: String,
-                           override val libellePiece: String,
-                           override val dateDebut: LocalDateTime,
-                           override val dateFin: LocalDateTime,
-                           override val personne: Personne? = null): Registre(){
+                           override val consultationUri: String,
+                           val pieceId: String,
+                           val nomPiece: String,
+                           val libellePiece: String,
+                           val dateDebut: LocalDateTime,
+                           val dateFin: LocalDateTime,
+                           var personne: Personne? = null,
+                           var entreprise: Organization? = null): Registre(){
 
     fun toDcObject(baseUri: String, msCle: String, clePersonne: String, pieceUri: String): DCBusinessResourceLight {
+        val consultationReference = consultationUri.substringAfterLast("/")
+        val siretOrgfr = consultationUri.split("/")[7]
         val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, MSUtils.RETRAIT_TYPE,
-                "FR/$siret/$consultationReference/$msCle"))
-        val consultationUri = DCUtils.getUri(baseUri, MSUtils.CONSULTATION_TYPE, "FR/$siret/$consultationReference")
+                "FR/$siretOrgfr/$consultationReference/$msCle"))
+
         val personneUri = DCUtils.getUri(baseUri, MSUtils.PERSONNE_TYPE, clePersonne)
+        val entrepriseUri = DCUtils.getUri(baseUri, "orgfr:Organisation_0", "FR/$siret")
+
         resourceLight.setStringValue("mpretrait:mscle", msCle)
         resourceLight.setStringValue("mpretrait:consultation", consultationUri)
+        if(!siret.isEmpty()) resourceLight.setStringValue("mpretrait:entreprise", entrepriseUri)
         resourceLight.setStringValue("mpretrait:piece", pieceUri)
         resourceLight.setStringValue("mpretrait:personne", personneUri)
         resourceLight.setStringValue("mpretrait:nomPiece", nomPiece)
@@ -37,27 +44,29 @@ data class RegistreRetrait(override val cle: String,
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject, siret: String, consultationReference: String, pieceId: String): RegistreRetrait {
+        fun fromSoapObject(responseObject: ResponseObject, consultationUri: String, pieceId: String): RegistreRetrait {
 
             val personne = Personne.fromSoapObject(responseObject)
+            val organization = Organization.fromSoapObject(responseObject)
 
             return RegistreRetrait(cle = responseObject.properties!![0].value!!,
-                    siret = siret,
-                    consultationReference = consultationReference,
+                    siret = responseObject.responseObject!![0].properties!![8].value!!,
+                    consultationUri = consultationUri,
                     pieceId = pieceId,
                     nomPiece = responseObject.properties[2].value!!,
                     libellePiece = responseObject.properties[3].value!!,
                     dateDebut = LocalDateTime.ofInstant(Instant.ofEpochSecond((responseObject.properties[7].value!!).toLong()), TimeZone.getDefault().toZoneId()),
                     dateFin = LocalDateTime.ofInstant(Instant.ofEpochSecond((responseObject.properties[9].value!!).toLong()), TimeZone.getDefault().toZoneId()),
-                    personne = personne
+                    personne = personne,
+                    entreprise = organization
             )
         }
 
         fun fromDCObject(dcRegistreRetrait: DCBusinessResourceLight): RegistreRetrait {
 
             return RegistreRetrait(cle = dcRegistreRetrait.getStringValue("mpretrait:mscle"),
-                    siret = dcRegistreRetrait.getIri().split("/")[1],
-                    consultationReference = dcRegistreRetrait.getIri().split("/")[2],
+                    siret = (dcRegistreRetrait.getStringValue("mpretrait:entreprise")).substringAfterLast("/"),
+                    consultationUri = dcRegistreRetrait.getStringValue("mpretrait:consultation"),
                     pieceId = (dcRegistreRetrait.getStringValue("mpretrait:piece")),
                     nomPiece = dcRegistreRetrait.getStringValue("mpretrait:nomPiece"),
                     libellePiece = dcRegistreRetrait.getStringValue("mpretrait:libellePiece"),

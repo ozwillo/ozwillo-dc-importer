@@ -1,10 +1,8 @@
 package org.ozwillo.dcimporter.model.sirene
 
-import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
-import org.springframework.beans.factory.annotation.Autowired
 
 data class Organization(val cp: String = "",
                         val voie: String = "",
@@ -21,14 +19,12 @@ data class Organization(val cp: String = "",
         val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "orgfr:Organisation_0", "FR/$siret"))
         resourceLight.setStringValue("adrpost:postCode", cp)
         resourceLight.setStringValue("adrpost:streetAndNumber", voie)
-        resourceLight.setStringValue("adrpost:postName", commune)
         resourceLight.setStringValue("adrpost:country", pays)
         resourceLight.setStringValue("org:country", pays)
         resourceLight.setStringValue("org:legalName", denominationUniteLegale)
         resourceLight.setStringValue("org:regNumber", siret)
-        resourceLight.setStringValue("", tel)
-        resourceLight.setStringValue("", naf)
-        resourceLight.setStringValue("", url)
+        resourceLight.setStringValue("org:phoneNumber", tel)
+        resourceLight.setStringValue("org:webSite", url)
 
         return resourceLight
     }
@@ -37,26 +33,27 @@ data class Organization(val cp: String = "",
 
         fun fromSoapObject(responseObject: ResponseObject): Organization{
 
-            val cp = responseObject.responseObject!![0].properties!![3].value!!
-            val voie = responseObject.responseObject[0].properties!![1].value!! +
-                    if (!responseObject.responseObject[0].properties!![2].value!!.isEmpty())
-                        ", ${responseObject.responseObject[0].properties!![2].value!!}"
+            val index = responseObject.responseObject!!.indexOf(responseObject.responseObject.find { p -> p.type == "entreprise" })
+            val cp = responseObject.responseObject[index].properties!![3].value!!
+            val voie = responseObject.responseObject[index].properties!![1].value!! +
+                    if (!responseObject.responseObject[index].properties!![2].value!!.isEmpty())
+                        ", ${responseObject.responseObject[index].properties!![2].value!!}"
                     else ""
-            val pays = responseObject.responseObject[0].properties!![5].value!!
-            val commune = responseObject.responseObject[0].properties!![4].value!!
-            val tel = responseObject.responseObject[0].properties!![6].value!!
-            val fax = responseObject.responseObject[0].properties!![7].value!!
+            val pays = responseObject.responseObject[index].properties!![5].value!!
+            val commune = responseObject.responseObject[index].properties!![4].value!!
+            val tel = responseObject.responseObject[index].properties!![6].value!!
+            val fax = responseObject.responseObject[index].properties!![7].value!!
 
             return Organization(
                     cp = cp,
                     voie = voie,
                     pays = "http://data.ozwillo.com/dc/type/geocofr:Pays_0/$pays",
                     commune = "http://data.ozwillo.com/dc/type/geocifr:Commune_0/$pays/$pays-${cp.substring(0,2)}/$commune",
-                    denominationUniteLegale = responseObject.responseObject[0].properties!![0].value!!,
-                    siret = responseObject.responseObject[0].properties!![8].value!!,
+                    denominationUniteLegale = responseObject.responseObject[index].properties!![0].value!!,
+                    siret = responseObject.responseObject[index].properties!![8].value!!,
                     tel = "telephone : $tel, fax : $fax",
-                    naf = responseObject.responseObject[0].properties!![10].value!!,
-                    url = responseObject.responseObject[0].properties!![11].value!!
+                    naf = responseObject.responseObject[index].properties!![10].value!!,
+                    url = responseObject.responseObject[index].properties!![11].value!!
             )
         }
 
@@ -66,11 +63,10 @@ data class Organization(val cp: String = "",
                         voie = dcOrg.getStringValue("adrpost:streetAndNumber"),
                         commune = dcOrg.getStringValue("adrpost:postName"),
                         pays = dcOrg.getStringValue("org:country"),
-                        denominationUniteLegale = dcOrg.getStringValue("org:legalName"),
+                        denominationUniteLegale = (dcOrg.getStringListValue("org:legalName").toString(),   //TODO: How to get v ?
                         siret = dcOrg.getStringValue("org:regNumber"),
-                        tel = dcOrg.getStringValue(""),
-                        naf = dcOrg.getStringValue(""),
-                        url = dcOrg.getStringValue("")
+                        tel = dcOrg.getStringValue("org:phoneNumber"),
+                        url = dcOrg.getStringValue("org:webSite")
                 )
     }
 }

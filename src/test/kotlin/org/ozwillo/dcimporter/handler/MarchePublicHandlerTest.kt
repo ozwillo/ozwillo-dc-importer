@@ -63,15 +63,63 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         [
             {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation",
-                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret"
+                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret",
+                "mpconsultation:reference": "$referenceConsultation",
+                "mpconsultation:etat": "PUBLISHED",
+                "mpconsultation:departementsPrestation": [],
+                "mpconsultation:objet": "",
+                "mpconsultation:datePublication": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:dateCloture": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:typePrestation": "SERVICES",
+                "mpconsultation:finaliteMarche": "ACCORD",
+                "mpconsultation:typeMarche": "ORDONNANCE2005",
+                "mpconsultation:informatique": false,
+                "mpconsultation:invisible": false,
+                "mpconsultation:passation": "AORA",
+                "mpconsultation:enLigne": false,
+                "mpconsultation:alloti": true,
+                "mpconsultation:nbLots": 1,
+                "mpconsultation:emails": []
             },
             {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-2",
-                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret"
+                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret",
+                "mpconsultation:reference": "$referenceConsultation-2",
+                "mpconsultation:etat": "PUBLISHED",
+                "mpconsultation:departementsPrestation": [],
+                "mpconsultation:objet": "",
+                "mpconsultation:datePublication": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:dateCloture": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:typePrestation": "SERVICES",
+                "mpconsultation:finaliteMarche": "ACCORD",
+                "mpconsultation:typeMarche": "ORDONNANCE2005",
+                "mpconsultation:informatique": false,
+                "mpconsultation:invisible": false,
+                "mpconsultation:passation": "AORA",
+                "mpconsultation:enLigne": false,
+                "mpconsultation:alloti": true,
+                "mpconsultation:nbLots": 1,
+                "mpconsultation:emails": []
             },
             {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-3",
-                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret"
+                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret",
+                "mpconsultation:reference": "$referenceConsultation-3",
+                "mpconsultation:etat": "PUBLISHED",
+                "mpconsultation:departementsPrestation": [],
+                "mpconsultation:objet": "",
+                "mpconsultation:datePublication": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:dateCloture": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:typePrestation": "SERVICES",
+                "mpconsultation:finaliteMarche": "ACCORD",
+                "mpconsultation:typeMarche": "ORDONNANCE2005",
+                "mpconsultation:informatique": false,
+                "mpconsultation:invisible": false,
+                "mpconsultation:passation": "AORA",
+                "mpconsultation:enLigne": false,
+                "mpconsultation:alloti": true,
+                "mpconsultation:nbLots": 1,
+                "mpconsultation:emails": []
             }
         ]
         """
@@ -79,7 +127,12 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
     private val dcGetAllRegisterResponse = """
         [
             {
-                "@id": "http://data.ozwillo.com/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre"
+                "@id": "http://data.ozwillo.com/dc/type/marchepublic:reponse_0/FR/$siret/$referenceConsultation/$cleRegistre",
+                "mpreponse:contact": "ANAME",
+                "mpreponse:mscle": "$cleRegistre",
+                "mpreponse:email": "un mail",
+                "mpreponse:dateDepot": "2018-08-03T14:47:05.000Z",
+                "mpreponse:poids": 4105705
             }
         ]
         """
@@ -99,7 +152,23 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         [
             {
                 "@id": "http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation",
-                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret"
+                "mpconsultation:organization": "http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/$siret",
+                "mpconsultation:reference": "$referenceConsultation",
+                "mpconsultation:etat": "PUBLISHED",
+                "mpconsultation:departementsPrestation": [],
+                "mpconsultation:objet": "",
+                "mpconsultation:datePublication": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:dateCloture": "2018-09-13T00:00:48.278Z",
+                "mpconsultation:typePrestation": "SERVICES",
+                "mpconsultation:finaliteMarche": "ACCORD",
+                "mpconsultation:typeMarche": "ORDONNANCE2005",
+                "mpconsultation:informatique": false,
+                "mpconsultation:invisible": false,
+                "mpconsultation:passation": "AORA",
+                "mpconsultation:enLigne": false,
+                "mpconsultation:alloti": true,
+                "mpconsultation:nbLots": 1,
+                "mpconsultation:emails": []
             }
         ]
         """

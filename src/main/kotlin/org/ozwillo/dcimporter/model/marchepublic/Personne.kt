@@ -28,15 +28,19 @@ data class Personne(val cle: String,
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject): Personne =
-                Personne(cle = responseObject.properties!![10].value!!,
-                        genre = responseObject.responseObject!![1].properties!![0].value!!,
-                        nom = responseObject.responseObject[1].properties!![1].value!!,
-                        prenom = responseObject.responseObject[1].properties!![2].value!!,
-                        email = responseObject.responseObject[1].properties!![3].value!!,
-                        telephone = responseObject.responseObject[1].properties!![4].value!!,
-                        fax = responseObject.responseObject[1].properties!![5].value!!
-                )
+        fun fromSoapObject(responseObject: ResponseObject): Personne {
+
+            val index = responseObject.responseObject!!.indexOf(responseObject.responseObject.find { p -> p.type == "personne" })
+
+            return Personne(cle = responseObject.properties!![10].value!!,
+                    genre = responseObject.responseObject[index].properties!![0].value!!,
+                    nom = responseObject.responseObject[index].properties!![1].value!!,
+                    prenom = responseObject.responseObject[index].properties!![2].value!!,
+                    email = responseObject.responseObject[index].properties!![3].value!!,
+                    telephone = responseObject.responseObject[index].properties!![4].value!!,
+                    fax = responseObject.responseObject[index].properties!![5].value!!
+            )
+        }
 
         fun fromDCObject(dcPersonne: DCBusinessResourceLight): Personne {
 

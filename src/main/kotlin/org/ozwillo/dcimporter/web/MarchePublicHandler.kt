@@ -4,6 +4,7 @@ import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
@@ -23,6 +24,7 @@ import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.core.publisher.toMono
 import java.net.URI
 import java.time.LocalDateTime
 
@@ -31,8 +33,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val applicationProperties: ApplicationProperties,
                           private val sender: Sender,
-                          private val marcheSecuriseListingService: MarcheSecuriseListingService,
-                          private val businessMappingRepository: BusinessMappingRepository) {
+                          private val marcheSecuriseListingService: MarcheSecuriseListingService) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -56,8 +57,12 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         return try {
             val dcOrg = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
             val uri = dcOrg.getUri()
-            val consultations: Flux<DCBusinessResourceLight> = datacoreService.findResources(MP_PROJECT, CONSULTATION_TYPE, DCQueryParameters("mpconsultation:organization", DCOperator.EQ, DCOrdering.DESCENDING, uri), startParam, maxParam)
-            ok().contentType(MediaType.APPLICATION_JSON).body(consultations, DCBusinessResourceLight::class.java)
+            val consultations = datacoreService.findResources(MP_PROJECT, CONSULTATION_TYPE, DCQueryParameters("mpconsultation:organization", DCOperator.EQ, DCOrdering.DESCENDING, uri), startParam, maxParam)
+                    .flatMap { dcConsultation ->
+                        val consultation = Consultation.fromDCObject(dcConsultation)
+                        consultation.toMono()
+                    }
+            ok().contentType(MediaType.APPLICATION_JSON).body(consultations, Consultation::class.java)
         }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -532,13 +537,27 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
                     val dcRegistre = when(type){
 
-                        MSUtils.REPONSE_TYPE -> (registreType as RegistreReponse).toDcObject(datacoreProperties.baseUri, registreType.cle)
+                        MSUtils.REPONSE_TYPE -> {
+
+                            if (!registreType.siret!!.isEmpty()){
+                                try {
+                                    datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${registreType.siret}", null)
+                                }catch (e:HttpClientErrorException){
+                                    if (e.statusCode == HttpStatus.NOT_FOUND){
+                                        val dcOrg = (registreType as RegistreReponse).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
+                                        datacoreService.saveResource(MP_PROJECT, ORG_TYPE, dcOrg, null)
+                                    }
+                                }
+                            }
+
+                            (registreType as RegistreReponse).toDcObject(datacoreProperties.baseUri, registreType.cle)
+                        }
 
                         MSUtils.RETRAIT_TYPE -> {
 
-                            val dcPersonne = (registreType.personne!!).toDcObject(datacoreProperties.baseUri)
+                            val dcPersonne = ((registreType as RegistreRetrait).personne!!).toDcObject(datacoreProperties.baseUri)
                             try {
-                                val currentResource = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType!!.personne!!.cle, bearer)
+                                val currentResource = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType.personne!!.cle, bearer)
 
                                 if (currentResource.getStringValue("mppersonne:email") != registreType.personne!!.email
                                 || currentResource.getStringValue("mppersonne:tel") != registreType.personne!!.telephone
@@ -552,7 +571,18 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                                 }
                             }
 
-                            (registreType as RegistreRetrait).toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
+                            if (!registreType.siret.isEmpty()){
+                                try {
+                                    datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${registreType.siret}", null)
+                                }catch (e:HttpClientErrorException){
+                                    if (e.statusCode == HttpStatus.NOT_FOUND){
+                                        val dcOrg = (registreType).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
+                                        datacoreService.saveResource(MP_PROJECT, ORG_TYPE, dcOrg, null)
+                                    }
+                                }
+                            }
+
+                            (registreType).toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
 
                         }
                         else -> registreType.toDcObject(datacoreProperties.baseUri, registreType.cle!!)
@@ -602,9 +632,49 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         }
 
         return try {
+            val body: MutableList<Registre> = arrayListOf()
+
             val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
-            val registres: Flux<DCBusinessResourceLight> = datacoreService.findResources(MP_PROJECT, type, DCQueryParameters(subject, DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
-            ok().contentType(MediaType.APPLICATION_JSON).body(registres, DCBusinessResourceLight::class.java)
+            datacoreService.findResources(MP_PROJECT, type, DCQueryParameters(subject, DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
+                    .collectList()
+                    .flatMap { registres ->
+                        registres.forEach {registre ->
+                            when(type){
+                                MSUtils.REPONSE_TYPE -> {
+
+                                    val entrepriseIri = "FR/" + registre.getStringValue("mpreponse:entreprise").substringAfterLast("/")
+
+                                    val registreReponse = RegistreReponse.fromDCObject(registre)
+
+                                    if (entrepriseIri != "FR/"){
+                                        val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, entrepriseIri, bearer)
+                                        registreReponse.entreprise = Organization.fromDcObject(dcEntreprise)
+                                    }
+
+                                    body.add(registreReponse)
+                                }
+                                MSUtils.RETRAIT_TYPE -> {
+
+                                    val personneIri = registre.getStringValue("mpretrait:personne").substringAfterLast("/")
+                                    val entrepriseIri = "FR/" + registre.getStringValue("mpretrait:entreprise").substringAfterLast("/")
+
+                                    val registreRetrait = RegistreRetrait.fromDCObject(registre)
+
+                                    if (!personneIri.isEmpty()){
+                                        val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personneIri, bearer)
+                                        registreRetrait.personne = Personne.fromDCObject(dcPersonne)
+                                    }
+                                    if (entrepriseIri != "FR/"){
+                                        val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, entrepriseIri, bearer)
+                                        registreRetrait.entreprise = Organization.fromDcObject(dcEntreprise)
+                                    }
+
+                                    body.add(registreRetrait)
+                                }
+                            }
+                        }
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(body))
+                    }
         }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
@@ -614,6 +684,81 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             status(e.statusCode).body(BodyInserters.fromObject(body))
         }
 
+    }
+
+    fun getRegistreRetraitResumeForConsultation(req: ServerRequest): Mono<ServerResponse>{
+        val bearer = extractBearer(req.headers())
+        val siret = req.pathVariable("siret")
+        val iri = "FR/$siret/${req.pathVariable("reference")}"
+        val type = MSUtils.RETRAIT_TYPE
+
+        val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
+        val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
+
+        try {
+            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
+        } catch (e: HttpClientErrorException) {
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
+                else -> "Unexpected error"
+            }
+
+            return status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
+
+        return try {
+            val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
+            val personnes: MutableList<String> = arrayListOf()
+            val entreprises: MutableList<String> = arrayListOf()
+            val dateDebutList: MutableList<LocalDateTime> = arrayListOf()
+            val dateFinList: MutableList<LocalDateTime> = arrayListOf()
+            datacoreService.findResources(MP_PROJECT, type, DCQueryParameters("mpretrait:consultation", DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
+                    .collectList()
+                    .flatMap { dcRegistres ->
+                        dcRegistres
+                                .forEach {dcRegistre ->
+                                    dateDebutList.add(dcRegistre.getDateValue("mpretrait:dateDebut"))
+                                    dateFinList.add(dcRegistre.getDateValue("mpretrait:dateFin"))
+
+                                    if (dcRegistre.getStringValue("mpretrait:personne") !in personnes)
+                                        personnes.add(dcRegistre.getStringValue("mpretrait:personne"))
+                                    if (dcRegistre.getStringValue("mpretrait:entreprise") !in entreprises)
+                                        entreprises.add(dcRegistre.getStringValue("mpretrait:entreprise"))
+                                }
+                        val nbreRetrait = dcRegistres.count()
+                        val dateFirstRetrait = dateDebutList.min()
+                        val dateLastRetrait = dateFinList.max()
+
+                        val retraitResume = RegistreRetraitResume(consultationUri = iri, personneUriList = personnes, OrgUriList = entreprises, nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait!!, dateDernierRetrait = dateLastRetrait!!, personnes = arrayListOf(), entreprises = arrayListOf())
+                        retraitResume.toMono()
+                    }
+                    .flatMap{ retraitResume ->
+                        retraitResume.personneUriList
+                                .forEach { personneUri ->
+                                    if (!personneUri.isEmpty()){
+                                        val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personneUri.substringAfterLast("/"), bearer)
+                                        retraitResume.personnes.add(Personne.fromDCObject(dcPersonne))
+                                    }
+                                }
+                        retraitResume.OrgUriList
+                                .forEach { orgUri ->
+                                    if (!orgUri.isEmpty()){
+                                        val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${orgUri.substringAfterLast("/")}", bearer)
+                                        retraitResume.entreprises.add(Organization.fromDcObject(dcEntreprise))
+                                    }
+                                }
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(retraitResume))
+                    }
+            //TODO: get registre without detail -> nb retrait, liste entreprise (avec détail objet entreprise), liste personnes (avec détail), date du premier retrait effectué par org (date debut min), date dernier retrait effectué par org(date fin max)
+        }catch (e: HttpClientErrorException){
+            val body = when(e.statusCode) {
+                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
+                HttpStatus.NOT_FOUND -> "Consultation with reference ${req.pathVariable("reference")} does not exist"
+                else -> "Unexpected error"
+            }
+            status(e.statusCode).body(BodyInserters.fromObject(body))
+        }
     }
 
 
