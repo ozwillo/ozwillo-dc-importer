@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
+import kotlin.collections.HashMap
 
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(uri: String,
@@ -55,6 +55,13 @@ class DCBusinessResourceLight(uri: String,
     fun getIntListValue(s: String): List<Int> = values[s] as List<Int>
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
+
+    fun getI18nFieldValueFromList(valueList : List<HashMap<String, String>>, lang: String): String{
+        val result = valueList.firstOrNull { value ->
+            value.values.toTypedArray()[0] == lang
+        }
+        return if (result != null) result.values.toTypedArray()[1] else ""
+    }
 
     override fun toString(): String {
         return "DCBusinessResourceLight(values=$values)"

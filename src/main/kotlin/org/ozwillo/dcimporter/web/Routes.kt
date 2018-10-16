@@ -45,9 +45,8 @@ class Routes(private val statusHandler: StatusHandler,
                     DELETE("/{siret}/consultation/{reference}/piece/{uuid}", marchePublicHandler::deletePiece)
 
                     //Registres
-                    POST("/{siret}/registre/type/{type}/{reference}", marchePublicHandler::refreshDatacoreRegistreForGivenConsultation)
-                    GET("/{siret}/registre/type/{type}/{reference}", marchePublicHandler::getRegistreForConsultation)
-                    GET("/{siret}/registre/retrait_resume/{reference}", marchePublicHandler::getRegistreRetraitResumeForConsultation)
+                    GET("/{siret}/registre/{reference}/{type}", marchePublicHandler::getRegistreForConsultation)
+                    GET("/{siret}/registre/{reference}/marchepublic:retrait_0/resume", marchePublicHandler::getRegistreRetraitResumeForConsultation)
                 }
         }
 

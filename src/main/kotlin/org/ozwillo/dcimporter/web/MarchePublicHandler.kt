@@ -5,9 +5,7 @@ import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.model.sirene.Organization
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.service.DatacoreService
-import org.ozwillo.dcimporter.service.MarcheSecuriseListingService
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.MSUtils
@@ -22,7 +20,6 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
 import java.net.URI
@@ -32,8 +29,7 @@ import java.time.LocalDateTime
 class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                           private val datacoreService: DatacoreService,
                           private val applicationProperties: ApplicationProperties,
-                          private val sender: Sender,
-                          private val marcheSecuriseListingService: MarcheSecuriseListingService) {
+                          private val sender: Sender) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
@@ -492,119 +488,6 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
     *   REGISTRES
     */
 
-    fun refreshDatacoreRegistreForGivenConsultation(req: ServerRequest):Mono<ServerResponse>{
-        val bearer = extractBearer(req.headers())
-        val siret = req.pathVariable("siret")
-        val type = req.pathVariable("type")
-        val iri = "FR/$siret/${req.pathVariable("reference")}"
-
-        val ordreParam: String = if (req.queryParam("ordre").isPresent) req.queryParam("ordre").get() else Ordre.DATE_PREMIER_RETRAIT.toString()
-        val sensOrdreParam = if (req.queryParam("sensOrdre").isPresent) req.queryParam("sensOrdre").get() else SensOrdre.ASC.toString()
-
-        val dcConsultation: DCBusinessResourceLight
-
-        try {
-            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
-        } catch (e: HttpClientErrorException) {
-            val body = when(e.statusCode) {
-                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
-                else -> "Unexpected error"
-            }
-            return status(e.statusCode).body(BodyInserters.fromObject(body))
-        }
-
-        try {
-            dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
-        } catch (e: HttpClientErrorException) {
-            val body = when(e.statusCode) {
-                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                HttpStatus.NOT_FOUND -> "Consultation with reference ${req.pathVariable("reference")} does not exist"
-                else -> "Unexpected error"
-            }
-
-            return status(e.statusCode).body(BodyInserters.fromObject(body))
-        }
-
-        return marcheSecuriseListingService.getRegistre(siret, type, dcConsultation.getUri(), ordreParam, sensOrdreParam)
-                .flatMap {registre ->
-
-                    val registreType = when(type){
-                        MSUtils.REPONSE_TYPE -> registre as RegistreReponse
-                        MSUtils.RETRAIT_TYPE -> registre as RegistreRetrait
-                        else -> registre
-                    }
-
-                    val dcRegistre = when(type){
-
-                        MSUtils.REPONSE_TYPE -> {
-
-                            if (!registreType.siret!!.isEmpty()){
-                                try {
-                                    datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${registreType.siret}", null)
-                                }catch (e:HttpClientErrorException){
-                                    if (e.statusCode == HttpStatus.NOT_FOUND){
-                                        val dcOrg = (registreType as RegistreReponse).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
-                                        datacoreService.saveResource(MP_PROJECT, ORG_TYPE, dcOrg, null)
-                                    }
-                                }
-                            }
-
-                            (registreType as RegistreReponse).toDcObject(datacoreProperties.baseUri, registreType.cle)
-                        }
-
-                        MSUtils.RETRAIT_TYPE -> {
-
-                            val dcPersonne = ((registreType as RegistreRetrait).personne!!).toDcObject(datacoreProperties.baseUri)
-                            try {
-                                val currentResource = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType.personne!!.cle, bearer)
-
-                                if (currentResource.getStringValue("mppersonne:email") != registreType.personne!!.email
-                                || currentResource.getStringValue("mppersonne:tel") != registreType.personne!!.telephone
-                                || currentResource.getStringValue("mppersonne:fax") != registreType.personne!!.fax)
-                                    datacoreService.updateResource(MP_PROJECT, MSUtils.PERSONNE_TYPE, dcPersonne, bearer)
-
-                            }catch (e: HttpClientErrorException){
-                                when(e.statusCode){
-                                    HttpStatus.NOT_FOUND -> datacoreService.saveResource(MP_PROJECT, MSUtils.PERSONNE_TYPE, dcPersonne, bearer)
-                                    else -> throw e
-                                }
-                            }
-
-                            if (!registreType.siret.isEmpty()){
-                                try {
-                                    datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${registreType.siret}", null)
-                                }catch (e:HttpClientErrorException){
-                                    if (e.statusCode == HttpStatus.NOT_FOUND){
-                                        val dcOrg = (registreType).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
-                                        datacoreService.saveResource(MP_PROJECT, ORG_TYPE, dcOrg, null)
-                                    }
-                                }
-                            }
-
-                            (registreType).toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
-
-                        }
-                        else -> registreType.toDcObject(datacoreProperties.baseUri, registreType.cle!!)
-                    }
-
-                    try {
-                        datacoreService.getResourceFromIRI(MP_PROJECT, type, "FR/$siret/${req.pathVariable("reference")}/${registreType.cle}", bearer)
-                        datacoreService.updateResource(MP_PROJECT, type, dcRegistre, bearer)
-                    }catch (e: HttpClientErrorException){
-                        when(e.statusCode){
-                            HttpStatus.NOT_FOUND -> datacoreService.saveResource(MP_PROJECT, type, dcRegistre, bearer)
-                            else -> throw e
-                        }
-                    }
-                }
-                .collectList()
-                .flatMap {
-                    ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
-                }
-                .onErrorResume(this::throwableToResponse)
-    }
-
     fun getRegistreForConsultation(req: ServerRequest): Mono<ServerResponse>{
         val bearer = extractBearer(req.headers())
         val siret = req.pathVariable("siret")
@@ -619,26 +502,11 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
         val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
 
-        try {
-            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
-        } catch (e: HttpClientErrorException) {
-            val body = when(e.statusCode) {
-                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
-                else -> "Unexpected error"
-            }
-
-            return status(e.statusCode).body(BodyInserters.fromObject(body))
-        }
-
         return try {
-            val body: MutableList<Registre> = arrayListOf()
 
             val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
             datacoreService.findResources(MP_PROJECT, type, DCQueryParameters(subject, DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
-                    .collectList()
-                    .flatMap { registres ->
-                        registres.forEach {registre ->
+                    .map {registre ->
                             when(type){
                                 MSUtils.REPONSE_TYPE -> {
 
@@ -651,7 +519,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                                         registreReponse.entreprise = Organization.fromDcObject(dcEntreprise)
                                     }
 
-                                    body.add(registreReponse)
+                                    registreReponse
                                 }
                                 MSUtils.RETRAIT_TYPE -> {
 
@@ -669,11 +537,14 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                                         registreRetrait.entreprise = Organization.fromDcObject(dcEntreprise)
                                     }
 
-                                    body.add(registreRetrait)
+                                    registreRetrait
                                 }
+                                else -> Registre()
                             }
-                        }
-                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(body))
+                    }
+                    .collectList()
+                    .flatMap{
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(it))
                     }
         }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {
@@ -695,63 +566,36 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
         val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
 
-        try {
-            datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
-        } catch (e: HttpClientErrorException) {
-            val body = when(e.statusCode) {
-                HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
-                HttpStatus.NOT_FOUND -> "Organization with SIRET $siret does not exist"
-                else -> "Unexpected error"
-            }
-
-            return status(e.statusCode).body(BodyInserters.fromObject(body))
-        }
-
         return try {
             val dcConsultation = datacoreService.getResourceFromIRI(MP_PROJECT, CONSULTATION_TYPE, iri, bearer)
-            val personnes: MutableList<String> = arrayListOf()
-            val entreprises: MutableList<String> = arrayListOf()
-            val dateDebutList: MutableList<LocalDateTime> = arrayListOf()
-            val dateFinList: MutableList<LocalDateTime> = arrayListOf()
             datacoreService.findResources(MP_PROJECT, type, DCQueryParameters("mpretrait:consultation", DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
                     .collectList()
                     .flatMap { dcRegistres ->
-                        dcRegistres
-                                .forEach {dcRegistre ->
-                                    dateDebutList.add(dcRegistre.getDateValue("mpretrait:dateDebut"))
-                                    dateFinList.add(dcRegistre.getDateValue("mpretrait:dateFin"))
-
-                                    if (dcRegistre.getStringValue("mpretrait:personne") !in personnes)
-                                        personnes.add(dcRegistre.getStringValue("mpretrait:personne"))
-                                    if (dcRegistre.getStringValue("mpretrait:entreprise") !in entreprises)
-                                        entreprises.add(dcRegistre.getStringValue("mpretrait:entreprise"))
-                                }
                         val nbreRetrait = dcRegistres.count()
-                        val dateFirstRetrait = dateDebutList.min()
-                        val dateLastRetrait = dateFinList.max()
+                        val dateFirstRetrait = dcRegistres.minBy { registre -> registre.getDateValue("mpretrait:dateDebut") }!!.getDateValue("mpretrait:dateDebut")
+                        val dateLastRetrait = dcRegistres.maxBy { registre -> registre.getDateValue("mpretrait:dateFin") }!!.getDateValue("mpretrait:dateFin")
+                        val personnes = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:personne") }.keys
+                        val entreprises = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:entreprise") }.keys
 
-                        val retraitResume = RegistreRetraitResume(consultationUri = iri, personneUriList = personnes, OrgUriList = entreprises, nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait!!, dateDernierRetrait = dateLastRetrait!!, personnes = arrayListOf(), entreprises = arrayListOf())
-                        retraitResume.toMono()
-                    }
-                    .flatMap{ retraitResume ->
-                        retraitResume.personneUriList
-                                .forEach { personneUri ->
-                                    if (!personneUri.isEmpty()){
-                                        val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personneUri.substringAfterLast("/"), bearer)
-                                        retraitResume.personnes.add(Personne.fromDCObject(dcPersonne))
-                                    }
-                                }
-                        retraitResume.OrgUriList
-                                .forEach { orgUri ->
-                                    if (!orgUri.isEmpty()){
-                                        val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${orgUri.substringAfterLast("/")}", bearer)
-                                        retraitResume.entreprises.add(Organization.fromDcObject(dcEntreprise))
-                                    }
-                                }
+                        val retraitResume = RegistreRetraitResume(consultationUri = iri, personneUriList = personnes.toList(), OrgUriList = entreprises.toList(), nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait, dateDernierRetrait = dateLastRetrait, personnes = arrayListOf(), entreprises = arrayListOf())
+
+                        if (!personnes.isEmpty()){
+                            personnes.forEach {personne ->
+                                val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personne.substringAfterLast("/"), bearer)
+                                retraitResume.personnes.add(Personne.fromDCObject(dcPersonne))
+                            }
+                        }
+
+                        if (!entreprises.isEmpty()){
+                            entreprises.forEach { entreprise ->
+                                val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${entreprise.substringAfterLast("/")}", bearer)
+                                retraitResume.entreprises.add(Organization.fromDcObject(dcEntreprise))
+                            }
+                        }
+
                         ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(retraitResume))
                     }
-            //TODO: get registre without detail -> nb retrait, liste entreprise (avec détail objet entreprise), liste personnes (avec détail), date du premier retrait effectué par org (date debut min), date dernier retrait effectué par org(date fin max)
-        }catch (e: HttpClientErrorException){
+           }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {
                 HttpStatus.UNAUTHORIZED -> "Token unauthorized, maybe it is expired ?"
                 HttpStatus.NOT_FOUND -> "Consultation with reference ${req.pathVariable("reference")} does not exist"

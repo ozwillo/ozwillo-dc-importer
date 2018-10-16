@@ -5,7 +5,6 @@ import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
-import org.springframework.beans.factory.annotation.Value
 import java.time.Instant
 import java.time.LocalDateTime
 import java.util.*
@@ -15,7 +14,7 @@ data class RegistreReponse(override val cle: String,
                     val emailContact: String,
                     val dateDepot: LocalDateTime,
                     val poids: Int,
-                    var entreprise: Organization? = null,
+                    override var entreprise: Organization? = null,
                     override val siret: String,
                     override val consultationUri: String): Registre() {
 
@@ -31,7 +30,7 @@ data class RegistreReponse(override val cle: String,
 
         resourceLight.setStringValue("mpreponse:mscle", msCle)
         resourceLight.setStringValue("mpreponse:consultation", consultationUri)
-        if (!siret.isEmpty()) resourceLight.setStringValue("mpreponse:entreprise", entrepriseUri)
+        if (!siret.isEmpty()) resourceLight.setStringValue("mpreponse:entreprise", entrepriseUri) //siret not always present in Marchés Sécurisés Reponse or retraits
         resourceLight.setStringValue("mpreponse:contact", nomContact)
         resourceLight.setStringValue("mpreponse:email", emailContact)
         resourceLight.setDateTimeValue("mpreponse:dateDepot", dateDepot)

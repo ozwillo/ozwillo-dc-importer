@@ -18,7 +18,7 @@ data class RegistreRetrait(override val cle: String,
                            val dateDebut: LocalDateTime,
                            val dateFin: LocalDateTime,
                            var personne: Personne? = null,
-                           var entreprise: Organization? = null): Registre(){
+                           override var entreprise: Organization? = null): Registre(){
 
     fun toDcObject(baseUri: String, msCle: String, clePersonne: String, pieceUri: String): DCBusinessResourceLight {
         val consultationReference = consultationUri.substringAfterLast("/")
@@ -31,7 +31,7 @@ data class RegistreRetrait(override val cle: String,
 
         resourceLight.setStringValue("mpretrait:mscle", msCle)
         resourceLight.setStringValue("mpretrait:consultation", consultationUri)
-        if(!siret.isEmpty()) resourceLight.setStringValue("mpretrait:entreprise", entrepriseUri)
+        if(!siret.isEmpty()) resourceLight.setStringValue("mpretrait:entreprise", entrepriseUri) //siret not always present in Marchés Sécurisés Reponse or retraits
         resourceLight.setStringValue("mpretrait:piece", pieceUri)
         resourceLight.setStringValue("mpretrait:personne", personneUri)
         resourceLight.setStringValue("mpretrait:nomPiece", nomPiece)
