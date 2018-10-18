@@ -10,6 +10,8 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.collections.HashMap
 
+typealias I18nOrgDenomination = HashMap<String, String>
+
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(uri: String,
                               @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
@@ -56,7 +58,7 @@ class DCBusinessResourceLight(uri: String,
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
 
-    fun getI18nFieldValueFromList(valueList : List<HashMap<String, String>>, lang: String): String{
+    fun getI18nFieldValueFromList(valueList : List<I18nOrgDenomination>, lang: String): String{
         val result = valueList.firstOrNull { value ->
             value.values.toTypedArray()[0] == lang
         }

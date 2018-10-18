@@ -2,23 +2,14 @@ package org.ozwillo.dcimporter.model.marchepublic
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.sirene.Organization
-import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
 
-open class Registre{
-    open val cle: String? = null
-    open val siret: String? = null
-    open val consultationUri: String? = null
-    open val entreprise: Organization? = null
+open class Registre(open val cle: String,
+                    open val siret: String,
+                    open val consultationUri: String,
+                    open val entreprise: Organization){
 
     open fun toDcObject(baseUri: String, msCle: String): DCBusinessResourceLight {
        return DCBusinessResourceLight("")
-    }
-
-    open fun fromSoapObject(responseObject: ResponseObject): Registre =
-                Registre()
-
-    open fun fromDCObject(dcRegistreReponse: DCBusinessResourceLight): Registre {
-        return Registre()
     }
 }
 

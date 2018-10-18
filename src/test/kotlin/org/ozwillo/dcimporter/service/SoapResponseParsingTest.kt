@@ -1588,15 +1588,14 @@ class SoapResponseParsingTest{
         assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
         assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
 
-        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0], siret, reference)
+        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0], "consultationUri")
 
         assertThat(registreReponse.cle).isEqualTo(cleReponse)
         assertThat(registreReponse.nomContact).isEqualTo(contact)
         assertThat(registreReponse.emailContact).isEqualTo(emailContact)
         assertThat(registreReponse.dateDepot).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDepot).toLong()), TimeZone.getDefault().toZoneId()))
         assertThat(registreReponse.poids).isEqualTo(poidsReponse.toInt())
-        assertThat(registreReponse.siret).isEqualTo(siret)
-        assertThat(registreReponse.consultationReference).isEqualTo(reference)
+        assertThat(registreReponse.siret).isEqualTo("")
     }
 
     @Test
@@ -1648,7 +1647,7 @@ class SoapResponseParsingTest{
                 "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siret\"&gt;987654321&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"siren\"/&gt;\n" +
                 "    &lt;propriete nom=\"code_naf\"&gt;$naf&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"url\"/&gt;\n" +
@@ -1838,10 +1837,9 @@ class SoapResponseParsingTest{
         assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
         assertThat(responseObject[0].responseObject!![1].type).isEqualTo("personne")
 
-        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject(responseObject[0], siret, reference, "pieceUuid")
+        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject(responseObject[0], "consultation Uri", "pieceUuid")
         assertThat(retrait.cle).isEqualTo(cleRetrait)
-        assertThat(retrait.consultationReference).isEqualTo(reference)
-        assertThat(retrait.siret).isEqualTo(siret)
+        assertThat(retrait.siret).isEqualTo("987654321")
         assertThat(retrait.nomPiece).isEqualTo("$nom.$extension")
         assertThat(retrait.libellePiece).isEqualTo(libellePiece)
         assertThat(retrait.dateDebut).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDebut).toLong()), TimeZone.getDefault().toZoneId()))

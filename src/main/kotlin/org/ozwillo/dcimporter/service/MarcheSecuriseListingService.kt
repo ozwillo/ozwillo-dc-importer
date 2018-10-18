@@ -73,7 +73,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
 
                                 val dcRegistre = when(type){
                                     MSUtils.REPONSE_TYPE -> {
-                                        if (!registreType.siret!!.isEmpty()){       // Organization siret not always given in Marchés Sécurisés Reponse
+                                        if (!registreType.siret.isEmpty()){       // Organization siret not always given in Marchés Sécurisés Reponse
                                             checkOrCreateOrganization(registreType, type)
                                         }
                                         (registreType as RegistreReponse).toDcObject(datacoreProperties.baseUri, registreType.cle)
@@ -83,9 +83,9 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
                                         if (!registreType.siret.isEmpty()){     // Organization siret not always given in Marchés Sécurisés Retrait
                                             checkOrCreateOrganization(registreType, type)
                                         }
-                                        (registreType).toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
+                                        registreType.toDcObject(datacoreProperties.baseUri, registreType.cle, registreType.personne!!.cle, registreType.pieceId)
                                     }
-                                    else -> registreType.toDcObject(datacoreProperties.baseUri, registreType.cle!!)
+                                    else -> registreType.toDcObject(datacoreProperties.baseUri, (registreType as RegistreRetrait).cle)
                                 }
 
                                 createOrUpdateRegistre(type, registreType, dcRegistre)
@@ -103,7 +103,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
                 }
     }
 
-    fun getRegistre(siret: String, type: String, uri: String, ordre: String, sensOrdre: String): Flux<Registre> {
+    private fun getRegistre(siret: String, type: String, uri: String, ordre: String, sensOrdre: String): Flux<Registre> {
         val businessMappingMono: Mono<BusinessMapping> =
                 businessMappingRepository.findByDcIdAndApplicationNameAndType(uri, MarcheSecuriseService.name, MSUtils.CONSULTATION_TYPE)
         val businessAppConfigurationMono: Mono<BusinessAppConfiguration> =
@@ -166,7 +166,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
         return responseObjects.toFlux()
     }
 
-    private fun parseSoapResponseObjectToRegistre(type: String, responseObject: ResponseObject, uri: String): Mono<Registre>{
+    fun parseSoapResponseObjectToRegistre(type: String, responseObject: ResponseObject, uri: String): Mono<Registre>{
         return when(type){
             MSUtils.REPONSE_TYPE -> RegistreReponse.fromSoapObject(responseObject, uri).toMono()
             MSUtils.RETRAIT_TYPE -> {
@@ -191,22 +191,25 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
                 }
     }
 
-    private fun checkOrCreateOrganization(registreType: Registre, type: String){
+    fun checkOrCreateOrganization(registreType: Registre, type: String){
         try {
             datacoreService.getResourceFromIRI(MP_PROJECT, modelOrg, "FR/${registreType.siret}", null)
         }catch (e:HttpClientErrorException){
             if (e.statusCode == HttpStatus.NOT_FOUND){
                 val dcOrg = when(type){
-                    MSUtils.REPONSE_TYPE -> (registreType as RegistreReponse).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
-                    MSUtils.RETRAIT_TYPE -> (registreType as RegistreRetrait).entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret)
-                    else -> registreType.entreprise!!.toDcObject(datacoreProperties.baseUri, registreType.siret!!)
+                    MSUtils.REPONSE_TYPE -> (registreType as RegistreReponse).entreprise.toDcObject(datacoreProperties.baseUri, registreType.siret)
+                    MSUtils.RETRAIT_TYPE -> (registreType as RegistreRetrait).entreprise.toDcObject(datacoreProperties.baseUri, registreType.siret)
+                    else -> registreType.entreprise.toDcObject(datacoreProperties.baseUri, registreType.siret)
                 }
                 datacoreService.saveResource(MP_PROJECT, modelOrg, dcOrg, null)
+            }
+            else{
+                throw e
             }
         }
     }
 
-    private fun checkOrCreateOrUpdatePerson(registreType: RegistreRetrait){
+    fun checkOrCreateOrUpdatePerson(registreType: RegistreRetrait){
         val dcPersonne = (registreType.personne!!).toDcObject(datacoreProperties.baseUri)
         try {
             val currentResource = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType.personne!!.cle, null)
@@ -224,11 +227,11 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
         }
     }
 
-    private fun createOrUpdateRegistre(type: String, registreType: Registre, dcRegistre: DCBusinessResourceLight){
+    fun createOrUpdateRegistre(type: String, registreType: Registre, dcRegistre: DCBusinessResourceLight){
         try {
-            datacoreService.getResourceFromIRI(MP_PROJECT, type, "FR/${registreType.consultationUri!!.split("/")[7]}/${registreType.consultationUri!!.substringAfterLast("/")}/${registreType.cle}", null)
+            datacoreService.getResourceFromIRI(MP_PROJECT, type, "FR/${registreType.consultationUri.split("/")[7]}/${registreType.consultationUri.substringAfterLast("/")}/${registreType.cle}", null)
             datacoreService.updateResource(MP_PROJECT, type, dcRegistre, null)
-            logger.debug("Response register from Marchés Sécurisés FR/${registreType.siret}/${registreType.consultationUri!!.substringAfterLast("/")}/${registreType.cle} updated in Datacore")
+            logger.debug("Response register from Marchés Sécurisés FR/${registreType.siret}/${registreType.consultationUri.substringAfterLast("/")}/${registreType.cle} updated in Datacore")
         }catch (e: HttpClientErrorException){
             when(e.statusCode){
                 HttpStatus.NOT_FOUND -> {
@@ -243,7 +246,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
         }
     }
 
-    private fun saveConsultationMSReferenceFromMarcheSecurise(businessMapping: BusinessMapping, businessAppConfiguration: BusinessAppConfiguration){
+    fun saveConsultationMSReferenceFromMarcheSecurise(businessMapping: BusinessMapping, businessAppConfiguration: BusinessAppConfiguration){
         var response = ""
         val soapMessage = MSUtils.generateReadConsultationRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, businessMapping.businessId)
         if (!soapMessage.isEmpty()){
@@ -263,7 +266,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
         }
     }
 
-    private fun updateFirstHundredPublishedConsultation(){
+    fun updateFirstHundredPublishedConsultation(){
 
         /* Datacore max limit result size = 100
         *  -> update of consultation list to pass "mpconsultation:etat" to CLOSED for old consultations

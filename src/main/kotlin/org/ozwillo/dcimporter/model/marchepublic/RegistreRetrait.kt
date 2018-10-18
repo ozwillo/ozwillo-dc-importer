@@ -18,7 +18,7 @@ data class RegistreRetrait(override val cle: String,
                            val dateDebut: LocalDateTime,
                            val dateFin: LocalDateTime,
                            var personne: Personne? = null,
-                           override var entreprise: Organization? = null): Registre(){
+                           override var entreprise: Organization): Registre(cle = cle, siret = siret, consultationUri = consultationUri, entreprise = entreprise){
 
     fun toDcObject(baseUri: String, msCle: String, clePersonne: String, pieceUri: String): DCBusinessResourceLight {
         val consultationReference = consultationUri.substringAfterLast("/")
@@ -71,7 +71,8 @@ data class RegistreRetrait(override val cle: String,
                     nomPiece = dcRegistreRetrait.getStringValue("mpretrait:nomPiece"),
                     libellePiece = dcRegistreRetrait.getStringValue("mpretrait:libellePiece"),
                     dateDebut = dcRegistreRetrait.getDateValue("mpretrait:dateDebut"),
-                    dateFin = dcRegistreRetrait.getDateValue("mpretrait:dateFin"))
+                    dateFin = dcRegistreRetrait.getDateValue("mpretrait:dateFin"),
+                    entreprise = Organization(siret = (dcRegistreRetrait.getStringValue("mpretrait:entreprise")).substringAfterLast("/")))
         }
     }
 }

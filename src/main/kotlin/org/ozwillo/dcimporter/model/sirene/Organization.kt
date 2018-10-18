@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.model.sirene
 
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.I18nOrgDenomination
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
 
@@ -63,7 +64,7 @@ data class Organization(val cp: String = "",
                         voie = dcOrg.getStringValue("adrpost:streetAndNumber"),
                         commune = dcOrg.getStringValue("adrpost:postName"),
                         pays = dcOrg.getStringValue("org:country"),
-                        denominationUniteLegale = dcOrg.getI18nFieldValueFromList(dcOrg.getStringListValue("org:legalName") as List<HashMap<String, String>>, "fr"),
+                        denominationUniteLegale = dcOrg.getI18nFieldValueFromList(dcOrg.getStringListValue("org:legalName") as List<I18nOrgDenomination>, "fr"),
                         siret = dcOrg.getStringValue("org:regNumber"),
                         tel = dcOrg.getStringValue("org:phoneNumber"),
                         url = dcOrg.getStringValue("org:webSite")

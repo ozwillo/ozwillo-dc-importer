@@ -10,7 +10,6 @@ import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.MSUtils
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -34,15 +33,12 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
     companion object {
         private val LOGGER = LoggerFactory.getLogger(MarchePublicHandler::class.java)
 
-        private val MP_PROJECT = "marchepublic_0"
-        private val ORG_TYPE = "orgfr:Organisation_0"
-        private val CONSULTATION_TYPE = "marchepublic:consultation_0"
-        private val LOT_TYPE = "marchepublic:lot_0"
-        private val PIECE_TYPE = "marchepublic:piece_0"
+        private const val MP_PROJECT = "marchepublic_0"
+        private const val ORG_TYPE = "orgfr:Organisation_0"
+        private const val CONSULTATION_TYPE = "marchepublic:consultation_0"
+        private const val LOT_TYPE = "marchepublic:lot_0"
+        private const val PIECE_TYPE = "marchepublic:piece_0"
     }
-
-    @Value("\${marchesecurise.url.registre}")
-    private val registreUrl = ""
 
     fun getAllConsultationsForSiret(req: ServerRequest): Mono<ServerResponse>{
         val bearer = extractBearer(req.headers())
@@ -539,7 +535,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
 
                                     registreRetrait
                                 }
-                                else -> Registre()
+                                else -> throw HttpClientErrorException(HttpStatus.BAD_REQUEST, "Unable to recognize register type from request : reponse_0 or retrait_0")
                             }
                     }
                     .collectList()
@@ -562,6 +558,7 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
         val siret = req.pathVariable("siret")
         val iri = "FR/$siret/${req.pathVariable("reference")}"
         val type = MSUtils.RETRAIT_TYPE
+        val retraitResume: MutableList<RegistreRetraitResume> = arrayListOf()
 
         val startParam = if (req.queryParam("start").isPresent) req.queryParam("start").get().toInt() else 0
         val maxParam = if (req.queryParam("limit").isPresent) req.queryParam("limit").get().toInt() else 50
@@ -571,29 +568,36 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             datacoreService.findResources(MP_PROJECT, type, DCQueryParameters("mpretrait:consultation", DCOperator.EQ, DCOrdering.DESCENDING, dcConsultation.getUri()), startParam, maxParam)
                     .collectList()
                     .flatMap { dcRegistres ->
-                        val nbreRetrait = dcRegistres.count()
-                        val dateFirstRetrait = dcRegistres.minBy { registre -> registre.getDateValue("mpretrait:dateDebut") }!!.getDateValue("mpretrait:dateDebut")
-                        val dateLastRetrait = dcRegistres.maxBy { registre -> registre.getDateValue("mpretrait:dateFin") }!!.getDateValue("mpretrait:dateFin")
-                        val personnes = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:personne") }.keys
-                        val entreprises = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:entreprise") }.keys
+                        val registresByOrganization = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:entreprise") }
+                        registresByOrganization.keys
+                                .forEach {organization ->
+                                    val registres = registresByOrganization[organization]
+                                    val nbreRetrait = registres!!.size
+                                    val dateFirstRetrait = registres.minBy {  registre -> registre.getDateValue("mpretrait:dateDebut") }!!.getDateValue("mpretrait:dateDebut")
+                                    val dateLastRetrait = registres.maxBy {  registre -> registre.getDateValue("mpretrait:dateFin") }!!.getDateValue("mpretrait:dateFin")
+                                    val personnes = registres.groupBy { registre -> registre.getStringValue("mpretrait:personne") }.keys.toList()
 
-                        val retraitResume = RegistreRetraitResume(consultationUri = iri, personneUriList = personnes.toList(), OrgUriList = entreprises.toList(), nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait, dateDernierRetrait = dateLastRetrait, personnes = arrayListOf(), entreprises = arrayListOf())
+                                    if (!organization.isEmpty()){
+                                        val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${organization.substringAfterLast("/")}", bearer)
+                                        val orgRetraitResume = RegistreRetraitResume(nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait, dateDernierRetrait = dateLastRetrait, entreprise = Organization.fromDcObject(dcEntreprise), personnes = arrayListOf())
 
-                        if (!personnes.isEmpty()){
-                            personnes.forEach {personne ->
-                                val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personne.substringAfterLast("/"), bearer)
-                                retraitResume.personnes.add(Personne.fromDCObject(dcPersonne))
-                            }
+                                        personnes.forEach { personne ->
+                                            if (!personne.isEmpty()){
+                                                val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personne.substringAfterLast("/"), bearer)
+                                                orgRetraitResume.personnes.add(Personne.fromDCObject(dcPersonne))
+                                            }
+                                        }
+                                        retraitResume.add(orgRetraitResume)
+                                    }
+                                }
+
+                        val body = object {
+                            val consultationUri = dcConsultation.getUri()
+                            val nbreOrg = registresByOrganization.keys.size
+                            val retraitsResume = retraitResume
                         }
 
-                        if (!entreprises.isEmpty()){
-                            entreprises.forEach { entreprise ->
-                                val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${entreprise.substringAfterLast("/")}", bearer)
-                                retraitResume.entreprises.add(Organization.fromDcObject(dcEntreprise))
-                            }
-                        }
-
-                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(retraitResume))
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(body))
                     }
            }catch (e: HttpClientErrorException){
             val body = when(e.statusCode) {

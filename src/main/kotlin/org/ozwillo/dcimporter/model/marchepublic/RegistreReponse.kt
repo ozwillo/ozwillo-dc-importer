@@ -14,9 +14,9 @@ data class RegistreReponse(override val cle: String,
                     val emailContact: String,
                     val dateDepot: LocalDateTime,
                     val poids: Int,
-                    override var entreprise: Organization? = null,
+                    override var entreprise: Organization,
                     override val siret: String,
-                    override val consultationUri: String): Registre() {
+                    override val consultationUri: String): Registre(cle = cle, siret = siret, consultationUri = consultationUri, entreprise = entreprise) {
 
     override fun toDcObject(baseUri: String, msCle: String): DCBusinessResourceLight {
 
@@ -64,7 +64,8 @@ data class RegistreReponse(override val cle: String,
                     dateDepot = dcRegistreReponse.getDateValue("mpreponse:dateDepot"),
                     poids = dcRegistreReponse.getIntValue("mpreponse:poids"),
                     siret = (dcRegistreReponse.getStringValue("mpreponse:entreprise")).substringAfterLast("/"),
-                    consultationUri = dcRegistreReponse.getStringValue("mpreponse:consultation"))
+                    consultationUri = dcRegistreReponse.getStringValue("mpreponse:consultation"),
+                    entreprise = Organization(siret = (dcRegistreReponse.getStringValue("mpreponse:entreprise")).substringAfterLast("/")))
         }
     }
 }
