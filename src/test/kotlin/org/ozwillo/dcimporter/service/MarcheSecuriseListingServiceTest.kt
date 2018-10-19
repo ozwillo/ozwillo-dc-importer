@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import reactor.test.StepVerifier
 import java.time.LocalDateTime
 
 @ExtendWith(SpringExtension::class)
@@ -35,6 +36,8 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
 
     @Value("\${marchesecurise.url.updateConsultation}")
     private val updateConsultationUrl = ""
+
+
 
 
     @BeforeAll
@@ -63,9 +66,12 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
         WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
                 .willReturn(WireMock.okJson(DCReturnModel.dcPostConsultationResponse).withStatus(200)))
 
-        marcheSecuriseListingService.updateFirstHundredPublishedConsultation()
+        val reactiveConsultationUpdateEvent = marcheSecuriseListingService.updateFirstHundredPublishedConsultation()
 
-        WireMock.verify(WireMock.putRequestedFor(WireMock.urlMatching("/dc/type/marchepublic:consultation_0")))
+        StepVerifier
+                .create(reactiveConsultationUpdateEvent)
+                .expectNextMatches { it -> it.is2xxSuccessful }
+                .verifyComplete()
     }
 
     @Test

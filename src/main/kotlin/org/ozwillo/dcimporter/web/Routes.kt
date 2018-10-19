@@ -46,7 +46,7 @@ class Routes(private val statusHandler: StatusHandler,
 
                     //Registres
                     GET("/{siret}/registre/{reference}/{type}", marchePublicHandler::getRegistreForConsultation)
-                    GET("/{siret}/registre/{reference}/marchepublic:retrait_0/resume", marchePublicHandler::getRegistreRetraitResumeForConsultation)
+                    GET("/{siret}/registre/{reference}/retrait/resume", marchePublicHandler::getRegistreRetraitResumeForConsultation)
                 }
         }
 

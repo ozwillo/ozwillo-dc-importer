@@ -1588,7 +1588,7 @@ class SoapResponseParsingTest{
         assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
         assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
 
-        val registreReponse = RegistreReponse.fromSoapObject(responseObject[0], "consultationUri")
+        val registreReponse = RegistreReponse.fromSoapObject("http://baseUri/dc/type", responseObject[0], "consultationUri")
 
         assertThat(registreReponse.cle).isEqualTo(cleReponse)
         assertThat(registreReponse.nomContact).isEqualTo(contact)
@@ -1837,7 +1837,7 @@ class SoapResponseParsingTest{
         assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
         assertThat(responseObject[0].responseObject!![1].type).isEqualTo("personne")
 
-        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject(responseObject[0], "consultation Uri", "pieceUuid")
+        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject("http://baseUri/dc/type", responseObject[0], "consultation Uri", "pieceUuid")
         assertThat(retrait.cle).isEqualTo(cleRetrait)
         assertThat(retrait.siret).isEqualTo("987654321")
         assertThat(retrait.nomPiece).isEqualTo("$nom.$extension")

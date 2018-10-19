@@ -519,7 +519,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:personne_0/$clePersonne"))
                 .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200)))
 
-        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/$referenceConsultation/${MSUtils.RETRAIT_TYPE}/resume")
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/$referenceConsultation/retrait/resume")
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(entity.body).contains(referenceConsultation)
     }
@@ -534,7 +534,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:retrait_0\\?start=0&limit=50&mpretrait:consultation=http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation-"))
                 .willReturn(WireMock.okJson(DCReturnModel.dcGetEmpty).withStatus(200)))
 
-        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/$referenceConsultation/${MSUtils.RETRAIT_TYPE}/resume")
+        val entity = restTemplate.getForEntity<String>("/api/marche-public/$siret/registre/$referenceConsultation/retrait/resume")
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(entity.body).isEqualTo("{\"consultationUri\":\"http://data.ozwillo.com/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation\",\"nbreOrg\":0,\"retraitsResume\":[]}")
     }

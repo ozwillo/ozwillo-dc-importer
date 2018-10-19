@@ -32,7 +32,7 @@ data class Organization(val cp: String = "",
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject): Organization{
+        fun fromSoapObject(baseUri: String, responseObject: ResponseObject): Organization{
 
             val index = responseObject.responseObject!!.indexOf(responseObject.responseObject.find { p -> p.type == "entreprise" })
             val cp = responseObject.responseObject[index].properties!![3].value!!
@@ -43,16 +43,15 @@ data class Organization(val cp: String = "",
             val pays = responseObject.responseObject[index].properties!![5].value!!
             val commune = responseObject.responseObject[index].properties!![4].value!!
             val tel = responseObject.responseObject[index].properties!![6].value!!
-            val fax = responseObject.responseObject[index].properties!![7].value!!
 
             return Organization(
                     cp = cp,
                     voie = voie,
-                    pays = "http://data.ozwillo.com/dc/type/geocofr:Pays_0/$pays",
-                    commune = "http://data.ozwillo.com/dc/type/geocifr:Commune_0/$pays/$pays-${cp.substring(0,2)}/$commune",
+                    pays = DCUtils.getUri(baseUri, "geocofr:Pays_0", pays),
+                    commune = DCUtils.getUri(baseUri, "geocifr:Commune_0", "$pays/$pays-${cp.substring(0,2)}/$commune"),
                     denominationUniteLegale = responseObject.responseObject[index].properties!![0].value!!,
                     siret = responseObject.responseObject[index].properties!![8].value!!,
-                    tel = "telephone : $tel, fax : $fax",
+                    tel = tel,
                     naf = responseObject.responseObject[index].properties!![10].value!!,
                     url = responseObject.responseObject[index].properties!![11].value!!
             )

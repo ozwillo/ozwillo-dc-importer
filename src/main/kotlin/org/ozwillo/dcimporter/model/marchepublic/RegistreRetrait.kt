@@ -44,10 +44,10 @@ data class RegistreRetrait(override val cle: String,
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject, consultationUri: String, pieceId: String): RegistreRetrait {
+        fun fromSoapObject(baseUri: String, responseObject: ResponseObject, consultationUri: String, pieceId: String): RegistreRetrait {
 
             val personne = Personne.fromSoapObject(responseObject)
-            val organization = Organization.fromSoapObject(responseObject)
+            val organization = Organization.fromSoapObject(baseUri, responseObject)
 
             return RegistreRetrait(cle = responseObject.properties!![0].value!!,
                     siret = responseObject.responseObject!![0].properties!![8].value!!,

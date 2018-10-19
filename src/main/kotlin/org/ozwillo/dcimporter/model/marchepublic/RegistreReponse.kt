@@ -41,9 +41,9 @@ data class RegistreReponse(override val cle: String,
 
     companion object {
 
-        fun fromSoapObject(responseObject: ResponseObject, consultationUri: String): RegistreReponse {
+        fun fromSoapObject(baseUri: String, responseObject: ResponseObject, consultationUri: String): RegistreReponse {
 
-            val organization = Organization.fromSoapObject(responseObject)
+            val organization = Organization.fromSoapObject(baseUri, responseObject)
 
             return RegistreReponse(cle = responseObject.properties!![0].value!!,
                     nomContact = responseObject.properties[4].value!!,

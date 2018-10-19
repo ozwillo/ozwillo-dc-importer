@@ -50,9 +50,9 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
             val dcOrg = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/$siret", bearer)
             val uri = dcOrg.getUri()
             val consultations = datacoreService.findResources(MP_PROJECT, CONSULTATION_TYPE, DCQueryParameters("mpconsultation:organization", DCOperator.EQ, DCOrdering.DESCENDING, uri), startParam, maxParam)
-                    .flatMap { dcConsultation ->
+                    .map { dcConsultation ->
                         val consultation = Consultation.fromDCObject(dcConsultation)
-                        consultation.toMono()
+                        consultation
                     }
             ok().contentType(MediaType.APPLICATION_JSON).body(consultations, Consultation::class.java)
         }catch (e: HttpClientErrorException){
@@ -569,19 +569,20 @@ class MarchePublicHandler(private val datacoreProperties: DatacoreProperties,
                     .collectList()
                     .flatMap { dcRegistres ->
                         val registresByOrganization = dcRegistres.groupBy { registre -> registre.getStringValue("mpretrait:entreprise") }
-                        registresByOrganization.keys
-                                .forEach {organization ->
+                        registresByOrganization
+                                .forEach {organization, _ ->
                                     val registres = registresByOrganization[organization]
                                     val nbreRetrait = registres!!.size
                                     val dateFirstRetrait = registres.minBy {  registre -> registre.getDateValue("mpretrait:dateDebut") }!!.getDateValue("mpretrait:dateDebut")
                                     val dateLastRetrait = registres.maxBy {  registre -> registre.getDateValue("mpretrait:dateFin") }!!.getDateValue("mpretrait:dateFin")
-                                    val personnes = registres.groupBy { registre -> registre.getStringValue("mpretrait:personne") }.keys.toList()
+                                    val registresByPerson = registres.distinctBy { registre -> registre.getStringValue("mpretrait:personne") }
 
                                     if (!organization.isEmpty()){
                                         val dcEntreprise = datacoreService.getResourceFromIRI(MP_PROJECT, ORG_TYPE, "FR/${organization.substringAfterLast("/")}", bearer)
                                         val orgRetraitResume = RegistreRetraitResume(nbreRetrait = nbreRetrait, datePremierRetrait = dateFirstRetrait, dateDernierRetrait = dateLastRetrait, entreprise = Organization.fromDcObject(dcEntreprise), personnes = arrayListOf())
 
-                                        personnes.forEach { personne ->
+                                        registresByPerson.forEach { registre ->
+                                            val personne = registre.getStringValue("mpretrait:personne")
                                             if (!personne.isEmpty()){
                                                 val dcPersonne = datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, personne.substringAfterLast("/"), bearer)
                                                 orgRetraitResume.personnes.add(Personne.fromDCObject(dcPersonne))

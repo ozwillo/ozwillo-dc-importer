@@ -37,7 +37,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MarcheSecuriseListingService::class.java)
     }
-    private var triggeredError = 0
+    private var triggeredError: Int = 0
 
     private val MP_PROJECT = "marchepublic_0"
 
@@ -57,13 +57,12 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
 
         logger.debug("Beginning Datacore register update from Marchés Sécurisés ...")
 
-        updateFirstHundredPublishedConsultation()
-
         listOf(MSUtils.REPONSE_TYPE, MSUtils.RETRAIT_TYPE)
                 .forEach { type ->
                     val startTime = Instant.now()
+                    triggeredError = 0
                     getRegistreListForAllPublishedConsultation(type, ordre, sensOrdre, startParam, limitParam)
-                            .flatMap {registre ->
+                            .map {registre ->
 
                                 val     registreType = when(type){
                                     MSUtils.REPONSE_TYPE -> registre as RegistreReponse
@@ -89,7 +88,7 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
                                 }
 
                                 createOrUpdateRegistre(type, registreType, dcRegistre)
-                                registre.toMono()
+                                registre
                             }
                             .onErrorResume {
                                 logger.warn(it.message)
@@ -168,12 +167,12 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
 
     fun parseSoapResponseObjectToRegistre(type: String, responseObject: ResponseObject, uri: String): Mono<Registre>{
         return when(type){
-            MSUtils.REPONSE_TYPE -> RegistreReponse.fromSoapObject(responseObject, uri).toMono()
+            MSUtils.REPONSE_TYPE -> RegistreReponse.fromSoapObject(datacoreProperties.baseUri, responseObject, uri).toMono()
             MSUtils.RETRAIT_TYPE -> {
                 val clePiece = responseObject.properties!![1].value!!
                 businessMappingRepository.findByBusinessIdAndApplicationNameAndType(clePiece, MarcheSecuriseService.name, MSUtils.PIECE_TYPE)
                         .flatMap {it ->
-                            RegistreRetrait.fromSoapObject(responseObject, uri, it.dcId).toMono()
+                            RegistreRetrait.fromSoapObject(datacoreProperties.baseUri, responseObject, uri, it.dcId).toMono()
                         }
             }
             else -> {
@@ -266,20 +265,18 @@ class MarcheSecuriseListingService(private val datacoreService: DatacoreService,
         }
     }
 
-    fun updateFirstHundredPublishedConsultation(){
+    fun updateFirstHundredPublishedConsultation(): Flux<HttpStatus>{
 
         /* Datacore max limit result size = 100
         *  -> update of consultation list to pass "mpconsultation:etat" to CLOSED for old consultations
         *  and avoid exceeding dc limit due to a lack of consultation state update
         */
 
-        datacoreService.findResources(MP_PROJECT, MSUtils.CONSULTATION_TYPE, DCQueryParameters("mpconsultation:etat", DCOperator.EQ, DCOrdering.DESCENDING, Etat.PUBLISHED.toString()), 0, 100)
-                .collectList()
-                .block()!!
-                .forEach{ dcConsultation ->
-                    val state = if ((dcConsultation.getDateValue("mpconsultation:dateCloture")).isBefore(LocalDateTime.now())) Etat.CLOSED.toString() else dcConsultation.getStringValue("mpconsultation:etat")
-                    dcConsultation.setStringValue("mpconsultation:etat", state)
-                    datacoreService.updateResource(MP_PROJECT, MSUtils.CONSULTATION_TYPE, dcConsultation, null)
+        return datacoreService.findResources(MP_PROJECT, MSUtils.CONSULTATION_TYPE, DCQueryParameters("mpconsultation:etat", DCOperator.EQ, DCOrdering.DESCENDING, Etat.PUBLISHED.toString()), 0, 100)
+                .flatMap { dcConsultations ->
+                        val state = if ((dcConsultations.getDateValue("mpconsultation:dateCloture")).isBefore(LocalDateTime.now())) Etat.CLOSED.toString() else dcConsultations.getStringValue("mpconsultation:etat")
+                        dcConsultations.setStringValue("mpconsultation:etat", state)
+                        datacoreService.updateResource(MP_PROJECT, MSUtils.CONSULTATION_TYPE, dcConsultations, null)
                 }
     }
 }
