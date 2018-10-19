@@ -3,7 +3,10 @@ package org.ozwillo.dcimporter.web
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.router
+import java.net.URI
+import org.springframework.core.io.ClassPathResource
 
 @Configuration
 class Routes(private val statusHandler: StatusHandler,
@@ -15,6 +18,10 @@ class Routes(private val statusHandler: StatusHandler,
 
     @Bean
     fun router() = router {
+        accept(MediaType.TEXT_HTML).nest {
+            GET("/") { ServerResponse.permanentRedirect(URI("/index.html")).build() }
+        }
+
         (accept(MediaType.APPLICATION_JSON) and
 
             "/api").nest {
