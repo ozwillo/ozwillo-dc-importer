@@ -2,12 +2,14 @@ package org.ozwillo.dcimporter.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.commons.lang3.RandomStringUtils
-import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
+import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.*
-import org.ozwillo.dcimporter.model.publik.*
-import org.ozwillo.dcimporter.repository.BusinessMappingRepository
+import org.ozwillo.dcimporter.model.publik.FormModel
+import org.ozwillo.dcimporter.model.publik.ListFormsModel
+import org.ozwillo.dcimporter.model.publik.User
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
+import org.ozwillo.dcimporter.repository.BusinessMappingRepository
 import org.ozwillo.dcimporter.util.hmac
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -21,15 +23,19 @@ import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.DefaultUriBuilderFactory
 import reactor.core.publisher.Mono
-import java.net.*
+import java.net.MalformedURLException
+import java.net.URI
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
 // TODO : needs a lot of cleanup and refactoring !!!!
 @Service
-class PublikService(private val datacoreService: DatacoreService,
-                    private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
-                    private val businessMappingRepository: BusinessMappingRepository) {
+class PublikService(
+    private val datacoreService: DatacoreService,
+    private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
+    private val businessMappingRepository: BusinessMappingRepository
+) {
 
     @Value("\${publik.formTypeEM}")
     private val formTypeEM: String? = null
@@ -60,63 +66,85 @@ class PublikService(private val datacoreService: DatacoreService,
         val uriBuilderFactory = DefaultUriBuilderFactory()
         uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
         val clientV2 = WebClient.builder()
-                .uriBuilderFactory(uriBuilderFactory)
-                .build()
+            .uriBuilderFactory(uriBuilderFactory)
+            .build()
         return clientV2.get()
-                .uri("$url?$signedQuery")
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError,
-                        { response -> response.bodyToMono(PublikResponse::class.java).map {
-                            RuntimeException(it.toString())
-                        } })
-                .bodyToMono(FormModel::class.java)
+            .uri("$url?$signedQuery")
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError,
+                { response ->
+                    response.bodyToMono(PublikResponse::class.java).map {
+                        RuntimeException(it.toString())
+                    }
+                })
+            .bodyToMono(FormModel::class.java)
     }
 
-    fun syncPublikForms(businessAppConfiguration: BusinessAppConfiguration, dcOrganization: DCResourceLight, formType: String): Mono<DCResult> {
+    fun syncPublikForms(
+        businessAppConfiguration: BusinessAppConfiguration,
+        dcOrganization: DCResourceLight,
+        formType: String
+    ): Mono<DCResult> {
 
         val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", businessAppConfiguration.secretOrToken!!)
 
-        LOGGER.debug("Getting Publik form list at URL ${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
+        LOGGER.debug(
+            "Getting Publik form list at URL ${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
 
         val uriBuilderFactory = DefaultUriBuilderFactory()
         uriBuilderFactory.encodingMode = DefaultUriBuilderFactory.EncodingMode.NONE
         val clientV2 = WebClient.builder()
-                .uriBuilderFactory(uriBuilderFactory)
-                .build()
+            .uriBuilderFactory(uriBuilderFactory)
+            .build()
         return clientV2.get()
-                .uri("${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError) { response -> response.bodyToMono(PublikResponse::class.java).map {
-                    RuntimeException(it.toString())}
+            .uri("${businessAppConfiguration.baseUrl}/api/forms/$formType/list?$signedQuery")
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError) { response ->
+                response.bodyToMono(PublikResponse::class.java).map {
+                    RuntimeException(it.toString())
                 }
-                .bodyToFlux(ListFormsModel::class.java)
-                .flatMap { listFormsModel -> getForm(formatUrl(listFormsModel.url), businessAppConfiguration.secretOrToken) }
-                .flatMap { formModel -> convertToDCResource(dcOrganization, formModel) }
-                .map { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
-                .count()
-                .map { DCResult(HttpStatus.OK) }
+            }
+            .bodyToFlux(ListFormsModel::class.java)
+            .flatMap { listFormsModel ->
+                getForm(
+                    formatUrl(listFormsModel.url),
+                    businessAppConfiguration.secretOrToken
+                )
+            }
+            .flatMap { formModel -> convertToDCResource(dcOrganization, formModel) }
+            .map { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
+            .count()
+            .map { DCResult(HttpStatus.OK) }
     }
 
-    data class PublikResponse(@JsonProperty("err_class") val errClass: String,
-                         @JsonProperty("err_desc") val errDesc: String,
-                         @JsonProperty("err") val err: Int)
+    data class PublikResponse(
+        @JsonProperty("err_class") val errClass: String,
+        @JsonProperty("err_desc") val errDesc: String,
+        @JsonProperty("err") val err: Int
+    )
 
     fun formToDCResource(organizationSiret: String, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
         LOGGER.debug("Got form from Publik : $form")
         LOGGER.debug("Form has URL ${form.url}")
 
-        val orgResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
+        val orgResource =
+            datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
         return convertToDCResource(orgResource, form).map { result ->
-            val businessMapping = BusinessMapping(applicationName = name, businessId = form.url,
-                    dcId = result.second.getUri(), type = result.first)
+            val businessMapping = BusinessMapping(
+                applicationName = name, businessId = form.url,
+                dcId = result.second.getUri(), type = result.first
+            )
             businessMappingRepository.save(businessMapping).subscribe()
 
             result
         }
     }
 
-    private fun convertToDCResource(dcOrganization: DCResourceLight, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
+    private fun convertToDCResource(
+        dcOrganization: DCResourceLight,
+        form: FormModel
+    ): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
         return getOrCreateUser(form).map { userUri ->
             val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
@@ -232,9 +260,10 @@ class PublikService(private val datacoreService: DatacoreService,
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())
         dcUserResource.setStringValue("citizenrequser:name", user.name)
-        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, null).map { saveResult ->
-            (saveResult as DCResultSingle).resource.getUri()
-        }
+        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, null)
+            .map { saveResult ->
+                (saveResult as DCResultSingle).resource.getUri()
+            }
     }
 
     data class PublikStatusResponse(val url: String?, val err: Int?)
@@ -247,32 +276,33 @@ class PublikService(private val datacoreService: DatacoreService,
         }
 
         val businessAppConfigurationMono: Mono<BusinessAppConfiguration> =
-                businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name)
+            businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name)
         val businessMappingMono: Mono<BusinessMapping> =
-                businessMappingRepository.findByDcIdAndApplicationName(dcResource.getUri(), name)
+            businessMappingRepository.findByDcIdAndApplicationName(dcResource.getUri(), name)
 
         businessAppConfigurationMono
-                .zipWith(businessMappingMono)
-                .subscribe { tuple2 ->
-                    val businessAppConfiguration = tuple2.t1
-                    val businessMapping = tuple2.t2
+            .zipWith(businessMappingMono)
+            .subscribe { tuple2 ->
+                val businessAppConfiguration = tuple2.t1
+                val businessMapping = tuple2.t2
 
-                    val signedQuery = signQuery("email=${businessAppConfiguration.login}&", businessAppConfiguration.secretOrToken!!)
-                    val uri = "${businessMapping.businessId}jump/trigger/close?$signedQuery"
+                val signedQuery =
+                    signQuery("email=${businessAppConfiguration.login}&", businessAppConfiguration.secretOrToken!!)
+                val uri = "${businessMapping.businessId}jump/trigger/close?$signedQuery"
 
-                    val restTemplate = RestTemplate()
-                    val headers = LinkedMultiValueMap<String, String>()
-                    headers.set("Accept", "application/json")
-                    val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
+                val restTemplate = RestTemplate()
+                val headers = LinkedMultiValueMap<String, String>()
+                headers.set("Accept", "application/json")
+                val request = RequestEntity<Any>(null, headers, HttpMethod.POST, URI(uri))
 
-                    try {
-                        val response = restTemplate.exchange(request, PublikStatusResponse::class.java)
-                        LOGGER.debug("Got Publik response for status change $response")
-                    } catch (e: HttpClientErrorException) {
-                        // TODO : what can we do here ?
-                        LOGGER.warn("Request status change failed in Publik ${e.responseBodyAsString}")
-                    }
+                try {
+                    val response = restTemplate.exchange(request, PublikStatusResponse::class.java)
+                    LOGGER.debug("Got Publik response for status change $response")
+                } catch (e: HttpClientErrorException) {
+                    // TODO : what can we do here ?
+                    LOGGER.warn("Request status change failed in Publik ${e.responseBodyAsString}")
                 }
+            }
     }
 
     private fun signQuery(query: String, secret: String): String {

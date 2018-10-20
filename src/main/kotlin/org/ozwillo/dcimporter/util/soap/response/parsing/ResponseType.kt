@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.util.soap.response.parsing
 
-open class ResponseType{
+open class ResponseType {
     open val type: String? = null
     open val properties: List<Properties>? = null
     open val lotNbr: Int? = null

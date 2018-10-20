@@ -14,7 +14,11 @@ class FullLoggingInterceptor : ClientHttpRequestInterceptor {
         private val logger = LoggerFactory.getLogger(FullLoggingInterceptor::class.java)
     }
 
-    override fun intercept(request: HttpRequest, body: ByteArray, execution: ClientHttpRequestExecution): ClientHttpResponse {
+    override fun intercept(
+        request: HttpRequest,
+        body: ByteArray,
+        execution: ClientHttpRequestExecution
+    ): ClientHttpResponse {
 
         traceRequest(request, body)
         val response = execution.execute(request, body)

@@ -4,7 +4,7 @@ import javax.xml.bind.annotation.*
 
 @XmlRootElement(name = "objet")
 @XmlAccessorType(XmlAccessType.FIELD)
-class ResponseObject: ResponseType() {
+class ResponseObject : ResponseType() {
     @field:XmlAttribute(name = "type")
     override val type: String? = null
     @field:XmlElement(name = "propriete")

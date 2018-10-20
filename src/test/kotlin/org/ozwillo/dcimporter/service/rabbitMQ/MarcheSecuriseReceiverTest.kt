@@ -41,27 +41,55 @@ class MarcheSecuriseReceiverTest {
     private val lotType = "marchepublic:lot_0"
 
     @BeforeAll
-    fun setUp(){
+    fun setUp() {
         MockitoAnnotations.initMocks(this)
         marcheSecuriseService = MarcheSecuriseService(businessMappingRepository, businessAppConfigurationRepository)
-        marcheSecuriseReceiver  = MarcheSecuriseReceiver(marcheSecuriseService, template)
+        marcheSecuriseReceiver = MarcheSecuriseReceiver(marcheSecuriseService, template)
     }
 
 
     @Test
     fun `Assert return of routing of actions binding key`() {
         assertAll("action",
-                Executable { assertTrue(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.CREATE))},
-                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.UPDATE))},
-                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfAction(routingKeyExample, BindingKeyAction.DELETE))}
+            Executable {
+                assertTrue(
+                    marcheSecuriseReceiver.routingBindingKeyOfAction(
+                        routingKeyExample,
+                        BindingKeyAction.CREATE
+                    )
+                )
+            },
+            Executable {
+                assertFalse(
+                    marcheSecuriseReceiver.routingBindingKeyOfAction(
+                        routingKeyExample,
+                        BindingKeyAction.UPDATE
+                    )
+                )
+            },
+            Executable {
+                assertFalse(
+                    marcheSecuriseReceiver.routingBindingKeyOfAction(
+                        routingKeyExample,
+                        BindingKeyAction.DELETE
+                    )
+                )
+            }
         )
     }
 
     @Test
     fun `Assert return of routing of types binding keys`() {
         assertAll("type",
-                Executable { assertTrue(marcheSecuriseReceiver.routingBindingKeyOfType(routingKeyExample, consultationType))},
-                Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfType(routingKeyExample, lotType))}
+            Executable {
+                assertTrue(
+                    marcheSecuriseReceiver.routingBindingKeyOfType(
+                        routingKeyExample,
+                        consultationType
+                    )
+                )
+            },
+            Executable { assertFalse(marcheSecuriseReceiver.routingBindingKeyOfType(routingKeyExample, lotType)) }
         )
     }
 }

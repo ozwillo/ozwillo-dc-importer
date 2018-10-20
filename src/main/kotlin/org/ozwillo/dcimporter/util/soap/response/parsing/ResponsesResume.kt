@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "reponses")
 @XmlAccessorType(XmlAccessType.FIELD)
-class ResponsesResume{
+class ResponsesResume {
     @field:XmlAttribute(name = "nb_total")
     val nbResponse: Int? = null
 }

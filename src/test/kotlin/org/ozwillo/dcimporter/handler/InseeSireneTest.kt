@@ -8,16 +8,15 @@ import org.apache.http.impl.client.HttpClientBuilder
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class InseeSireneTest{
+class InseeSireneTest {
 
     @Test
-    fun `is Insee Sirene API respond test`(){
+    fun `is Insee Sirene API respond test`() {
 
         val request: HttpUriRequest = HttpGet("https://api.insee.fr/entreprises/sirene/V3/siret")
 

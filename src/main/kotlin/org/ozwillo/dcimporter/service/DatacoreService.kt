@@ -54,11 +54,11 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     fun saveResource(project: String, type: String, resource: DCResourceLight, bearer: String?): Mono<DCResultSingle> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
-                .path("/dc/type/{type}")
-                .build()
-                .expand(type)
-                .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
-                .toUriString()
+            .path("/dc/type/{type}")
+            .build()
+            .expand(type)
+            .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
+            .toUriString()
         LOGGER.debug("Saving resource at URI $uri")
 
         val accessToken = bearer ?: getSyncAccessToken()
@@ -81,19 +81,26 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    fun updateResource(project: String, type: String, resource: DCBusinessResourceLight, bearer: String?): Mono<HttpStatus> {
+    fun updateResource(
+        project: String,
+        type: String,
+        resource: DCBusinessResourceLight,
+        bearer: String?
+    ): Mono<HttpStatus> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
-                .path("/dc/type/{type}")
-                .build()
-                .expand(type)
-                .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
-                .toUriString()
+            .path("/dc/type/{type}")
+            .build()
+            .expand(type)
+            .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
+            .toUriString()
 
         LOGGER.debug("Updating resource at URI $uri")
 
         val dcCurrentResource = getResourceFromIRI(project, type, resource.getIri(), bearer)
-        resource.setStringValue("o:version", dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
+        resource.setStringValue(
+            "o:version",
+            dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
 
         val accessToken = bearer ?: getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -130,18 +137,31 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("Authorization", "Bearer $accessToken")
 
         try {
-            val response = restTemplate.exchange(uri, HttpMethod.DELETE, HttpEntity<HttpHeaders>(headers), DCResourceLight::class.java)
+            val response = restTemplate.exchange(
+                uri,
+                HttpMethod.DELETE,
+                HttpEntity<HttpHeaders>(headers),
+                DCResourceLight::class.java
+            )
             sender.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
             return Mono.just(response.statusCode)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            LOGGER.error("[Marche Securise] : no delete request sent to Marche Securise for resource {}", dcCurrentResource)
+            LOGGER.error(
+                "[Marche Securise] : no delete request sent to Marche Securise for resource {}",
+                dcCurrentResource
+            )
             throw e
         }
     }
 
     fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
-        val resourceUri = checkEncoding(dcResourceUri(type, iri))   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
+        val resourceUri = checkEncoding(
+            dcResourceUri(
+                type,
+                iri
+            )
+        )   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         LOGGER.debug("Fetching resource from URI $encodedUri")
@@ -159,11 +179,11 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         return response.body!!
     }
 
-    private fun checkEncoding(iri: String): String{
+    private fun checkEncoding(iri: String): String {
         val decodedIri = URLDecoder.decode(iri, "UTF-8")
-        return if (decodedIri.length < iri.length){
+        return if (decodedIri.length < iri.length) {
             decodedIri
-        }else{
+        } else {
             iri
         }
     }
@@ -176,9 +196,9 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCResourceLight>> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
-                .path("/dc/type/{type}")
-                .queryParam("start", 0)
-                .queryParam("limit", 1)
+            .path("/dc/type/{type}")
+            .queryParam("start", 0)
+            .queryParam("limit", 1)
 
         for (param in queryParameters) {
             uriComponentsBuilder.queryParam(param.subject, param.operator.value + param.getObject())
@@ -186,9 +206,9 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
 
         val uriComponents = uriComponentsBuilder
-                .build()
-                .expand(model)
-                .encode()
+            .build()
+            .expand(model)
+            .encode()
         // path ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
         // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
         // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
@@ -208,19 +228,25 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(requestUri))
-        val respType = object: ParameterizedTypeReference<List<DCResourceLight>>(){}
+        val respType = object : ParameterizedTypeReference<List<DCResourceLight>>() {}
 
         val response = restTemplate.exchange(request, respType)
         val results: List<DCResourceLight> = response.body!!
         return Mono.just(results)
     }
 
-    fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int, maxResult: Int): Flux<DCBusinessResourceLight> {
+    fun findResources(
+        project: String,
+        model: String,
+        queryParameters: DCQueryParameters,
+        start: Int,
+        maxResult: Int
+    ): Flux<DCBusinessResourceLight> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
-                .path("/dc/type/{type}")
-                .queryParam("start", start)
-                .queryParam("limit", maxResult)
+            .path("/dc/type/{type}")
+            .queryParam("start", start)
+            .queryParam("limit", maxResult)
 
         for (param in queryParameters) {
             uriComponentsBuilder.queryParam(param.subject, param.operator.value + param.getObject())
@@ -228,9 +254,9 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
 
         val uriComponents = uriComponentsBuilder
-                .build()
-                .expand(model)
-                .encode()
+            .build()
+            .expand(model)
+            .encode()
         // path ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
         // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
         // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
@@ -246,13 +272,13 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
 
         return try {
             val client: WebClient = WebClient.create(requestUri)
-            getAccessToken().flatMapMany {accessToken ->
+            getAccessToken().flatMapMany { accessToken ->
                 client.get()
-                        .header("X-Datacore-Project", project)
-                        .header("Authorization", "Bearer $accessToken")
-                        .accept(MediaType.APPLICATION_JSON)
-                        .retrieve()
-                        .bodyToFlux(DCBusinessResourceLight::class.java)
+                    .header("X-Datacore-Project", project)
+                    .header("Authorization", "Bearer $accessToken")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToFlux(DCBusinessResourceLight::class.java)
             }
         } catch (e: HttpClientErrorException) {
             Flux.empty() // this.getDCResultFromHttpErrorException(e)
@@ -268,14 +294,17 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     private fun getAccessToken(): Mono<String> {
         val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
+            String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(
+                StandardCharsets.UTF_8
+            )
+        )
         return client.post()
-                .header("Authorization", authorizationHeaderValue)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromFormData("grant_type", "refresh_token").with("refresh_token", refreshToken))
-                .retrieve()
-                .bodyToMono(TokenResponse::class.java)
-                .map { it -> it.accessToken }
+            .header("Authorization", authorizationHeaderValue)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("grant_type", "refresh_token").with("refresh_token", refreshToken))
+            .retrieve()
+            .bodyToMono(TokenResponse::class.java)
+            .map { it -> it.accessToken }
     }
 
     private fun getSyncAccessToken(): String {
@@ -283,7 +312,10 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         val restTemplate = RestTemplate()
 
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
-                String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(StandardCharsets.UTF_8))
+            String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(
+                StandardCharsets.UTF_8
+            )
+        )
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
         headers.set("Authorization", authorizationHeaderValue)
@@ -299,12 +331,12 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
 
     private fun dcResourceUri(type: String, iri: String): String {
         return StringBuilder(datacoreUrl)
-                .append(typePrefix)
-                .append('/')
-                .append(DCResource.encodeUriPathSegment(type))
-                .append('/')
-                .append(iri) // already encoded
-                .toString()
+            .append(typePrefix)
+            .append('/')
+            .append(DCResource.encodeUriPathSegment(type))
+            .append('/')
+            .append(iri) // already encoded
+            .toString()
     }
 }
 

@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "ns1:lire_consultation_logResponse")
 @XmlAccessorType(XmlAccessType.FIELD)
-class ReadConsultationResponse{
-    @field:XmlElement(name= "return")
+class ReadConsultationResponse {
+    @field:XmlElement(name = "return")
     val soapReturn: String? = null
 }

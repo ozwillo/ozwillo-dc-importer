@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.utils
 
-class DCReturnModel{
+class DCReturnModel {
 
     companion object {
 

@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "validation_erreur")
 @XmlAccessorType(XmlAccessType.FIELD)
-class CheckConsultationRejectedState: ResponseType(){
+class CheckConsultationRejectedState : ResponseType() {
     @field:XmlAttribute(name = "erreur_0")
     override val errorState: String? = null
     @field:XmlAttribute(name = "cle")

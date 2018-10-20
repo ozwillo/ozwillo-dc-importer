@@ -23,18 +23,18 @@ class MaarchHandler(private val datacoreService: DatacoreService) {
     data class MaarchResponse(val returnCode: Int)
 
     fun status(req: ServerRequest) =
-            req.bodyToMono<MaarchStatusRequest>()
-                    .flatMap { maarchRequest ->
-                        val iri = maarchRequest.dcId.substringAfter(datacoreModelEM)
-                        val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelEM, iri, null)
-                        // TODO : not sure we really neeed to do that
-                        val values = dcResource.getValues().filter { entry ->
-                            entry.key.startsWith("citizenreq")
-                        }
-                        val updatedResource = DCBusinessResourceLight(maarchRequest.dcId, values)
-                        updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
-                        datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
-                    }.flatMap {
-                        ServerResponse.status(it).body(BodyInserters.fromObject(MaarchResponse(it.value())))
-                    }
+        req.bodyToMono<MaarchStatusRequest>()
+            .flatMap { maarchRequest ->
+                val iri = maarchRequest.dcId.substringAfter(datacoreModelEM)
+                val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelEM, iri, null)
+                // TODO : not sure we really neeed to do that
+                val values = dcResource.getValues().filter { entry ->
+                    entry.key.startsWith("citizenreq")
+                }
+                val updatedResource = DCBusinessResourceLight(maarchRequest.dcId, values)
+                updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
+                datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
+            }.flatMap {
+                ServerResponse.status(it).body(BodyInserters.fromObject(MaarchResponse(it.value())))
+            }
 }

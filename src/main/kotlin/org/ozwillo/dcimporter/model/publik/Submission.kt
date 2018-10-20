@@ -5,4 +5,5 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Submission(
     var channel: String,
-    var backoffice: Boolean)
+    var backoffice: Boolean
+)

@@ -12,15 +12,17 @@ import kotlin.streams.toList
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 class DCResource(
-        @JsonProperty("@id") val id: String,
-        @JsonProperty("o:version") val version: Int = INITIAL_VERSION,
-        val type: String) {
+    @JsonProperty("@id") val id: String,
+    @JsonProperty("o:version") val version: Int = INITIAL_VERSION,
+    val type: String
+) {
 
     companion object {
         /** used to split id in order to encode its path elements if it's not disabled */
         private const val URL_SAFE_CHARACTERS_BESIDES_ALPHANUMERIC = "\\$\\-_\\.\\+!\\*'\\(\\)"
         private const val URL_ALSO_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS = ":@~&,;=/"
-        private const val URL_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS_BESIDES_ALPHANUMERIC = URL_SAFE_CHARACTERS_BESIDES_ALPHANUMERIC + URL_ALSO_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS
+        private const val URL_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS_BESIDES_ALPHANUMERIC =
+            URL_SAFE_CHARACTERS_BESIDES_ALPHANUMERIC + URL_ALSO_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS
 
         const val INITIAL_VERSION = -1
 
@@ -30,13 +32,14 @@ class DCResource(
             val sb = StringBuilder()
             try {
                 for (c in uriPathSegment.toCharArray()) {
-                    if ( (c.toInt() in 48..57) // number
-                            || (c.toInt() in 65..90) // upper case
-                            || (c.toInt() in 97..122) // lower case
-                            || URL_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS_BESIDES_ALPHANUMERIC.indexOf(c) != -1) { // among safe chars
+                    if ((c.toInt() in 48..57) // number
+                        || (c.toInt() in 65..90) // upper case
+                        || (c.toInt() in 97..122) // lower case
+                        || URL_SAFE_PATH_SEGMENT_OR_SLASH_CHARACTERS_BESIDES_ALPHANUMERIC.indexOf(c) != -1
+                    ) { // among safe chars
                         sb.append(c)
                     } else {
-                        sb.append(URLEncoder.encode(String(Character.toChars(c.toInt())) , "UTF-8"))
+                        sb.append(URLEncoder.encode(String(Character.toChars(c.toInt())), "UTF-8"))
                     }
                 }
             } catch (e: UnsupportedEncodingException) {
@@ -86,8 +89,8 @@ class DCResource(
         val modelTypeIndex = uri.indexOf(dcTypeMidfix) + dcTypeMidfix.length
         val idSlashIndex = uri.indexOf('/', modelTypeIndex)
 
-        this.iri = uri.substring(idSlashIndex+1) // (encoded)
-        this.baseUri = uri.substring(0, modelTypeIndex-1) // (encoded)
+        this.iri = uri.substring(idSlashIndex + 1) // (encoded)
+        this.baseUri = uri.substring(0, modelTypeIndex - 1) // (encoded)
     }
 
     fun isNew(): Boolean {
@@ -100,7 +103,7 @@ class DCResource(
         this.values = this.values.plus(Pair(key, StringValue(value)))
     }
 
-    fun setMappedListValue(key: String, values: List<Map<String,Value>>) {
+    fun setMappedListValue(key: String, values: List<Map<String, Value>>) {
         val arrayValue: List<MapValue> = values.stream().map {
             MapValue(it)
         }.toList()
@@ -168,7 +171,7 @@ class DCResource(
         abstract fun isMap(): Boolean
         abstract fun asString(): String
         abstract fun asArray(): List<Value>
-        abstract fun asMap(): Map<String,Value>
+        abstract fun asMap(): Map<String, Value>
         open fun isNull(): Boolean = false
         fun isString(): Boolean = !isArray() && !isMap()
     }
@@ -183,7 +186,7 @@ class DCResource(
 
         override fun asArray(): List<Value> = throw UnsupportedOperationException()
 
-        override fun asMap(): Map<String,Value> = throw UnsupportedOperationException()
+        override fun asMap(): Map<String, Value> = throw UnsupportedOperationException()
 
         override fun isNull(): Boolean = value == null
     }
@@ -192,7 +195,7 @@ class DCResource(
 
         var values: List<Value> = ArrayList()
 
-        constructor(values: List<Value>): this() {
+        constructor(values: List<Value>) : this() {
             this.values = values
         }
 
@@ -209,9 +212,9 @@ class DCResource(
 
     class MapValue() : DCResource.Value() {
 
-        var values: Map<String,Value> = HashMap()
+        var values: Map<String, Value> = HashMap()
 
-        constructor(values: Map<String, Value>): this() {
+        constructor(values: Map<String, Value>) : this() {
             this.values = values
         }
 

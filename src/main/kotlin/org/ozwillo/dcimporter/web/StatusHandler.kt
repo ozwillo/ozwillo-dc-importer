@@ -11,5 +11,5 @@ import reactor.core.publisher.Mono
 class StatusHandler {
 
     fun status(req: ServerRequest): Mono<ServerResponse> =
-            ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(fromObject("OK"))
+        ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).body(fromObject("OK"))
 }

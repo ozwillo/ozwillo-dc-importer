@@ -12,9 +12,11 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("!test")
-class PublikSynchronizerService(private val datacoreService: DatacoreService,
-                                private val publikService: PublikService,
-                                private val businessAppConfigurationRepository: BusinessAppConfigurationRepository) : CommandLineRunner {
+class PublikSynchronizerService(
+    private val datacoreService: DatacoreService,
+    private val publikService: PublikService,
+    private val businessAppConfigurationRepository: BusinessAppConfigurationRepository
+) : CommandLineRunner {
 
     @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
@@ -33,16 +35,23 @@ class PublikSynchronizerService(private val datacoreService: DatacoreService,
 
         businessAppConfigurationRepository.findByApplicationName(PublikService.name).subscribe { publikConfiguration ->
 
-            val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/${publikConfiguration.organizationSiret}", null)
-            val queryParameters = DCQueryParameters("citizenreq:organization", DCOperator.EQ,
-                    DCOrdering.DESCENDING, dcResource.getUri())
+            val dcResource = datacoreService.getResourceFromIRI(
+                datacoreProject,
+                datacoreModelORG,
+                "FR/${publikConfiguration.organizationSiret}",
+                null
+            )
+            val queryParameters = DCQueryParameters(
+                "citizenreq:organization", DCOperator.EQ,
+                DCOrdering.DESCENDING, dcResource.getUri()
+            )
 
             listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
                 val result = datacoreService.findResource(datacoreProject, type!!, queryParameters).blockOptional()
                 if (result.isPresent && result.get().isEmpty()) {
                     if (type == datacoreModelEM)
                         publikService.syncPublikForms(publikConfiguration, dcResource, formTypeEM)
-                                .subscribe { LOGGER.debug("Synchro finished with $it") }
+                            .subscribe { LOGGER.debug("Synchro finished with $it") }
                     else if (type == datacoreModelSVE)
                         publikService.syncPublikForms(publikConfiguration, dcResource, formTypeSVE).block()
                 }

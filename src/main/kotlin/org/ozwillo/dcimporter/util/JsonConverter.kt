@@ -5,18 +5,18 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 
-object JsonConverter{
+object JsonConverter {
 
-        fun objectToJson(resource: DCResourceLight):String{
+    fun objectToJson(resource: DCResourceLight): String {
 
-            val mapper = jacksonObjectMapper()
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
-        }
+        val mapper = jacksonObjectMapper()
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
+    }
 
-        fun jsonToObject(input:String):DCBusinessResourceLight{
+    fun jsonToObject(input: String): DCBusinessResourceLight {
 
-            val mapper = jacksonObjectMapper()
-            mapper.findAndRegisterModules()
-            return mapper.readValue(input)
-        }
+        val mapper = jacksonObjectMapper()
+        mapper.findAndRegisterModules()
+        return mapper.readValue(input)
+    }
 }

@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "publication_refusee")
 @XmlAccessorType(XmlAccessType.FIELD)
-class PublishConsultationRejectedState: ResponseType(){
+class PublishConsultationRejectedState : ResponseType() {
     @field:XmlAttribute(name = "cle")
     override val dce: String? = null
     @field:XmlAttribute(name = "reference")

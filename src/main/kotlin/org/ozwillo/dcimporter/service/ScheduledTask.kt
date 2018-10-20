@@ -6,15 +6,15 @@ import org.springframework.stereotype.Component
 
 @Component
 @Profile("!test")
-class ScheduledTask(private val marcheSecuriseListingService: MarcheSecuriseListingService){
+class ScheduledTask(private val marcheSecuriseListingService: MarcheSecuriseListingService) {
 
     @Scheduled(initialDelay = 3600000, fixedRate = 86400000)  //fixedRate 1/24H
-    fun sheduledRefreshDatacoreRegistreReponse(){
+    fun sheduledRefreshDatacoreRegistreReponse() {
         marcheSecuriseListingService.refreshDatacoreRegistreReponse()
     }
 
     @Scheduled(initialDelay = 30000, fixedRate = 86400000)  //fixedRate 1/24H
-    fun scheduledUpdateFirstHundredConsultationState(){
+    fun scheduledUpdateFirstHundredConsultationState() {
         marcheSecuriseListingService.updateFirstHundredPublishedConsultation().subscribe()
     }
 

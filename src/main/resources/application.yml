@@ -58,17 +58,17 @@ marchesecurise:
 
 amqp:
   config:
-      exchangerName: dcimporter
-      marchesecurise:
-        queueName: marchesecurise
-        deadLetterQueue: ms.deadletter
-        bindingKey: marchepublic_0.#
-      maarch:
-        queueName: maarch
-        bindingKey: citizenreq_0.#
-      publik:
-        queueName: publik
-        bindingKey: citizenreq_0.#
+    exchangerName: dcimporter
+    marchesecurise:
+      queueName: marchesecurise
+      deadLetterQueue: ms.deadletter
+      bindingKey: marchepublic_0.#
+    maarch:
+      queueName: maarch
+      bindingKey: citizenreq_0.#
+    publik:
+      queueName: publik
+      bindingKey: citizenreq_0.#
 
 kernel:
   baseUri: https://kernel.ozwillo-preprod.eu

@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "publication_error")
 @XmlAccessorType(XmlAccessType.FIELD)
-class PublishConsultationRejected{
-    @field:XmlElement(name= "publication_refusee")
+class PublishConsultationRejected {
+    @field:XmlElement(name = "publication_refusee")
     val publishConsultationRejectedState: PublishConsultationRejectedState? = null
 }

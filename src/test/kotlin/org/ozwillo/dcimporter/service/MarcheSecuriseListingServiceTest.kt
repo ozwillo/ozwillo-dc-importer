@@ -12,9 +12,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.config.RabbitMockConfig
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.BusinessMapping
-import org.ozwillo.dcimporter.model.marchepublic.*
+import org.ozwillo.dcimporter.model.marchepublic.Etat
+import org.ozwillo.dcimporter.model.marchepublic.Personne
+import org.ozwillo.dcimporter.model.marchepublic.RegistreReponse
+import org.ozwillo.dcimporter.model.marchepublic.RegistreRetrait
 import org.ozwillo.dcimporter.model.sirene.Organization
-import org.ozwillo.dcimporter.util.*
+import org.ozwillo.dcimporter.util.BindingKeyAction
+import org.ozwillo.dcimporter.util.MSUtils
+import org.ozwillo.dcimporter.util.SoapParsingUnexpectedError
 import org.ozwillo.dcimporter.utils.DCReturnModel
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -27,7 +32,7 @@ import java.time.LocalDateTime
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(RabbitMockConfig::class)
-class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingService: MarcheSecuriseListingService){
+class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingService: MarcheSecuriseListingService) {
 
     private lateinit var wireMockServer: WireMockServer
 
@@ -36,8 +41,6 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
 
     @Value("\${marchesecurise.url.updateConsultation}")
     private val updateConsultationUrl = ""
-
-
 
 
     @BeforeAll
@@ -54,28 +57,38 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `update datacore consultation state test`(){
+    fun `update datacore consultation state test`() {
 
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0\\?start=0&limit=100&mpconsultation:etat=${Etat.PUBLISHED}-"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetConsultationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcExistingResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostConsultationResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/dc/type/marchepublic:consultation_0\\?start=0&limit=100&mpconsultation:etat=${Etat.PUBLISHED}-"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetConsultationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/marchepublic:consultation_0/FR/$siret/$referenceConsultation"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcExistingResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/marchepublic:consultation_0"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostConsultationResponse).withStatus(200))
+        )
 
         val reactiveConsultationUpdateEvent = marcheSecuriseListingService.updateFirstHundredPublishedConsultation()
 
         StepVerifier
-                .create(reactiveConsultationUpdateEvent)
-                .expectNextMatches { it -> it.is2xxSuccessful }
-                .verifyComplete()
+            .create(reactiveConsultationUpdateEvent)
+            .expectNextMatches { it -> it.is2xxSuccessful }
+            .verifyComplete()
     }
 
     @Test
-    fun `parse soap response object to Registre`(){
+    fun `parse soap response object to Registre`() {
 
         val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
@@ -112,9 +125,14 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        val responseObject =
+            MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
 
-        val registreReponse = marcheSecuriseListingService.parseSoapResponseObjectToRegistre(MSUtils.REPONSE_TYPE, responseObject[0], "consultationUri").block()!!
+        val registreReponse = marcheSecuriseListingService.parseSoapResponseObjectToRegistre(
+            MSUtils.REPONSE_TYPE,
+            responseObject[0],
+            "consultationUri"
+        ).block()!!
         assertThat(registreReponse.cle).isEqualTo("cleReponse")
         assertThat(registreReponse.consultationUri).isEqualTo("consultationUri")
         assertThat(registreReponse.siret).isEmpty()
@@ -122,7 +140,7 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `get consultation msReference from Marches Securises`(){
+    fun `get consultation msReference from Marches Securises`() {
 
         val msResponse = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
                 "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
@@ -158,42 +176,86 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
                 "    </SOAP-ENV:Body>\n" +
                 "</SOAP-ENV:Envelope>"
 
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/webserv/\\?module=dce%7Cserveur_modif_dce"))
-                .willReturn(WireMock.okXml(msResponse).withStatus(200)))
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/webserv/\\?module=dce%7Cserveur_modif_dce"))
+                .willReturn(WireMock.okXml(msResponse).withStatus(200))
+        )
 
-        val businessMapping = BusinessMapping(dcId = "dcId", businessId = "businessId", businessId2 = "", applicationName = MarcheSecuriseService.name, type = MSUtils.CONSULTATION_TYPE)
-        val businessAppConfiguration = BusinessAppConfiguration(applicationName = MarcheSecuriseService.name, baseUrl = "http://localhost:8089", organizationSiret = DCReturnModel.siret, login = "login", password = "password",
-                instanceId = "instanceId")
+        val businessMapping = BusinessMapping(
+            dcId = "dcId",
+            businessId = "businessId",
+            businessId2 = "",
+            applicationName = MarcheSecuriseService.name,
+            type = MSUtils.CONSULTATION_TYPE
+        )
+        val businessAppConfiguration = BusinessAppConfiguration(
+            applicationName = MarcheSecuriseService.name,
+            baseUrl = "http://localhost:8089",
+            organizationSiret = DCReturnModel.siret,
+            login = "login",
+            password = "password",
+            instanceId = "instanceId"
+        )
         var response = ""
 
-        val soapMessage = MSUtils.generateReadConsultationRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, businessMapping.businessId)
-        if (!soapMessage.isEmpty()){
+        val soapMessage = MSUtils.generateReadConsultationRequest(
+            businessAppConfiguration.login!!,
+            businessAppConfiguration.password!!,
+            businessAppConfiguration.instanceId!!,
+            businessMapping.businessId
+        )
+        if (!soapMessage.isEmpty()) {
             response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$updateConsultationUrl", soapMessage)
         }
-        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
-        if (responseObject.properties!![0].name!! == "cle" && responseObject.properties!!.size >= 2){
+        val responseObject =
+            MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        if (responseObject.properties!![0].name!! == "cle" && responseObject.properties!!.size >= 2) {
             businessMapping.businessId2 = responseObject.properties!![1].value!!
-        }else{
-            throw SoapParsingUnexpectedError("Unable to process to consultation msReference reading from Marchés Sécurisés because of unexpected error")
+        } else {
+            throw SoapParsingUnexpectedError(
+                "Unable to process to consultation msReference reading from Marchés Sécurisés because of unexpected error")
         }
 
         assertThat(businessMapping.businessId2).isEqualTo("msReference")
     }
 
     @Test
-    fun `test of correct organization creation during datacore registre response update`(){
+    fun `test of correct organization creation during datacore registre response update`() {
 
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/987654321"))
-                .willReturn(WireMock.aResponse().withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostOrganizationResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/987654321"))
+                .willReturn(WireMock.aResponse().withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostOrganizationResponse).withStatus(201))
+        )
 
-        val registreReponse = RegistreReponse(cle = DCReturnModel.cleRegistre, nomContact = "ANAME", emailContact = "test@test.com", dateDepot = LocalDateTime.now(), poids = 400000,
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"), siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}")
+        val registreReponse = RegistreReponse(
+            cle = DCReturnModel.cleRegistre,
+            nomContact = "ANAME",
+            emailContact = "test@test.com",
+            dateDepot = LocalDateTime.now(),
+            poids = 400000,
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            ),
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}"
+        )
 
         marcheSecuriseListingService.checkOrCreateOrganization(registreReponse, MSUtils.REPONSE_TYPE)
 
@@ -202,21 +264,52 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test of correct organization creation during datacore registre retrait update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test of correct organization creation during datacore registre retrait update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/987654321"))
-                .willReturn(WireMock.aResponse().withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostOrganizationResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/987654321"))
+                .willReturn(WireMock.aResponse().withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostOrganizationResponse).withStatus(201))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}" +
-                "",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "Bugs", prenom = "Bunny", email = "test@test.com", telephone = "un téléphone", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}" +
+                    "",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "Bugs",
+                prenom = "Bunny",
+                email = "test@test.com",
+                telephone = "un téléphone",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
         marcheSecuriseListingService.checkOrCreateOrganization(registreRetrait, MSUtils.RETRAIT_TYPE)
 
@@ -224,20 +317,51 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test correct contact creation during datacore retrait update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test correct contact creation during datacore retrait update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
-                .willReturn(WireMock.aResponse().withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostPersonResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
+                .willReturn(WireMock.aResponse().withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostPersonResponse).withStatus(201))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "Bugs", prenom = "Bunny", email = "test@test.com", telephone = "un téléphone", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "Bugs",
+                prenom = "Bunny",
+                email = "test@test.com",
+                telephone = "un téléphone",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
         marcheSecuriseListingService.checkOrCreateOrUpdatePerson(registreRetrait)
 
@@ -245,20 +369,51 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test correct contact update during datacore retrait update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test correct contact update during datacore retrait update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostPersonResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostPersonResponse).withStatus(200))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "Bugs", prenom = "Bunny", email = "un mail différent", telephone = "un téléphone différent", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "Bugs",
+                prenom = "Bunny",
+                email = "un mail différent",
+                telephone = "un téléphone différent",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
         marcheSecuriseListingService.checkOrCreateOrUpdatePerson(registreRetrait)
 
@@ -266,39 +421,97 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test no contact update during datacore retrait update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test no contact update during datacore retrait update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetPersonResponse).withStatus(200))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "BUGS", prenom = "Bunny", email = "test@test.com", telephone = "artichaut", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "BUGS",
+                prenom = "Bunny",
+                email = "test@test.com",
+                telephone = "artichaut",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
         marcheSecuriseListingService.checkOrCreateOrUpdatePerson(registreRetrait)
 
-        WireMock.verify(WireMock.getRequestedFor(WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}")))
+        WireMock.verify(
+            WireMock.getRequestedFor(
+                WireMock.urlMatching("/dc/type/${MSUtils.PERSONNE_TYPE}/${DCReturnModel.clePersonne}")))
     }
 
     @Test
-    fun `test create registre reponse during datacore registre update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test create registre reponse during datacore registre update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
-                .willReturn(WireMock.aResponse().withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreReponseResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/dc/type/${MSUtils.REPONSE_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
+                .willReturn(WireMock.aResponse().withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreReponseResponse).withStatus(201))
+        )
 
-        val registreReponse = RegistreReponse(cle = DCReturnModel.cleRegistre, nomContact = "ANAME", emailContact = "test@test.com", dateDepot = LocalDateTime.now(), poids = 400000,
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"), siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}")
+        val registreReponse = RegistreReponse(
+            cle = DCReturnModel.cleRegistre,
+            nomContact = "ANAME",
+            emailContact = "test@test.com",
+            dateDepot = LocalDateTime.now(),
+            poids = 400000,
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            ),
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}"
+        )
 
         val dcRegistreReponse = registreReponse.toDcObject("http://baseUri/dc/type", registreReponse.cle)
 
@@ -308,18 +521,43 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test update registre reponse during datacore registre update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test update registre reponse during datacore registre update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetRegistreReponse).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreReponseResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/dc/type/${MSUtils.REPONSE_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetRegistreReponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.REPONSE_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreReponseResponse).withStatus(200))
+        )
 
-        val registreReponse = RegistreReponse(cle = DCReturnModel.cleRegistre, nomContact = "ANAME", emailContact = "test@test.com", dateDepot = LocalDateTime.now(), poids = 400000,
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"), siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}")
+        val registreReponse = RegistreReponse(
+            cle = DCReturnModel.cleRegistre,
+            nomContact = "ANAME",
+            emailContact = "test@test.com",
+            dateDepot = LocalDateTime.now(),
+            poids = 400000,
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            ),
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}"
+        )
 
         val dcRegistreReponse = registreReponse.toDcObject("http://baseUri/dc/type", registreReponse.cle)
 
@@ -329,22 +567,60 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test create registre retrait during datacore registre update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test create registre retrait during datacore registre update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
-                .willReturn(WireMock.aResponse().withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreRetraitResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/dc/type/${MSUtils.RETRAIT_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
+                .willReturn(WireMock.aResponse().withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreRetraitResponse).withStatus(201))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "BUGS", prenom = "Bunny", email = "test@test.com", telephone = "artichaut", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "BUGS",
+                prenom = "Bunny",
+                email = "test@test.com",
+                telephone = "artichaut",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
-        val dcRegistreRetrait = registreRetrait.toDcObject("http://baseUri/dc/type", DCReturnModel.cleRegistre, DCReturnModel.clePersonne, DCReturnModel.uuidPiece)
+        val dcRegistreRetrait = registreRetrait.toDcObject(
+            "http://baseUri/dc/type",
+            DCReturnModel.cleRegistre,
+            DCReturnModel.clePersonne,
+            DCReturnModel.uuidPiece
+        )
 
         marcheSecuriseListingService.createOrUpdateRegistre(MSUtils.RETRAIT_TYPE, registreRetrait, dcRegistreRetrait)
 
@@ -352,22 +628,60 @@ class MarcheSecuriseListingServiceTest(@Autowired val marcheSecuriseListingServi
     }
 
     @Test
-    fun `test update registre retrait during datacore registre update`(){
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/a/token"))
+    fun `test update registre retrait during datacore registre update`() {
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/a/token"))
                 .withHeader("Authorization", EqualToPattern("Basic ZGNpbXBvcnRlcjpzZWNyZXQ="))
-                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcGetRegistreRetrait).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}"))
-                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreRetraitResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(DCReturnModel.tokenInfoResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/dc/type/${MSUtils.RETRAIT_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}/${DCReturnModel.cleRegistre}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcGetRegistreRetrait).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/${MSUtils.RETRAIT_TYPE}"))
+                .willReturn(WireMock.okJson(DCReturnModel.dcPostRegistreRetraitResponse).withStatus(201))
+        )
 
-        val registreRetrait = RegistreRetrait(cle = DCReturnModel.cleRegistre, siret = "987654321", consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
-                pieceId = DCReturnModel.uuidPiece, nomPiece = "Unom", libellePiece = "", dateDebut = LocalDateTime.now(), dateFin = LocalDateTime.now().plusDays(3),
-                personne = Personne(cle = DCReturnModel.clePersonne, genre = "m", nom = "BUGS", prenom = "Bunny", email = "test@test.com", telephone = "artichaut", fax = ""),
-                entreprise = Organization(siret = "987654321", cp = "11111", voie = "unevoie",commune = "une commune", pays = "FR", denominationUniteLegale = "un nom", tel = "un téléphone", naf = "un numéro",
-                        url = "un url"))
+        val registreRetrait = RegistreRetrait(
+            cle = DCReturnModel.cleRegistre,
+            siret = "987654321",
+            consultationUri = "http://baseUri/dc/type/${MSUtils.CONSULTATION_TYPE}/FR/${DCReturnModel.siret}/${DCReturnModel.referenceConsultation}",
+            pieceId = DCReturnModel.uuidPiece,
+            nomPiece = "Unom",
+            libellePiece = "",
+            dateDebut = LocalDateTime.now(),
+            dateFin = LocalDateTime.now().plusDays(3),
+            personne = Personne(
+                cle = DCReturnModel.clePersonne,
+                genre = "m",
+                nom = "BUGS",
+                prenom = "Bunny",
+                email = "test@test.com",
+                telephone = "artichaut",
+                fax = ""
+            ),
+            entreprise = Organization(
+                siret = "987654321",
+                cp = "11111",
+                voie = "unevoie",
+                commune = "une commune",
+                pays = "FR",
+                denominationUniteLegale = "un nom",
+                tel = "un téléphone",
+                naf = "un numéro",
+                url = "un url"
+            )
+        )
 
-        val dcRegistreRetrait = registreRetrait.toDcObject("http://baseUri/dc/type", DCReturnModel.cleRegistre, DCReturnModel.clePersonne, DCReturnModel.uuidPiece)
+        val dcRegistreRetrait = registreRetrait.toDcObject(
+            "http://baseUri/dc/type",
+            DCReturnModel.cleRegistre,
+            DCReturnModel.clePersonne,
+            DCReturnModel.uuidPiece
+        )
 
         marcheSecuriseListingService.createOrUpdateRegistre(MSUtils.RETRAIT_TYPE, registreRetrait, dcRegistreRetrait)
 

@@ -14,7 +14,6 @@ import org.ozwillo.dcimporter.config.RabbitMockConfig
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.util.DCUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.client.postForEntity
@@ -29,8 +28,10 @@ import java.time.LocalDateTime
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(RabbitMockConfig::class)
-class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
-                          @Autowired val datacoreProperties: DatacoreProperties){
+class DatacoreHandlerTest(
+    @Autowired val restTemplate: TestRestTemplate,
+    @Autowired val datacoreProperties: DatacoreProperties
+) {
 
     private lateinit var wireMockServer: WireMockServer
 
@@ -115,18 +116,30 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
     }
 
     @Test
-    fun `correct subvention creation with organization already saved in dc`(){
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200)))
+    fun `correct subvention creation with organization already saved in dc`() {
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
+        )
 
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(datacoreProperties.baseUri, "grant:association_0",
-                "FR/$siret/$dateConvention/$objet"))
+        val resourceLight = DCBusinessResourceLight(
+            DCUtils.getUri(
+                datacoreProperties.baseUri, "grant:association_0",
+                "FR/$siret/$dateConvention/$objet"
+            )
+        )
         val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
         val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
@@ -149,26 +162,46 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
     }
 
     @Test
-    fun `correct subvention creation with organization unknown from dc`(){
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/token"))
+    fun `correct subvention creation with organization unknown from dc`() {
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/token"))
                 .withHeader("Authorization", EqualToPattern("Basic secret"))
                 .withHeader("Content-Type", EqualToPattern("application/x-www-form-urlencoded;charset=UTF-8"))
-                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
-                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
-                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
+                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
+                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
+        )
 
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(datacoreProperties.baseUri, "grant:association_0",
-                "FR/$siret/$dateConvention/$objet"))
+        val resourceLight = DCBusinessResourceLight(
+            DCUtils.getUri(
+                datacoreProperties.baseUri, "grant:association_0",
+                "FR/$siret/$dateConvention/$objet"
+            )
+        )
         val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
         val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
@@ -191,27 +224,47 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
     }
 
     @Test
-    fun `correct subvention update with organization already saved in dc`(){
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))
+    fun `correct subvention update with organization already saved in dc`() {
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+        )
 
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet-1"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet-1"))
+                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+        )
 
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(datacoreProperties.baseUri, "grant:association_0",
-                "FR/$siret/$dateConvention/$objet"))
+        val resourceLight = DCBusinessResourceLight(
+            DCUtils.getUri(
+                datacoreProperties.baseUri, "grant:association_0",
+                "FR/$siret/$dateConvention/$objet"
+            )
+        )
         val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
         val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
@@ -231,49 +284,87 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
 
         resourceLight.setStringValue("grantassociation:objet", "$objet-1")
         val httpEntity = HttpEntity(resourceLight)
-        val updatedEntity = restTemplate.exchange("/dc/type/grant:association_0",
-                HttpMethod.PUT, httpEntity, String::class.java)
+        val updatedEntity = restTemplate.exchange(
+            "/dc/type/grant:association_0",
+            HttpMethod.PUT, httpEntity, String::class.java
+        )
         Assertions.assertThat(updatedEntity.statusCode).isEqualTo(HttpStatus.OK)
     }
 
     @Test
-    fun `correct subvention update with organization unknown from dc`(){
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/token"))
+    fun `correct subvention update with organization unknown from dc`() {
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/token"))
                 .withHeader("Authorization", EqualToPattern("Basic secret"))
                 .withHeader("Content-Type", EqualToPattern("application/x-www-form-urlencoded;charset=UTF-8"))
-                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
-                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
-                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200)))
+                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
+                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
+                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
+        )
 
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
-                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/token"))
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$siret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
+                .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(404))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/token"))
                 .withHeader("Authorization", EqualToPattern("Basic secret"))
                 .withHeader("Content-Type", EqualToPattern("application/x-www-form-urlencoded;charset=UTF-8"))
-                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
-                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
-                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcGetSubventionResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201)))
+                .willReturn(WireMock.okJson(inseeGetTokenResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.get(
+                WireMock.urlMatching(
+                    "/entreprises/sirene/V3/siret/$grantedSiret\\?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret"))
+                .willReturn(WireMock.okJson(inseeGetOrgResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.post(WireMock.urlMatching("/dc/type/orgfr:Organisation_0"))
+                .willReturn(WireMock.okJson(dcPostOrganizationResponse).withStatus(201))
+        )
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+                .willReturn(WireMock.okJson(dcGetSubventionResponse).withStatus(200))
+        )
+        WireMock.stubFor(
+            WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
+        )
 
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(datacoreProperties.baseUri, "grant:association_0",
-                "FR/$siret/$dateConvention/$objet"))
+        val resourceLight = DCBusinessResourceLight(
+            DCUtils.getUri(
+                datacoreProperties.baseUri, "grant:association_0",
+                "FR/$siret/$dateConvention/$objet"
+            )
+        )
         val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
         val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
@@ -293,8 +384,10 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
 
         resourceLight.setStringValue("grantassociation:objet", "$objet-1")
         val httpEntity = HttpEntity(resourceLight)
-        val updatedEntity = restTemplate.exchange("/dc/type/grant:association_0",
-                HttpMethod.PUT, httpEntity, String::class.java)
+        val updatedEntity = restTemplate.exchange(
+            "/dc/type/grant:association_0",
+            HttpMethod.PUT, httpEntity, String::class.java
+        )
         Assertions.assertThat(updatedEntity.statusCode).isEqualTo(HttpStatus.OK)
     }
 

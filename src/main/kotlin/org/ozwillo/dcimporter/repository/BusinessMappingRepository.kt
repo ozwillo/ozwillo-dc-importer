@@ -10,9 +10,17 @@ interface BusinessMappingRepository : ReactiveMongoRepository<BusinessMapping, S
 
     fun findByDcIdAndApplicationName(dcId: String, applicationName: String): Mono<BusinessMapping>
 
-    fun findByDcIdAndApplicationNameAndType(dcId: String, applicationName: String, type:String):Mono<BusinessMapping>
+    fun findByDcIdAndApplicationNameAndType(dcId: String, applicationName: String, type: String): Mono<BusinessMapping>
 
-    fun findByBusinessIdAndApplicationNameAndType(businessId: String, applicationName: String, type: String): Mono<BusinessMapping>
+    fun findByBusinessIdAndApplicationNameAndType(
+        businessId: String,
+        applicationName: String,
+        type: String
+    ): Mono<BusinessMapping>
 
-    fun deleteByDcIdAndApplicationNameAndType(dcId:String, applicationName:String, type: String):Mono<BusinessMapping>
+    fun deleteByDcIdAndApplicationNameAndType(
+        dcId: String,
+        applicationName: String,
+        type: String
+    ): Mono<BusinessMapping>
 }

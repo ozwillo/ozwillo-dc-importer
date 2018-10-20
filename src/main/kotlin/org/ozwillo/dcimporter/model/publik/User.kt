@@ -9,4 +9,5 @@ data class User(
     @JsonProperty("NameID")
     val nameID: ArrayList<String>,
     val id: Int,
-    val name: String)
+    val name: String
+)
