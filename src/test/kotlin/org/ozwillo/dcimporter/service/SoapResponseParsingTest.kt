@@ -2,23 +2,26 @@ package org.ozwillo.dcimporter.service
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.ozwillo.dcimporter.model.marchepublic.FinaliteMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypeMarcheType
-import org.ozwillo.dcimporter.model.marchepublic.TypePrestationType
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.LocalDateTime
 import java.time.ZoneId
 import org.assertj.core.api.Assertions.assertThat
+import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.util.*
+import java.time.Instant
+import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class SoapResponseParsing{
+class SoapResponseParsingTest{
 
     private var pa: String = "instance pa"
 
+    private val siret = "123456789"
+
     val dce = "1533297690p44lmzk2fidz"
+    val msReference = "F-SICTIAM_06_20180925W2_01"
     val objet = "Consultation WS Test"
     val enligne = MSUtils.booleanToInt(true).toString()
     val datePublication = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
@@ -45,6 +48,32 @@ class SoapResponseParsing{
     val nom = "NomDuFichierSansTiret6"
     val extension = "txt"
 
+    val clePersonne = "1335945366ODE0aP0Xgd"
+    val genre = "m"
+    val nomContact = "Bugs"
+    val prenomContact = "Bunny"
+    val telephoneContact = "numéro de téléphone du contact"
+
+    val cleRetrait = "1533743662n9qa4hxbnjhs"
+    val dateDebut = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+    val dateFin = LocalDateTime.now().plusMonths(3).atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+
+    val cleReponse = "1533048729cetzyl2xvn78"
+    val cleEntreprise = "12678986288x531"
+    val nomEntreprise = "Compte entreprise pour F-SICTIAM_06"
+    val contact = "Bugs Bunny"
+    val emailContact = "test1@test.com"
+    val dateDepot = LocalDateTime.now().atZone(ZoneId.of("Europe/Paris")).toInstant().epochSecond.toString()
+    val poidsReponse = 4105705.toString()
+    val adresse = "Une adresse"
+    val codePostal = 11111.toString()
+    val commune = "Vallauris"
+    val pays = "FR"
+    val tel = "un numéro de téléphone"
+    val fax = "un numéro de fax"
+    val naf = "un code naf"
+    val url = "www.unurldesite.fr"
+
     @Test
     fun `correct consultation creation response parsing test`(){
 
@@ -63,7 +92,7 @@ class SoapResponseParsing{
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\" statut=\"changed\"&gt;$dce&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"cle_pa\" statut=\"changed\"&gt;$pa&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180904W2_02&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication_f\" statut=\"changed\"&gt;${LocalDateTime.now()}&lt;/propriete&gt;\n" +
@@ -140,7 +169,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process ${MSUtils.CONSULTATION_TYPE} ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -174,7 +203,7 @@ class SoapResponseParsing{
                 "                xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -234,7 +263,7 @@ class SoapResponseParsing{
                 "                xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\" statut=\"changed\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\" statut=\"changed\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -288,7 +317,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -477,7 +506,7 @@ class SoapResponseParsing{
                 "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -605,7 +634,7 @@ class SoapResponseParsing{
                 "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
                 "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
                 "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
-                "    &lt;propriete nom=\"reference\"&gt;F-SICTIAM_06_20180905W2_01&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
                 "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
@@ -769,7 +798,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.CREATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -916,7 +945,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, ordreLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.UPDATE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -1071,7 +1100,7 @@ class SoapResponseParsing{
         try {
             MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
         }catch (e: BadLogError){
-            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password. Please check ms.deadletter queue")
+            assertThat(e.message).isEqualTo("Unable to process marchepublic:lot_0 ${BindingKeyAction.DELETE.value} request for following reason : Unknown login/password.")
         }
     }
 
@@ -1411,5 +1440,416 @@ class SoapResponseParsing{
         }catch (e: BadLogError){
             assertThat(e.message).isEqualTo("Unable to process to piece deletion in Marchés Sécurisés beacause of following error : unknown login/password. Please check ms.deadletter queue")
         }
+    }
+
+    @Test
+    fun `correct read consultation from marche securise response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"reference\"&gt;$msReference&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"objet\"&gt;$objet&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_creation\"&gt;$datePublication&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_publication\"&gt;$datePublication&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_publication_f\"&gt;jeudi 13 septembre 2018 - 00:00&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_cloture\"&gt;$dateCloture&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_cloture_f\"&gt;dimanche 30 décembre 2018 - 00:00&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"ref_interne\"&gt;$reference&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"finalite_marche\"&gt;$finaliteMarche&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"type_marche\"&gt;$typeMarche&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"type_prestation\"&gt;$prestation&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"departements_prestation\"&gt;$departement&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"passation\"&gt;$passation&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"informatique\"&gt;$informatique&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"passe\"&gt;passe&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"emails\"&gt;$email&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"en_ligne\"&gt;$enligne&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"a_lots\"&gt;$alloti&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"invisible\"&gt;0&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![1].value).isEqualTo(msReference)
+        assertThat(responseObject.properties!![1].name).isEqualTo("reference")
+    }
+
+    @Test
+    fun `read consultation from marche securise with bad log response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:nil=\"true\"/>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        try{
+           MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        }catch (e: BadLogError){
+           assertThat(e.message).isEqualTo("Unable to process marchepublic:consultation_0 get request for following reason : Unknown login/password.")
+        }
+    }
+
+    @Test
+    fun `read consultation from marche securise with bad pa response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"error\"&gt;\n" +
+                "    &lt;propriete nom=\"load_pa_error\"&gt;error&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![0].name).isEqualTo("load_pa_error")
+    }
+
+    @Test
+    fun `read consultation from marche securise with bad dce response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lire_consultation_logResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms_v2__fullweb_dce\"&gt;\n" +
+                "    &lt;propriete nom=\"load_consultation_fail\" statut=\"not_changed\" message=\"no_consultation\"&gt;no_consultation&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lire_consultation_logResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.GET.value)
+        assertThat(responseObject.properties!![0].name).isEqualTo("load_consultation_fail")
+    }
+
+    @Test
+    fun `correct reponse listing response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_reponses_electroniquesResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms__reponse\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleReponse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_entreprise_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"contact\"&gt;$contact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email_contact\"&gt;$emailContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_depot\"&gt;$dateDepot&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_depot_f\"&gt;vendredi 03 août 2018 - 14:47&lt;/propriete&gt;\n" +
+                "  &lt;propriete nom=\"taille_reponse\"&gt;$poidsReponse&lt;/propriete&gt;&lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"&gt;$url&lt;/propriete&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "&lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;&lt;reponses nb_total=\"1\"/&gt;&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_reponses_electroniquesResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        assertThat(responseObject).isNotNull
+        assertThat(responseObject.size).isEqualTo(1)
+        assertThat(responseObject[0].properties!!.size).isEqualTo(9)
+        assertThat(responseObject[0].responseObject!!.size).isEqualTo(1)
+        assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
+        assertThat(responseObject[0].responseObject!![0].properties!!.size).isEqualTo(12)
+        assertThat(responseObject[0].responseObject!![0].properties!![3].name).isEqualTo("code_postal")
+
+        val registreReponse = RegistreReponse.fromSoapObject("http://baseUri/dc/type", responseObject[0], "consultationUri")
+
+        assertThat(registreReponse.cle).isEqualTo(cleReponse)
+        assertThat(registreReponse.nomContact).isEqualTo(contact)
+        assertThat(registreReponse.emailContact).isEqualTo(emailContact)
+        assertThat(registreReponse.dateDepot).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDepot).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(registreReponse.poids).isEqualTo(poidsReponse.toInt())
+        assertThat(registreReponse.siret).isEqualTo("")
+    }
+
+    @Test
+    fun `correct reponse listing empty response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_reponses_electroniquesResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;\n" +
+                "  &lt;reponses nb_total=\"0\"/&gt;\n" +
+                "&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_reponses_electroniquesResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.REPONSE_TYPE, BindingKeyAction.UPDATE.value)
+        assertThat(responseObject).isEmpty()
+    }
+
+    @Test
+    fun `correct retrait listing response parsing test`(){
+        val response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<SOAP-ENV:Envelope xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ns1=\"https://www.marches-securises.fr/webserv/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\" SOAP-ENV:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">\n" +
+                "    <SOAP-ENV:Body>\n" +
+                "        <ns1:lister_retraits_electroniques_detailsResponse>\n" +
+                "            <return xsi:type=\"xsd:string\">&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?&gt;\n" +
+                "&lt;ifw:data xmlns:ifw=\"interbat/framwork-exportation\"&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;E$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;$dateDebut&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;$dateFin&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"&gt;987654321&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;$prenomContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;$emailContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$telephoneContact&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-2.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-2&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;$tel&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;$fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-2&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;${genre}me&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-3.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"&gt;$libellePiece&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;$nomEntreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() - 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() - 86400}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;$nomEntreprise-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;$adresse-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;$codePostal-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;$commune-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt; un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;un fax&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-3&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-4.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-4&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;FR&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-4&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;Un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-5.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() - 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() - 44000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-5&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom d'entreprise&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;Un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-5&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "  &lt;objet type=\"ms__retrait\"&gt;\n" +
+                "    &lt;propriete nom=\"cle\"&gt;$cleRetrait-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_piece\"&gt;$clePiece-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom_piece\"&gt;$nom-6.$extension&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"libelle_piece\"/&gt;\n" +
+                "    &lt;propriete nom=\"cle_dce\"&gt;$dce&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_ent_ms\"&gt;$cleEntreprise-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"denomination_ent\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut\"&gt;${dateDebut.toInt() + 60000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_debut_f\"&gt;mercredi 08 août 2018 - 17:54&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"date_fin\"&gt;${dateFin.toInt() + 60000}&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"cle_utilisateur\"&gt;$clePersonne-6&lt;/propriete&gt;\n" +
+                "  &lt;objet type=\"entreprise\"&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_1\"&gt;Une adresse&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"adresse_2\"&gt;vgc&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"code_postal\"&gt;Un code postal&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"commune\"&gt;Une commune&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"pays\"&gt;$pays&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"&gt;Un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"siret\"/&gt;\n" +
+                "    &lt;propriete nom=\"siren\"/&gt;\n" +
+                "    &lt;propriete nom=\"code_naf\"&gt;$naf-6&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"url\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;objet type=\"personne\"&gt;\n" +
+                "    &lt;propriete nom=\"genre\"&gt;$genre&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"nom\"&gt;Un nom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"prenom\"&gt;Un prénom&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"email\"&gt;un mail&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"tel\"&gt;un téléphone&lt;/propriete&gt;\n" +
+                "    &lt;propriete nom=\"fax\"/&gt;\n" +
+                "  &lt;/objet&gt;&lt;/objet&gt;\n" +
+                "&lt;pagination ordre=\"\" sensordre=\"ASC\"/&gt;&lt;retraits nb_total=\"6\"/&gt;&lt;/ifw:data&gt;\n" +
+                "</return>\n" +
+                "        </ns1:lister_retraits_electroniques_detailsResponse>\n" +
+                "    </SOAP-ENV:Body>\n" +
+                "</SOAP-ENV:Envelope>"
+
+        val responseObject = MSUtils.parseToResponseObjectList(response, MSUtils.RETRAIT_TYPE, BindingKeyAction.UPDATE.value)
+        assertThat(responseObject.size).isEqualTo(6)
+        assertThat(responseObject[0].responseObject!!.size).isEqualTo(2)
+        assertThat(responseObject[0].type).isEqualTo("ms__retrait")
+        assertThat(responseObject[0].responseObject!![0].type).isEqualTo("entreprise")
+        assertThat(responseObject[0].responseObject!![1].type).isEqualTo("personne")
+
+        val retrait: RegistreRetrait = RegistreRetrait.fromSoapObject("http://baseUri/dc/type", responseObject[0], "consultation Uri", "pieceUuid")
+        assertThat(retrait.cle).isEqualTo(cleRetrait)
+        assertThat(retrait.siret).isEqualTo("987654321")
+        assertThat(retrait.nomPiece).isEqualTo("$nom.$extension")
+        assertThat(retrait.libellePiece).isEqualTo(libellePiece)
+        assertThat(retrait.dateDebut).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateDebut).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(retrait.dateFin).isEqualTo(LocalDateTime.ofInstant(Instant.ofEpochSecond((dateFin).toLong()), TimeZone.getDefault().toZoneId()))
+        assertThat(retrait.personne!!.cle).isEqualTo(clePersonne)
+        assertThat(retrait.personne!!.genre).isEqualTo(genre)
+        assertThat(retrait.personne!!.nom).isEqualTo(nomContact)
+        assertThat(retrait.personne!!.prenom).isEqualTo(prenomContact)
+        assertThat(retrait.personne!!.email).isEqualTo(emailContact)
+        assertThat(retrait.personne!!.telephone).isEqualTo(telephoneContact)
+        assertThat(retrait.personne!!.fax).isEmpty()
     }
 }

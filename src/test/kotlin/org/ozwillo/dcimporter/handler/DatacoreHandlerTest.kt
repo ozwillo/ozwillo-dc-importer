@@ -205,7 +205,7 @@ class DatacoreHandlerTest(@Autowired val restTemplate: TestRestTemplate,
                 .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
         WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/orgfr:Organisation_0/FR/$grantedSiret"))
                 .willReturn(WireMock.okJson(dcGetOrganizationResponse).withStatus(200)))
-        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
+        WireMock.stubFor(WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet-1"))
                 .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))
         WireMock.stubFor(WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
                 .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200)))

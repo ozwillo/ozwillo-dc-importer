@@ -28,8 +28,7 @@ import java.net.URI
 
 @Component
 class DatacoreHandler (private val datacoreService: DatacoreService,
-                       private val datacoreProperties: DatacoreProperties,
-                       private val applicationProperties: ApplicationProperties){
+                       private val datacoreProperties: DatacoreProperties){
 
     companion object {
         private val logger = LoggerFactory.getLogger(DatacoreHandler::class.java)

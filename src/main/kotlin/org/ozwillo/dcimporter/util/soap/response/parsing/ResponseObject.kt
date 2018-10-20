@@ -11,4 +11,6 @@ class ResponseObject: ResponseType() {
     override val properties: List<Properties>? = null
     @field:XmlElement(name = "nombre_lots")
     override val lotNbr: Int? = null
+    @field:XmlElement(name = "objet")
+    override val responseObject: List<ResponseObject>? = null
 }

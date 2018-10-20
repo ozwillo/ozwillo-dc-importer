@@ -61,8 +61,9 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
         //saving dce (=consultation id in MS)
         val dce = if (responseObject.properties!!.size == 20 && responseObject.properties!![0].status == "changed")responseObject.properties!![0].value else ""
+        val msReference = if (responseObject.properties!!.size == 20 && responseObject.properties!![2].name == "reference")responseObject.properties!![2].value!! else ""
         if (!dce!!.isEmpty()){
-            val businessMapping = BusinessMapping(applicationName = name, businessId = dce, dcId = uri, type = MSUtils.CONSULTATION_TYPE)
+            val businessMapping = BusinessMapping(applicationName = name, businessId = dce, businessId2 = msReference, dcId = uri, type = MSUtils.CONSULTATION_TYPE)
             businessMappingRepository.save(businessMapping).subscribe()
             logger.debug("saved BusinessMapping : {}", businessMapping)
         }else{
@@ -79,7 +80,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
         return if (existingBusinessMappings == null) {
             val creationResponse = createConsultationAndSaveDce(businessAppConfiguration.login!!, businessAppConfiguration.password!!,
-                    businessAppConfiguration.instanceId!!, consultation, uri, "${businessAppConfiguration.baseUrl}/$createConsultationUrl")
+                    businessAppConfiguration.instanceId!!, consultation, uri, "${businessAppConfiguration.baseUrl}$createConsultationUrl")
             if(creationResponse.properties!!.size == 20 && creationResponse.properties!![0].status == "changed")
                 updateConsultation(siret, consultation, uri)
             else
@@ -125,7 +126,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         //  SOAP request sending
         var response = ""
         if(!soapMessage.isEmpty()){
-            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$updateConsultationUrl", soapMessage)
+            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$updateConsultationUrl", soapMessage)
         }
         return MSUtils.parseToResponseType(response, MSUtils.CONSULTATION_TYPE, BindingKeyAction.UPDATE.value)
     }
@@ -145,7 +146,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
 
             //Sending soap request
             if (!soapMessage.isEmpty()){
-                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$deleteConsultationUrl", soapMessage)
+                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$deleteConsultationUrl", soapMessage)
             }else{
                 logger.warn("A problem occurred while generating soap request")
             }
@@ -168,7 +169,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         val soapMessage = MSUtils.generateCheckConsultationRequest(login, password, pa, dce)
         var response = ""
         if (!soapMessage.isEmpty()){
-            response = MSUtils.sendSoap("$baseUrl/$publishConsultationUrl", soapMessage)
+            response = MSUtils.sendSoap("$baseUrl$publishConsultationUrl", soapMessage)
         }else{
             logger.warn("A problem occured generating soap request")
         }
@@ -193,7 +194,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 soapMessage = MSUtils.generatePublishConsultationRequest(businessAppConfiguration.login, businessAppConfiguration.password, businessAppConfiguration.instanceId, dce)
                 //Sending soap request
                 if (!soapMessage.isEmpty()){
-                    response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$publishConsultationUrl", soapMessage)
+                    response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$publishConsultationUrl", soapMessage)
                 }else{
                     logger.warn("A problem occured generating soap request")
                 }
@@ -254,7 +255,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         }
         // SOAP sending and response
         if(!soapMessage.isEmpty()){
-            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$lotUrl", soapMessage)
+            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$lotUrl", soapMessage)
         }
         //  cleLot parsed from response and saved in businessMapping
         val responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.CREATE.value, lot.ordre.toString())
@@ -294,7 +295,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             logger.warn("error on finding dce and cleLot from businessMapping, ${e.message}")
         }
         if(!soapMessage.isEmpty()){
-            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$lotUrl", soapMessage)
+            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$lotUrl", soapMessage)
         }
         return MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.UPDATE.value, lot.ordre.toString())
     }
@@ -320,7 +321,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             soapMessage = MSUtils.generateDeleteLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!,
                     dce, cleLot)
             if(!soapMessage.isEmpty()){
-                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$lotUrl", soapMessage)
+                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$lotUrl", soapMessage)
             }
             //Delete businessMapping
             responseObject = MSUtils.parseToResponseType(response, MSUtils.LOT_TYPE, BindingKeyAction.DELETE.value, cleLot)
@@ -346,7 +347,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
         //  SOAP request and response
         val soapMessage = MSUtils.generateDeleteAllLotRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce)
 
-        return MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$url", soapMessage)
+        return MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$url", soapMessage)
     }
 
 /*
@@ -404,7 +405,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
                 logger.warn("error on finding dce and cleLot from BusinessMapping, ${e.message}")
             }
             if (!soapMessage.isEmpty()){
-                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$pieceUrl", soapMessage)
+                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$pieceUrl", soapMessage)
             }
 
             //  clePiece parsed from response and saved in businessMapping
@@ -455,7 +456,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             logger.warn("error on finding dce, clePiece or cleLot from BusinessMapping, ${e.message}")
         }
         if(!soapMessage.isEmpty()){
-            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$url", soapMessage)
+            response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$url", soapMessage)
         }
         return response
     }
@@ -479,7 +480,7 @@ class MarcheSecuriseService (private val businessMappingRepository: BusinessMapp
             val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, name).block()!!
             soapMessage = MSUtils.generateDeletePieceRequest(businessAppConfiguration.login!!, businessAppConfiguration.password!!, businessAppConfiguration.instanceId!!, dce, clePiece)
             if (!soapMessage.isEmpty()){
-                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}/$pieceUrl", soapMessage)
+                response = MSUtils.sendSoap("${businessAppConfiguration.baseUrl}$pieceUrl", soapMessage)
             }
             responseObject = MSUtils.parseToResponseType(response, MSUtils.PIECE_TYPE, BindingKeyAction.DELETE.value, clePiece)
             if (responseObject.properties != null && responseObject.properties!!.find { p -> p.value == clePiece } == null && (responseObject.properties!![0].name == "cle_piece" || responseObject.properties!![0].value == "supprime")){
