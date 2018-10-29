@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Dashboard from './components/Dashboard'
+import Dashboard from './views/Dashboard'
+import DataRequest from './views/DataRequest'
 
 Vue.use(Router)
 
@@ -12,6 +13,11 @@ export default new Router({
       path: '/',
       name: 'dashboard',
       component: Dashboard
+    },
+    {
+      path: '/request',
+      name: 'request',
+      component: DataRequest
     }
   ]
 })
