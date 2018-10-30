@@ -8,7 +8,7 @@
 <script>
 import Vue from 'vue'
 import  VueRouter from 'vue-router'
-import NavBar from './components/NavBar'
+import NavBar from './components/organisms/NavBar'
 
 export default {
   name: 'app',
