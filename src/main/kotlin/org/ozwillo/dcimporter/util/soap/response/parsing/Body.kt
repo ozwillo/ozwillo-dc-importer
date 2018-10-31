@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "SOAP-ENV:Body")
 @XmlAccessorType(XmlAccessType.FIELD)
-class Body{
+class Body {
     @field:XmlElement(name = "ns1:creer_consultation_logResponse")
     private val createConsultationLogResponse: CreateConsultationLogResponse? = null
 }

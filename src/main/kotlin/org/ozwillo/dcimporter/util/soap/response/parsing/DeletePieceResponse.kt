@@ -7,7 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement
 
 @XmlRootElement(name = "ns1:supprimer_fichier_logResponse")
 @XmlAccessorType(XmlAccessType.FIELD)
-class DeletePieceResponse{
-    @field:XmlElement(name= "return")
+class DeletePieceResponse {
+    @field:XmlElement(name = "return")
     val soapReturn: String? = null
 }

@@ -7,4 +7,5 @@ data class ListFormsModel(
     var id: Int,
     var url: String,
     var last_update_time: String,
-    var receipt_time: String)
+    var receipt_time: String
+)

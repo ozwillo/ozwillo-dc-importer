@@ -1,16 +1,20 @@
 package org.ozwillo.dcimporter.model.datacore
 
-import java.util.ArrayList
+import java.util.*
 
-class DCQueryParameters(subject: String,
-                        operator: DCOperator,
-                        ordering: DCOrdering,
-                        target: String) : Iterable<DCQueryParameters.DCQueryParam> {
+class DCQueryParameters(
+    subject: String,
+    operator: DCOperator,
+    ordering: DCOrdering,
+    target: String
+) : Iterable<DCQueryParameters.DCQueryParam> {
 
-    class DCQueryParam(val subject: String,
-                       val operator: DCOperator,
-                       val ordering: DCOrdering,
-                       val objectAsString: String) {
+    class DCQueryParam(
+        val subject: String,
+        val operator: DCOperator,
+        val ordering: DCOrdering,
+        val objectAsString: String
+    ) {
 
         fun getObject(): String {
             val builder = StringBuilder()
@@ -18,7 +22,7 @@ class DCQueryParameters(subject: String,
             if ("".equals(objectAsString)) {
                 // nothing
             } else {
-                builder.append(objectAsString );
+                builder.append(objectAsString);
             }
 
             if (ordering != null) {

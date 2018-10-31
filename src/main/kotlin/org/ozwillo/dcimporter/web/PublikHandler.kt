@@ -15,8 +15,10 @@ import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 
 @Component
-class PublikHandler(private val datacoreService: DatacoreService,
-                    private val publikService: PublikService) {
+class PublikHandler(
+    private val datacoreService: DatacoreService,
+    private val publikService: PublikService
+) {
 
     @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
@@ -24,18 +26,33 @@ class PublikHandler(private val datacoreService: DatacoreService,
     data class PublikDataResponse(@JsonProperty("data") val data: PublikDataEntryResponse)
 
     data class PublikDataEntryResponse(
-            @JsonProperty("transmission_status") val transmissionStatus: Int,
-            @JsonProperty("transmission_response") val transmissionResponse: Map<String, String>)
+        @JsonProperty("transmission_status") val transmissionStatus: Int,
+        @JsonProperty("transmission_response") val transmissionResponse: Map<String, String>
+    )
 
     fun publish(req: ServerRequest): Mono<ServerResponse> =
-            req.bodyToMono<FormModel>()
-                    .flatMap { formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel) }
-                    .flatMap { dcResourceWithProject ->
-                        datacoreService.saveResource(datacoreProject, dcResourceWithProject.first, dcResourceWithProject.second, null)
-                    }
-                    .flatMap { result ->
-                        ServerResponse.ok()
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .body(fromObject(PublikDataResponse(PublikDataEntryResponse(HttpStatus.OK.value(), mapOf(Pair("Identifiant Ozwillo", result.resource.getUri()))))))
-                    }
+        req.bodyToMono<FormModel>()
+            .flatMap { formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel) }
+            .flatMap { dcResourceWithProject ->
+                datacoreService.saveResource(
+                    datacoreProject,
+                    dcResourceWithProject.first,
+                    dcResourceWithProject.second,
+                    null
+                )
+            }
+            .flatMap { result ->
+                ServerResponse.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(
+                        fromObject(
+                            PublikDataResponse(
+                                PublikDataEntryResponse(
+                                    HttpStatus.OK.value(),
+                                    mapOf(Pair("Identifiant Ozwillo", result.resource.getUri()))
+                                )
+                            )
+                        )
+                    )
+            }
 }

@@ -5,14 +5,18 @@ import org.ozwillo.dcimporter.util.DCUtils
 import java.util.*
 
 data class Lot(
-        val libelle: String,
-        val ordre: Int,
-        val numero: Int,
-        val uuid: String = UUID.randomUUID().toString()
+    val libelle: String,
+    val ordre: Int,
+    val numero: Int,
+    val uuid: String = UUID.randomUUID().toString()
 ) {
     fun toDcObject(baseUri: String, siret: String, reference: String, uuid: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "marchepublic:lot_0",
-                "FR/$siret/$reference/$uuid"))
+        val resourceLight = DCBusinessResourceLight(
+            DCUtils.getUri(
+                baseUri, "marchepublic:lot_0",
+                "FR/$siret/$reference/$uuid"
+            )
+        )
         val consultationUri = DCUtils.getUri(baseUri, "marchepublic:consultation_0", "FR/$siret/$reference")
         resourceLight.setStringValue("mplot:uuid", uuid)
         resourceLight.setStringValue("mplot:consultation", consultationUri)
@@ -28,9 +32,11 @@ data class Lot(
     companion object {
 
         fun toLot(dcLot: DCBusinessResourceLight): Lot =
-                Lot(libelle = dcLot.getStringValue("mplot:libelle"),
-                        ordre = dcLot.getIntValue("mplot:ordre"),
-                        numero = dcLot.getIntValue("mplot:numero"),
-                        uuid = dcLot.getStringValue("mplot:uuid"))
+            Lot(
+                libelle = dcLot.getStringValue("mplot:libelle"),
+                ordre = dcLot.getIntValue("mplot:ordre"),
+                numero = dcLot.getIntValue("mplot:numero"),
+                uuid = dcLot.getStringValue("mplot:uuid")
+            )
     }
 }

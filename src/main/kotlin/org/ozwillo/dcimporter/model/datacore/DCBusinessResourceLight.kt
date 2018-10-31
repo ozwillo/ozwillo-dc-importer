@@ -8,11 +8,14 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
+
+typealias I18nOrgDenomination = HashMap<String, String>
 
 @JsonIgnoreProperties("@type")
-class DCBusinessResourceLight(uri: String,
-                              @JsonAnySetter private var values: Map<String, Any> = HashMap()) : DCResourceLight(uri) {
+class DCBusinessResourceLight(
+    uri: String,
+    @JsonAnySetter private var values: Map<String, Any> = HashMap()
+) : DCResourceLight(uri) {
 
     @JsonIgnore
     val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
@@ -55,6 +58,13 @@ class DCBusinessResourceLight(uri: String,
     fun getIntListValue(s: String): List<Int> = values[s] as List<Int>
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
+
+    fun getI18nFieldValueFromList(valueList: List<I18nOrgDenomination>, lang: String): String {
+        val result = valueList.firstOrNull { value ->
+            value.values.toTypedArray()[0] == lang
+        }
+        return if (result != null) result.values.toTypedArray()[1] else ""
+    }
 
     override fun toString(): String {
         return "DCBusinessResourceLight(values=$values)"

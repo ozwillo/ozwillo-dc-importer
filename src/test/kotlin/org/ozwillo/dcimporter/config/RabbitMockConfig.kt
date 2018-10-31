@@ -50,19 +50,28 @@ class RabbitMockConfig {
         val container = SimpleMessageListenerContainer(connectionFactory())
         // FIXME : make this more dynamic
         // maybe extend TestRabbitTemplate to able to wildcard queue names ?
-        container.setQueueNames("marchepublic_0.123456789.marchepublic:consultation_0.create",
-                "marchepublic_0.123456789.marchepublic:consultation_0.update",
-                "marchepublic_0.123456789.marchepublic:consultation_0.delete",
-                "marchepublic_0.123456789.marchepublic:consultation_0.publish",
-                "marchepublic_0.123456789.marchepublic:lot_0.create",
-                "marchepublic_0.123456789.marchepublic:lot_0.update",
-                "marchepublic_0.123456789.marchepublic:lot_0.delete",
-                ".123456789.grant:association_0.create",
-                ".987654321.grant:association_0.create",
-                ".987654321.orgfr:Organisation_0.create",
-                ".123456789.grant:association_0.update",
-                ".987654321.grant:association_0.update")
-        container.setMessageListener(MessageListenerAdapter( object {
+        container.setQueueNames(
+            "marchepublic_0.123456789.marchepublic:consultation_0.create",
+            "marchepublic_0.123456789.marchepublic:consultation_0.update",
+            "marchepublic_0.123456789.marchepublic:consultation_0.delete",
+            "marchepublic_0.123456789.marchepublic:consultation_0.publish",
+            "marchepublic_0.123456789.marchepublic:lot_0.create",
+            "marchepublic_0.123456789.marchepublic:lot_0.update",
+            "marchepublic_0.123456789.marchepublic:lot_0.delete",
+            ".123456789.grant:association_0.create",
+            ".987654321.grant:association_0.create",
+            ".987654321.orgfr:Organisation_0.create",
+            ".123456789.grant:association_0.update",
+            ".987654321.grant:association_0.update",
+            "marchepublic_0.123456789.marchepublic:reponse_0.create",
+            "marchepublic_0.123456789.marchepublic:reponse_0.update",
+            "marchepublic_0.123456789.marchepublic:retrait_0.create",
+            "marchepublic_0.123456789.marchepublic:retrait_0.update",
+            "marchepublic_0.987654321.orgfr:Organisation_0.create",
+            "marchepublic_0.1335945366ODE0aP0Xgd.marchepublic:personne_0.create",
+            "marchepublic_0.1335945366ODE0aP0Xgd.marchepublic:personne_0.update"
+        )
+        container.setMessageListener(MessageListenerAdapter(object {
             fun handleMessage(message: Any) {
                 LOGGER.debug("Got message $message")
             }

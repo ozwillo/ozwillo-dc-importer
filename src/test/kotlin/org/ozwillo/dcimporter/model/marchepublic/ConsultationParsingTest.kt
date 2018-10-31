@@ -44,7 +44,7 @@ class ConsultationParsingTest {
         val consultation = jacksonTester.parseObject(consultationJson)
 
         assertThat(consultation.reference).isEqualTo("reference")
-        assertThat(consultation.datePublication).isEqualTo(LocalDateTime.of(2018,5,1,0,0,0))
+        assertThat(consultation.datePublication).isEqualTo(LocalDateTime.of(2018, 5, 1, 0, 0, 0))
         assertThat(consultation.finaliteMarche).isEqualTo(FinaliteMarcheType.MARCHE)
         assertThat(consultation.typeMarche).isEqualTo(TypeMarcheType.PRIVE)
         assertThat(consultation.typePrestation).isEqualTo(TypePrestationType.TRAVAUX)

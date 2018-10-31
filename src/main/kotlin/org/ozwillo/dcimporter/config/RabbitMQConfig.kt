@@ -1,10 +1,10 @@
 package org.ozwillo.dcimporter.config
 
 import org.springframework.amqp.core.*
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
 @Configuration
 class RabbitMQConfig {
@@ -30,13 +30,13 @@ class RabbitMQConfig {
         @Bean(name = ["queue_ms"])
         fun queueMS(): Queue {
             return QueueBuilder.durable(QUEUE_MS_NAME)
-                    .withArgument("x-dead-letter-exchange", "")
-                    .withArgument("x-dead-letter-routing-key", DEAD_LETTER_QUEUE_NAME)
-                    .build()
+                .withArgument("x-dead-letter-exchange", "")
+                .withArgument("x-dead-letter-routing-key", DEAD_LETTER_QUEUE_NAME)
+                .build()
         }
 
         @Bean(name = ["queue_deadletter"])
-        fun deadLetterQueue(): Queue{
+        fun deadLetterQueue(): Queue {
             return Queue(DEAD_LETTER_QUEUE_NAME)
         }
 

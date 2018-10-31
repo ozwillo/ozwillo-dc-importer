@@ -24,7 +24,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
 
     @RabbitListener(queues = ["maarch"])
     @Throws(InterruptedException::class)
-    fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG)tag: Long) {
+    fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
         val resource = JsonConverter.jsonToObject(message)
@@ -49,7 +49,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
         channel.basicAck(tag, false)
     }
 
-    fun routingBindingKeyOfAction(routingKey: String, controlKey : BindingKeyAction): Boolean {
+    fun routingBindingKeyOfAction(routingKey: String, controlKey: BindingKeyAction): Boolean {
         return routingKey.substringAfterLast('.') == controlKey.value
     }
 

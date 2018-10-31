@@ -1,17 +1,24 @@
-            {
-                "objet": "mon marché public",
-                "datePublication": "2018-05-01T00:00:00",
-                "dateCloture": "2018-06-30T00:00:00",
-                "finaliteMarche": "MARCHE",
-                "typeMarche": "PUBLIC",
-                "typePrestation": "TRAVAUX",
-                "departementsPrestation": [5,6,83],
-                "passation": "Passation",
-                "informatique": "true",
-                "emails": ["dev@sictiam.fr", "demat@sictiam.fr"],
-                "enLigne": "false",
-                "alloti": "true",
-                "invisible": "false",
-                "nbLots": "3"
-            }
+{
+  "objet": "mon marché public",
+  "datePublication": "2018-05-01T00:00:00",
+  "dateCloture": "2018-06-30T00:00:00",
+  "finaliteMarche": "MARCHE",
+  "typeMarche": "PUBLIC",
+  "typePrestation": "TRAVAUX",
+  "departementsPrestation": [
+    5,
+    6,
+    83
+  ],
+  "passation": "Passation",
+  "informatique": "true",
+  "emails": [
+    "dev@sictiam.fr",
+    "demat@sictiam.fr"
+  ],
+  "enLigne": "false",
+  "alloti": "true",
+  "invisible": "false",
+  "nbLots": "3"
+}
 

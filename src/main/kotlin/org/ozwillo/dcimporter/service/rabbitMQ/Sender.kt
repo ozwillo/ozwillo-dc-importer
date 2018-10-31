@@ -16,7 +16,7 @@ import java.util.*
 @Service
 class Sender(private val template: RabbitTemplate) {
 
-    private val logger:Logger = LoggerFactory.getLogger(Sender::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(Sender::class.java)
 
     @Value("\${amqp.config.exchangerName}")
     private val exchangerName = ""
@@ -30,9 +30,9 @@ class Sender(private val template: RabbitTemplate) {
         // we don't always have a SIRET in the URI and we can't assume it will be at the 8th position when there is one
         // for now, if we don't find it where expected, take the last part of the URI
         val siret =
-                if (splittedUri.size >= 8) splittedUri[7]
-                else uri.substringAfterLast("/")
-        val key = getKey(project, type, siret , action)
+            if (splittedUri.size >= 8) splittedUri[7]
+            else uri.substringAfterLast("/")
+        val key = getKey(project, type, siret, action)
         val message = JsonConverter.objectToJson(resource)
 
         logger.debug("About to send $message with key $key")
@@ -41,7 +41,11 @@ class Sender(private val template: RabbitTemplate) {
         properties.setHeader("original-routing-key", key)
         properties.setHeader("message-id", UUID.randomUUID())
 
-        template.convertAndSend(exchangerName, key, MessageBuilder.withBody(message.toByteArray()).andProperties(properties).build())
+        template.convertAndSend(
+            exchangerName,
+            key,
+            MessageBuilder.withBody(message.toByteArray()).andProperties(properties).build()
+        )
     }
 
     fun getKey(project: String, type: String, siret: String, action: BindingKeyAction): String {

@@ -1,9 +1,5 @@
 package org.ozwillo.dcimporter.model.publik
 
-import org.springframework.core.io.Resource
-import org.springframework.util.FileCopyUtils
-import java.io.IOException
-
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -11,8 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.json.JsonTest
 import org.springframework.boot.test.json.JacksonTester
 import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.Resource
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.util.FileCopyUtils
+import java.io.IOException
 
 @ExtendWith(SpringExtension::class)
 @JsonTest
@@ -35,7 +34,8 @@ class FormModelParsingTest {
         assertThat(formModel.display_name).isEqualTo("Demande de rendez-vous avec un élu - n°17-4")
         assertThat(formModel.submission.channel).isEqualTo("web")
         assertThat(formModel.submission.backoffice).isFalse()
-        assertThat(formModel.url).isEqualTo("https://demarches-sve.test-demarches.sictiam.fr/demande-de-rendez-vous-avec-un-elu/4/")
+        assertThat(formModel.url).isEqualTo(
+            "https://demarches-sve.test-demarches.sictiam.fr/demande-de-rendez-vous-avec-un-elu/4/")
         assertThat(formModel.fields["nom_famille"]).isEqualTo("agent_sictiam")
         assertThat(formModel.fields["prenom"]).isEqualTo("agent_sictiam")
         assertThat(formModel.fields["telephone"]).isEqualTo("0661444444")
