@@ -15,7 +15,8 @@ class Routes(
     private val maarchHandler: MaarchHandler,
     private val marchePublicHandler: MarchePublicHandler,
     private val connectorsHandler: ConnectorsHandler,
-    private val datacoreHandler: DatacoreHandler
+    private val datacoreHandler: DatacoreHandler,
+    private val dataAccessRequestHandler: DataAccessRequestHandler
 ) {
 
     @Bean
@@ -27,6 +28,10 @@ class Routes(
         (accept(MediaType.APPLICATION_JSON) and
 
                 "/api").nest {
+
+            "/data_access_request".nest {
+                POST("/{siret}/{request}", dataAccessRequestHandler::create)    //request = save for SAVED state, send for SENT state (meaning sent to validation task)
+            }
 
             "/publik".nest {
                 POST("/{siret}/form", publikHandler::publish)
