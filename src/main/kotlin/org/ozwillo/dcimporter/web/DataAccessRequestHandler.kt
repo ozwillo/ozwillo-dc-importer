@@ -59,6 +59,45 @@ class DataAccessRequestHandler(
             .onErrorResume(this::throwableToResponse)
     }
 
+    fun update(req: ServerRequest): Mono<ServerResponse>{
+        val id = req.pathVariable("id")
+        val state =
+            when(req.pathVariable("action")) {
+                "valid" -> AccessRequestState.VALIDATED
+                "reject" -> AccessRequestState.REFUSED
+                "send" -> AccessRequestState.SENT
+                "save" -> AccessRequestState.SAVED
+                else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize requested action. Waiting for \"valid\" or \"reject\" or \"save\" or \"send\""))
+            }
+
+        val fallback: Mono<DataAccessRequest> = Mono.error(EmptyException("No data access request found with id $id"))
+
+        return dataAccessRequestRepository.findById(id)
+            .switchIfEmpty(fallback)
+            .flatMap { currentDataAccessRequest ->
+                req.bodyToMono<DataAccessRequest>()
+                    .flatMap { dataAccessRequest ->
+                        dataAccessRequestRepository.save(
+                            DataAccessRequest(
+                                id = currentDataAccessRequest.id,
+                                nom = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.nom else currentDataAccessRequest.nom,
+                                model = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.model else currentDataAccessRequest.model,
+                                organization = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.organization else currentDataAccessRequest.organization,
+                                email = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.email else currentDataAccessRequest.email,
+                                state = state
+                            )
+                        ).subscribe()
+                        ok().body(BodyInserters.empty<String>())
+                    }
+            }
+            .onErrorResume { e ->
+                when (e) {
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject(e.message))
+                    else -> this.throwableToResponse(e)
+                }
+            }
+    }
+
     //Utils
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
