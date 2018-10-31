@@ -31,6 +31,7 @@ class Routes(
 
             "/data_access_request".nest {
                 POST("/{siret}/{request}", dataAccessRequestHandler::create)    //request = save for SAVED state, send for SENT state (meaning sent to validation task)
+                GET("/{siret}/{state}", dataAccessRequestHandler::get)  //state = saved (list of saved pre-filled form) or sent (list of elements waiting for validation)
             }
 
             "/publik".nest {

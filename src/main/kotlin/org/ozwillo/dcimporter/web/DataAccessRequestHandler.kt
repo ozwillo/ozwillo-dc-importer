@@ -5,11 +5,13 @@ import org.ozwillo.dcimporter.model.DataAccessRequest
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.ServerResponse.status
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
@@ -21,6 +23,23 @@ class DataAccessRequestHandler(
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DataAccessRequestHandler::class.java)
+    }
+
+    fun get(req: ServerRequest): Mono<ServerResponse>{
+        val state =
+            when(req.pathVariable("state")){
+                "saved" -> AccessRequestState.SAVED
+                "sent" -> AccessRequestState.SENT
+                else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize state, waiting for \"saved\" or \"sent\""))
+            }
+
+        return try {
+            val dataAccessRequest = dataAccessRequestRepository.findByState(state)
+            ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
+        }catch (e: Exception){
+            this.throwableToResponse(e)
+        }
+
     }
 
     fun create(req: ServerRequest): Mono<ServerResponse> {
