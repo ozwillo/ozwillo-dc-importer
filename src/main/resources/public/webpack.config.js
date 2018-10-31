@@ -76,6 +76,10 @@ module.exports = {
     extensions: ['*', '.js', '.vue', '.json']
   },
   devServer: {
+    proxy: [{
+      context: ['/actuator', '/api'],
+      target: 'http://localhost:8080',
+    }],
     historyApiFallback: true,
     noInfo: true,
     overlay: true
