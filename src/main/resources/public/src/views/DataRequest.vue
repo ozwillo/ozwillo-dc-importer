@@ -4,9 +4,9 @@
         <form>
             <div class="form-group row">
                 <label for="claimer-collectivity" class="col-sm-3 col-form-label col-form-label-sm">
-                    Collectivity
+                    Organization
                 </label>
-                <input id="claimer-collectivity" value=""/>
+                <input id="claimer-collectivity" v-model="organization"/>
             </div>
             <div class="form-group row">
                 <label for="claimer-email" class="col-sm-3 col-form-label col-form-label-sm">
@@ -14,6 +14,13 @@
                 </label>
                 <input id="claimer-email" v-model="email"/>
             </div>
+            <div class="form-group row">
+                <label for="dc-model" class="col-sm-3 col-form-label col-form-label-sm">
+                    DC Model
+                </label>
+                <input id="dc-model" v-model="model"/>
+            </div>
+            <input type="button" @click="createDataRequestModel()" value="submit">
         </form>
     </div>
 </template>
@@ -24,22 +31,29 @@
         name: "DataRequest",
         data() {
             return {
-                email: ''
+                organization: '',
+                email: '',
+                model: ''
             }
-        },
-        beforeCreate() {
-          axios.get(`actuator/health`)
-            .then(response => {
-              this.response = response.data
-              console.log(this.response)
-            })
-            .catch(e => {
-              this.errors.push(e)
-            })
         },
         methods: {
             callRestService() {
               event.preventPropagation()
+            },
+            createDataRequestModel() {
+              axios.post(`api/data_access_request/123456789/send`, {
+                nom: "",
+                organization: this.organization,
+                email: this.email,
+                model: this.model
+              })
+                .then(response => {
+                  this.response = response.data
+                  console.log(this.response)
+                })
+                .catch(e => {
+                  this.errors.push(e)
+                })
             }
         }
     }
