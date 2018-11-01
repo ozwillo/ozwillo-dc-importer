@@ -143,5 +143,4 @@ class ConnectorsHandler(private val businessAppConfigurationRepository: Business
     }
 }
 
-class EmptyException(override var message: String) : Exception(message) {
-}
+class EmptyException(override var message: String) : Exception(message)
