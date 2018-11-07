@@ -15,21 +15,13 @@
                 <input id="claimer-email" v-model="email"/>
             </div>
             <div class="form-group row">
-                <table>
-                    <tr id="single-select-with-label">
-                        <td class="col-sm-3 col-form-label col-form-label-sm">
-                            {{ labelName }}
-                        </td>
-                        <td class="single-select-input">
-                            <vue-single-select 
-                                v-model="model"
-                                v-bind:options="models"
-                                placeholder="Pick a model dataset"
-                                v-bind:required="true"
-                            ></vue-single-select>
-                        </td>
-                    </tr>
-                </table>
+                <label class="col-sm-3 col-form-label col-form-label-sm">{{ labelName }}</label>
+                <vue-single-select 
+                    v-model="model"
+                    v-bind:options="models"
+                    placeholder="Pick a model dataset"
+                    v-bind:required="true"
+                ></vue-single-select>
             </div>
             <input type="button" @click="createDataRequestModel()" value="submit" v-bind:disabled="disabled">
         </form>
@@ -88,8 +80,5 @@
 </script>
 
 <style scoped>
-.single-select-input{
-    padding-left: 140px;
-    width: 400px;
-}
+
 </style>
