@@ -22,7 +22,7 @@
             }
         },
         beforeCreate() {
-            axios.get('api/data_access_request/123456789/sent')
+            axios.get('api/data_access_request/123456789?state=sent')
             .then(response => {
                 this.requestToValid = response.data.length
             })
