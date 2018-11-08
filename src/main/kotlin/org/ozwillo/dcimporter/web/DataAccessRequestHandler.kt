@@ -11,8 +11,7 @@ import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.ok
-import org.springframework.web.reactive.function.server.ServerResponse.status
+import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 
@@ -26,16 +25,30 @@ class DataAccessRequestHandler(
     }
 
     fun get(req: ServerRequest): Mono<ServerResponse>{
-        val state =
-            when(req.pathVariable("state")){
-                "saved" -> AccessRequestState.SAVED
-                "sent" -> AccessRequestState.SENT
-                else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize state, waiting for \"saved\" or \"sent\""))
+
+        val state = if (req.queryParam("state").isPresent) {
+                when (req.queryParam("state").get()) {
+                    "saved" -> AccessRequestState.SAVED.toString()
+                    "sent" -> AccessRequestState.SENT.toString()
+                    else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize state, waiting for \"saved\" or \"sent\""))
+                }
             }
+            else ""
+
+        val id = if (req.queryParam("id").isPresent) req.queryParam("id").get() else ""
 
         return try {
-            val dataAccessRequest = dataAccessRequestRepository.findByState(state)
-            ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
+            if (!state.isEmpty()){
+                val dataAccessRequest = dataAccessRequestRepository.findByState(state)
+                ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
+            }
+            else if (!id.isEmpty()){
+                val dataAccessRequest = dataAccessRequestRepository.findById(id)
+                ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
+            }
+            else{
+                badRequest().body(BodyInserters.fromObject("\"state\" or \"id\" parameters are missing in url request"))
+            }
         }catch (e: Exception){
             this.throwableToResponse(e)
         }
@@ -84,6 +97,7 @@ class DataAccessRequestHandler(
                                 model = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.model else currentDataAccessRequest.model,
                                 organization = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.organization else currentDataAccessRequest.organization,
                                 email = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.email else currentDataAccessRequest.email,
+                                creationDate = if (state == AccessRequestState.SAVED || state == AccessRequestState.SENT) dataAccessRequest.creationDate else currentDataAccessRequest.creationDate,
                                 state = state
                             )
                         ).subscribe()
