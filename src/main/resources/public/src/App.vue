@@ -24,6 +24,10 @@ export default {
 <style lang="scss">
 @import '../node_modules/bootstrap/scss/bootstrap.scss';
 
+.data-access-validation-label{
+    padding-right: 20px;
+}
+
 h1, h2 {
   font-weight: normal;
 }
