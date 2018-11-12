@@ -15,7 +15,7 @@ export default new Router({
       component: Dashboard
     },
     {
-      path: '/request',
+      path: '/request/:id?',
       name: 'request',
       component: DataRequest
     }

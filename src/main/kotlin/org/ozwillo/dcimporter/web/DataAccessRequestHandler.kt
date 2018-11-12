@@ -98,6 +98,16 @@ class DataAccessRequestHandler(
             }
     }
 
+    fun dataAccess(req: ServerRequest): Mono<ServerResponse>{
+        val id = req.pathVariable("id")
+        return try {
+            val dataAccessRequest = dataAccessRequestRepository.findById(id)
+            ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
+        }catch (e: Exception){
+            this.throwableToResponse(e)
+        }
+    }
+
     //Utils
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {

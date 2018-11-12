@@ -12,7 +12,11 @@
             </thead>
             <tbody>
                 <tr v-for="dataRequest in dataRequests">
-                    <td>{{ dataRequest.nom }}</td>
+                    <td>
+                        <router-link :to="{ name: 'request', params: { id: dataRequest.id }}">
+                          {{ dataRequest.nom }}
+                        </router-link>
+                    </td>
                     <td>{{ dataRequest.model }}</td>
                     <td>{{ dataRequest.organization }}</td>
                     <td>{{ dataRequest.state }}</td>
@@ -24,19 +28,20 @@
 
 <script>
     import axios from 'axios'
+    import  VueRouter from 'vue-router'
+
     export default {
         name: "Dashboard",
         data() {
             return {
-              dataRequests: [],
-              errors: []
+                dataRequests: [],
+                errors: []
             }
         },
         beforeCreate() {
-            axios.get(`api/data_access_request/123456789/sent`)
+            axios.get(`/api/data_access_request/123456789/sent`)
                 .then(response => {
-                    this.response = response.data
-                    this.dataRequests = this.response
+                    this.dataRequests = response.data
                 })
                 .catch(e => {
                     this.errors.push(e)

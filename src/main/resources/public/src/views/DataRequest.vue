@@ -6,19 +6,19 @@
                 <label for="claimer-collectivity" class="col-sm-3 col-form-label col-form-label-sm">
                     Organization
                 </label>
-                <input id="claimer-collectivity" v-model="organization"/>
+                <input id="claimer-collectivity" v-model="dataRequest.organization"/>
             </div>
             <div class="form-group row">
                 <label for="claimer-email" class="col-sm-3 col-form-label col-form-label-sm">
                     Email
                 </label>
-                <input id="claimer-email" v-model="email"/>
+                <input id="claimer-email" v-model="dataRequest.email"/>
             </div>
             <div class="form-group row">
                 <label for="dc-model" class="col-sm-3 col-form-label col-form-label-sm">
                     DC Model
                 </label>
-                <input id="dc-model" v-model="model"/>
+                <input id="dc-model" v-model="dataRequest.model"/>
             </div>
             <input type="button" @click="createDataRequestModel()" value="submit">
         </form>
@@ -27,33 +27,48 @@
 
 <script>
     import axios from 'axios'
+    import  VueRouter from 'vue-router'
+
     export default {
         name: "DataRequest",
         data() {
             return {
-                organization: '',
-                email: '',
-                model: ''
+                dataRequest: {
+                    id: null,
+                    nom: '',
+                    email: '',
+                    organization: '',
+                    model: ''
+                },
+                errors: [],
+                response: {}
             }
         },
+        beforeCreate() {
+            if(this.$route.params.id !== null) {
+                axios.get(`/api/data_access_request/${this.$route.params.id}`)
+                  .then(response => {
+                    this.dataRequest = response.data
+                  })
+                  .catch(e => {
+                    this.errors.push(e)
+                  })
+            }
+        },
+        beforeRouteUpdate (to, from, next) {
+            next()
+            this.dataRequest = {}
+        },
         methods: {
-            callRestService() {
-              event.preventPropagation()
-            },
             createDataRequestModel() {
-              axios.post(`api/data_access_request/123456789/send`, {
-                nom: "",
-                organization: this.organization,
-                email: this.email,
-                model: this.model
-              })
-                .then(response => {
-                  this.response = response.data
-                  console.log(this.response)
-                })
-                .catch(e => {
-                  this.errors.push(e)
-                })
+                axios.post(`/api/data_access_request/123456789/send`, this.dataRequest)
+                    .then(response => {
+                        this.response = response.data
+                        this.$router.push({ name: 'dashboard' })
+                    })
+                    .catch(e => {
+                        this.errors.push(e)
+                    })
             }
         }
     }
