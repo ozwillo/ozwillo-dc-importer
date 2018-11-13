@@ -59,11 +59,16 @@ class DCBusinessResourceLight(
 
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
 
-    fun getI18nFieldValueFromList(valueList: List<I18nOrgDenomination>, lang: String): String {
+    fun getI18nFieldValueFromList(valueList: List<I18nOrgDenomination>): String {
+        var nameIndex = 0
+
         val result = valueList.firstOrNull { value ->
-            value.values.toTypedArray()[0] == lang
+            val lang = value["l"]
+            val langIndex = value.values.indexOf(lang)
+            nameIndex = if (langIndex == 0) 1 else 0
+            value.values.toTypedArray()[langIndex] == lang
         }
-        return if (result != null) result.values.toTypedArray()[1] else ""
+        return if (result != null) result.values.toTypedArray()[nameIndex] else ""
     }
 
     override fun toString(): String {
