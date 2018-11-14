@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.web
 import org.ozwillo.dcimporter.model.AccessRequestState
 import org.ozwillo.dcimporter.model.DataAccessRequest
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
+import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -12,16 +13,35 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
+import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 
 @Component
 class DataAccessRequestHandler(
-    private val dataAccessRequestRepository: DataAccessRequestRepository
+    private val dataAccessRequestRepository: DataAccessRequestRepository,
+    private val datacoreService: DatacoreService
 ) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DataAccessRequestHandler::class.java)
+    }
+
+    fun getModels(req: ServerRequest): Mono<ServerResponse>{
+
+        val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
+
+        return try {
+            val dcModels = datacoreService.findModels(100, name)
+                .map { it ->
+                    val modelName = it.getStringValue("dcmo:name")
+                    modelName
+                }
+                .collectList()
+            ok().contentType(MediaType.APPLICATION_JSON).body(dcModels)
+        }catch (e: HttpClientErrorException){
+            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+        }
     }
 
     fun get(req: ServerRequest): Mono<ServerResponse>{

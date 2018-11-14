@@ -42,19 +42,25 @@
                 email: '',
                 model: '',
                 labelName: 'DC Model :',
-                models: [
-                    'orgfr:Organisation_0',
-                    'org:Organization_0',
-                    'marchepublic:Consultation_0',
-                    'citizenreq:user_0',
-                    'grant:association_0'
-                ]   //TODO: get model list by an API
+                models: []   //TODO: get model list by an API
             }
+        },
+        beforeCreate() {
+            axios.get('api/data_access_request/123456789/model')
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
         },
         computed: {
             disabled: function(){
                 return(this.organization == '' || this.email == '' || this.model == '')
-            }
+            },
+            something: function(value){
+              this.getModels(value)
+          }
         },
         methods: {
             callRestService() {
@@ -73,6 +79,15 @@
                 })
                 .catch(e => {
                   this.errors.push(e)
+                })
+            },
+            getModels(name){
+                axios.get('api/data_access_request/123456789/model?name=' + name)
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
                 })
             }
         }
