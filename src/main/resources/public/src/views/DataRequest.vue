@@ -6,22 +6,23 @@
                 <label for="claimer-collectivity" class="col-sm-3 col-form-label col-form-label-sm">
                     Organization
                 </label>
-                <input id="claimer-collectivity" v-model="organization"/>
+                <input id="claimer-collectivity" v-model="dataRequest.organization"/>
             </div>
             <div class="form-group row">
                 <label for="claimer-email" class="col-sm-3 col-form-label col-form-label-sm">
                     Email
                 </label>
-                <input id="claimer-email" v-model="email"/>
+                <input id="claimer-email" v-model="dataRequest.email"/>
             </div>
             <div class="form-group row">
-                <label class="col-sm-3 col-form-label col-form-label-sm">{{ labelName }}</label>
+                <label for="claimer-model" class="col-sm-3 col-form-label col-form-label-sm">
+                    Model
+                </label>
                 <vue-single-select 
-                    v-model="model"
+                    v-model="dataRequest.model"
                     v-bind:options="models"
                     placeholder="Pick a model dataset"
-                    v-bind:required="true"
-                ></vue-single-select>
+                    v-bind:required="true"/>
             </div>
             <input type="button" @click="createDataRequestModel()" value="submit" v-bind:disabled="disabled">
         </form>
@@ -31,6 +32,8 @@
 <script>
     import axios from 'axios'
     import VueSingleSelect from 'vue-single-select'
+    import  VueRouter from 'vue-router'
+
     export default {
         name: "DataRequest",
         components: {
@@ -38,42 +41,54 @@
         },
         data() {
             return {
-                organization: '',
-                email: '',
-                model: '',
-                labelName: 'DC Model :',
+                dataRequest: {
+                    id: null,
+                    nom: '',
+                    email: '',
+                    organization: '',
+                    model: ''
+                },
                 models: [
                     'orgfr:Organisation_0',
                     'org:Organization_0',
                     'marchepublic:Consultation_0',
                     'citizenreq:user_0',
                     'grant:association_0'
-                ]   //TODO: get model list by an API
+                ],
+                errors: [],
+                response: {}
             }
         },
         computed: {
             disabled: function(){
-                return(this.organization == '' || this.email == '' || this.model == '')
+                return(this.dataRequest.organization == '' || this.dataRequest.email == '' || (this.dataRequest.model == '' || this.dataRequest.model === null))
             }
         },
+        beforeCreate() {
+            if(this.$route.params.id !== null) {
+                axios.get(`/api/data_access_request/${this.$route.params.id}`)
+                  .then(response => {
+                    this.dataRequest = response.data
+                  })
+                  .catch(e => {
+                    this.errors.push(e)
+                  })
+            }
+        },
+        beforeRouteUpdate (to, from, next) {
+            next()
+            this.dataRequest = {}
+        },
         methods: {
-            callRestService() {
-              event.preventPropagation()
-            },
             createDataRequestModel() {
-              axios.post(`api/data_access_request/123456789/send`, {
-                nom: "",
-                organization: this.organization,
-                email: this.email,
-                model: this.model
-              })
-                .then(response => {
-                  this.response = response.data
-                  console.log(this.response)
-                })
-                .catch(e => {
-                  this.errors.push(e)
-                })
+                axios.post(`/api/data_access_request/123456789/send`, this.dataRequest)
+                    .then(response => {
+                        this.response = response.data
+                        this.$router.push({ name: 'dashboard' })
+                    })
+                    .catch(e => {
+                        this.errors.push(e)
+                    })
             }
         }
     }
