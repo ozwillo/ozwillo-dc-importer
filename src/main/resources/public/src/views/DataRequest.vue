@@ -59,10 +59,22 @@
                 response: {}
             }
         },
+        beforeCreate() {
+            axios.get('api/data_access_request/123456789/model')
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
+        },
         computed: {
             disabled: function(){
                 return(this.dataRequest.organization == '' || this.dataRequest.email == '' || (this.dataRequest.model == '' || this.dataRequest.model === null))
-            }
+            },
+            something: function(value){
+              this.getModels(value)
+          }
         },
         beforeCreate() {
             if(this.$route.params.id !== null) {
@@ -74,6 +86,13 @@
                     this.errors.push(e)
                   })
             }
+            axios.get('api/data_access_request/123456789/model')
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
         },
         beforeRouteUpdate (to, from, next) {
             next()
@@ -89,6 +108,15 @@
                     .catch(e => {
                         this.errors.push(e)
                     })
+            },
+            getModels(name){
+                axios.get('api/data_access_request/123456789/model?name=' + name)
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
             }
         }
     }
