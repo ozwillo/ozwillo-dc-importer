@@ -48,25 +48,10 @@
                     organization: '',
                     model: ''
                 },
-                models: [
-                    'orgfr:Organisation_0',
-                    'org:Organization_0',
-                    'marchepublic:Consultation_0',
-                    'citizenreq:user_0',
-                    'grant:association_0'
-                ],
+                models: [],
                 errors: [],
                 response: {}
             }
-        },
-        beforeCreate() {
-            axios.get('api/data_access_request/123456789/model')
-                .then(response => {
-                    this.models = response.data
-                })
-                .catch(e => {
-                    this.errors.push(e)
-                })
         },
         computed: {
             disabled: function(){
@@ -77,7 +62,7 @@
           }
         },
         beforeCreate() {
-            if(this.$route.params.id !== null) {
+            if(this.$route.params.id != null) {
                 axios.get(`/api/data_access_request/${this.$route.params.id}`)
                   .then(response => {
                     this.dataRequest = response.data
