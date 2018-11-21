@@ -86,6 +86,13 @@
                     this.errors.push(e)
                   })
             }
+            axios.get('api/data_access_request/123456789/model')
+                .then(response => {
+                    this.models = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
         },
         beforeRouteUpdate (to, from, next) {
             next()

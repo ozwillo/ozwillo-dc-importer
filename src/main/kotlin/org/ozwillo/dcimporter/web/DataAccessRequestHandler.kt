@@ -46,29 +46,11 @@ class DataAccessRequestHandler(
 
     fun get(req: ServerRequest): Mono<ServerResponse>{
 
-        val state = if (req.queryParam("state").isPresent) {
-                when (req.queryParam("state").get()) {
-                    "saved" -> AccessRequestState.SAVED.toString()
-                    "sent" -> AccessRequestState.SENT.toString()
-                    else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize state, waiting for \"saved\" or \"sent\""))
-                }
-            }
-            else ""
-
-        val id = if (req.queryParam("id").isPresent) req.queryParam("id").get() else ""
+        val state = req.pathVariable("state").toUpperCase()
 
         return try {
-            if (!state.isEmpty() && id.isEmpty()){
-                val dataAccessRequest = dataAccessRequestRepository.findByState(state)
-                ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
-            }
-            else if (!id.isEmpty() && state.isEmpty()){
-                val dataAccessRequest = dataAccessRequestRepository.findById(id)
-                ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
-            }
-            else{
-                badRequest().body(BodyInserters.fromObject("\"state\" or \"id\" parameters are both present or missing in url request"))
-            }
+            val dataAccessRequest = dataAccessRequestRepository.findByState(state)
+            ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
         }catch (e: Exception){
             this.throwableToResponse(e)
         }
