@@ -235,6 +235,33 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         return Mono.just(results)
     }
 
+    fun findModels(limit: Int, name: String): Flux<DCBusinessResourceLight>{
+
+        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
+            .path("/dc/type/dcmo:model_0")
+            .queryParam("limit", limit)
+            .queryParam("dcmo:name", "${DCOperator.REGEX.value}$name")
+
+        val uriComponents = uriComponentsBuilder
+            .build()
+            .encode()
+
+        val requestUri = uriComponents.toUriString()
+
+        return try {
+            val client: WebClient = WebClient.create(requestUri)
+            getAccessToken().flatMapMany { accessToken ->
+                client.get()
+                    .header("Authorization", "Bearer $accessToken")
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .bodyToFlux(DCBusinessResourceLight::class.java)
+            }
+        }catch (e: HttpClientErrorException) {
+            Flux.empty() // this.getDCResultFromHttpErrorException(e)
+        }
+    }
+
     fun findResources(
         project: String,
         model: String,

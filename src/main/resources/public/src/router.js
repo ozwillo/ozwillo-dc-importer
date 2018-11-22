@@ -15,9 +15,9 @@ export default new Router({
             component: Dashboard
         },
         {
-            path: '/request',
-            name: 'request',
-            component: DataRequest
+          path: '/request/:id?',
+          name: 'request',
+          component: DataRequest
         },
         {
             path: '/tovalidate',
