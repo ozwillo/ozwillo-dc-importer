@@ -2,9 +2,14 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.model.AccessRequestState
 import org.ozwillo.dcimporter.model.DataAccessRequest
+import org.ozwillo.dcimporter.model.datacore.DCOperator
+import org.ozwillo.dcimporter.model.datacore.DCOrdering
+import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
+import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -27,6 +32,9 @@ class DataAccessRequestHandler(
         private val LOGGER = LoggerFactory.getLogger(DataAccessRequestHandler::class.java)
     }
 
+    @Value("\${datacore.model.modelORG}")
+    private val modelOrg = ""
+  
     fun getModels(req: ServerRequest): Mono<ServerResponse>{
 
         val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
@@ -55,6 +63,42 @@ class DataAccessRequestHandler(
             this.throwableToResponse(e)
         }
 
+    }
+
+    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse>{
+
+        val queryParameter:String
+        val queryObject:String
+
+        when {
+            req.queryParam("name").isPresent -> {
+                queryParameter = req.queryParam("name").get()
+                queryObject = "org:legalName"
+            }
+            req.queryParam("siret").isPresent -> {
+                queryParameter = req.queryParam("siret").get()
+                queryObject = "org:regNumber"
+            }
+            else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Missing query parameter \"name\" or \"siret\""))
+        }
+
+        return try {
+            val organizations = datacoreService.findResources(
+                "oasis.main",
+                modelOrg,
+                DCQueryParameters(queryObject, DCOperator.REGEX, DCOrdering.DESCENDING, queryParameter),
+                0,
+                100
+            )
+                .map { dcOrganization ->
+                    val organization = Organization.fromDcObject(dcOrganization)
+                    organization
+                }
+            ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
+
+        }catch (e: HttpClientErrorException){
+            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+        }
     }
 
     fun create(req: ServerRequest): Mono<ServerResponse> {

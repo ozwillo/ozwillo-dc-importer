@@ -18,11 +18,14 @@
                 <label for="claimer-model" class="col-sm-3 col-form-label col-form-label-sm">
                     Model
                 </label>
-                <vue-single-select 
+                <vue-bootstrap-typeahead 
                     v-model="dataRequest.model"
-                    v-bind:options="models"
-                    placeholder="Pick a model dataset"
-                    v-bind:required="true"/>
+                    v-bind:data="models"
+                    placeholder="Find a model dataset"
+                    v-bind:minMatchingChars="minMatch"
+                    v-bind:maxMatches="maxMatch"
+                    ref="typeahead"
+                />
             </div>
             <input type="button" @click="createDataRequestModel()" value="submit" v-bind:disabled="disabled">
         </form>
@@ -31,13 +34,13 @@
 
 <script>
     import axios from 'axios'
-    import VueSingleSelect from 'vue-single-select'
+    import VueBootstrapTypeahead from 'vue-bootstrap-typeahead'
     import  VueRouter from 'vue-router'
 
     export default {
         name: "DataRequest",
         components: {
-          VueSingleSelect  
+          VueBootstrapTypeahead  
         },
         data() {
             return {
@@ -50,28 +53,31 @@
                 },
                 models: [],
                 errors: [],
-                response: {}
+                response: {},
+                minMatch: 0,
+                maxMatch: 50
             }
         },
         computed: {
             disabled: function(){
                 return(this.dataRequest.organization == '' || this.dataRequest.email == '' || (this.dataRequest.model == '' || this.dataRequest.model === null))
-            },
-            something: function(value){
-              this.getModels(value)
-          }
+            }
         },
         beforeCreate() {
+            
             if(this.$route.params.id != null) {
                 axios.get(`/api/data_access_request/${this.$route.params.id}`)
                   .then(response => {
                     this.dataRequest = response.data
+                    //Even if typeahead value = dataRequest.model - we need to fullfill typeahead inputValue to display value
+                    this.$refs.typeahead.$data.inputValue = this.dataRequest.model
                   })
                   .catch(e => {
                     this.errors.push(e)
                   })
             }
-            axios.get('api/data_access_request/123456789/model')
+
+            axios.get('/api/data_access_request/123456789/model')
                 .then(response => {
                     this.models = response.data
                 })
@@ -82,6 +88,8 @@
         beforeRouteUpdate (to, from, next) {
             next()
             this.dataRequest = {}
+            //Empty typeahead inputValue when updating route
+            this.$refs.typeahead.$data.inputValue = this.dataRequest.model
         },
         methods: {
             createDataRequestModel() {
@@ -95,13 +103,22 @@
                     })
             },
             getModels(name){
-                axios.get('api/data_access_request/123456789/model?name=' + name)
+                axios.get('/api/data_access_request/123456789/model?name=' + name)
                 .then(response => {
                     this.models = response.data
                 })
                 .catch(e => {
                     this.errors.push(e)
                 })
+            }
+        },
+        watch: {
+            dataRequest: {
+                handler: function (val) {
+                    if(val.model != '' && val.model != null)
+                        this.getModels(val.model)
+                },
+                deep: true
             }
         }
     }
