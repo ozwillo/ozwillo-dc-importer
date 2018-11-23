@@ -67,7 +67,8 @@ data class Organization(
                 commune = dcOrg.getStringValue("adrpost:postName"),
                 pays = dcOrg.getStringValue("org:country"),
                 denominationUniteLegale = dcOrg.getI18nFieldValueFromList(
-                    dcOrg.getStringListValue("org:legalName") as List<I18nOrgDenomination>),
+                    dcOrg.getStringListValue("org:legalName") as List<I18nOrgDenomination>,
+                    "fr"),
                 siret = dcOrg.getStringValue("org:regNumber"),
                 tel = dcOrg.getStringValue("org:phoneNumber"),
                 url = dcOrg.getStringValue("org:webSite")
