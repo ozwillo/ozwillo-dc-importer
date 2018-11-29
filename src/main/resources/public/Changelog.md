@@ -1,7 +1,7 @@
 # Added dependancies
 
-**JQuery Autocomplete**
->[More Info](https://vuejsexamples.com/single-select-dropdown-with-autocomplete)
+**Autocomplete typeahead**
+>[More Info](https://vuejsexamples.com/an-autocomplete-typeahead-component-for-vue-2-and-bootstrap-4/)
 ``` bash
-npm i vue-single-select
+npm i vue-bootstrap-typeahead --save
 ```

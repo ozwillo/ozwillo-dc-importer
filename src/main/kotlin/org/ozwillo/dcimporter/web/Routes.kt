@@ -32,7 +32,7 @@ class Routes(
             "/data_access_request".nest {
                 POST("/{request}", dataAccessRequestHandler::create)    //request = save for SAVED state, send for SENT state (meaning sent to validation task)
                 PUT("/{action}/{id}", dataAccessRequestHandler::update)     //action = valid (push "Valider" button, update state to VALIDATED) or reject (push "Annuler" button, update state to REFUSED) or send (in case of pre-filled form sent to validation) or save (in case or updating pre-filled form)
-                GET("/organisation", dataAccessRequestHandler::getAllOrganization)
+                GET("/organizations", dataAccessRequestHandler::getAllOrganization)
                 GET("/model", dataAccessRequestHandler::getModels)
                 GET("/state/{state}", dataAccessRequestHandler::get)  //state = saved (list of saved pre-filled form) or sent (list of elements waiting for validation)
                 GET("/{id}", dataAccessRequestHandler::dataAccess)

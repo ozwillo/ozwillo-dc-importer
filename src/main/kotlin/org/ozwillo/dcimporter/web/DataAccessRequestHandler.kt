@@ -69,15 +69,18 @@ class DataAccessRequestHandler(
 
         val queryParameter:String
         val queryObject:String
+        val queryOperator: DCOperator
 
         when {
             req.queryParam("name").isPresent -> {
                 queryParameter = req.queryParam("name").get()
                 queryObject = "org:legalName"
+                queryOperator =DCOperator.REGEX
             }
             req.queryParam("siret").isPresent -> {
                 queryParameter = req.queryParam("siret").get()
                 queryObject = "org:regNumber"
+                queryOperator = DCOperator.EQ
             }
             else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Missing query parameter \"name\" or \"siret\""))
         }
@@ -86,7 +89,7 @@ class DataAccessRequestHandler(
             val organizations = datacoreService.findResources(
                 "oasis.main",
                 modelOrg,
-                DCQueryParameters(queryObject, DCOperator.REGEX, DCOrdering.DESCENDING, queryParameter),
+                DCQueryParameters(queryObject, queryOperator, DCOrdering.DESCENDING, queryParameter),
                 0,
                 100
             )

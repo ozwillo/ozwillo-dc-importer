@@ -92,7 +92,7 @@ class DCBusinessResourceLight(
             value.values.toTypedArray()[langIndex] == correctedLang
         }
         if (!errorMessage.isEmpty() && result != null){
-            LOGGER.warn("${result.values.toTypedArray()[nameIndex]} : $errorMessage")
+            LOGGER.debug("${result.values.toTypedArray()[nameIndex]} : $errorMessage")
         }
         return if (result != null) result.values.toTypedArray()[nameIndex] else ""
     }

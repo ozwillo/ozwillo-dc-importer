@@ -288,7 +288,10 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
         // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
 
-        val requestUri = uriComponents.toUriString()
+        // Okay so to avoid encoded parameters and as long I can't directly modify uriComponents.query alone : I decode uriComponents.query and replace everything following the "?" in the final String query by it
+        val decodedQuery = URLDecoder.decode(uriComponents.query, "UTF-8")
+
+        val requestUri = uriComponents.toUriString().substringBefore("?") + "?" + decodedQuery
         // and NOT uriComponents.toString() else variable expansion encodes it once too many
         // (because new UriTemplate(uriString) assumes uriString is not yet encoded -_-)
         // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
