@@ -59,7 +59,7 @@
             }
         },
         computed: {
-            disabled: function(){
+            disabled (){
                 return(this.dataRequest.organization == '' || this.dataRequest.email == '' || (this.dataRequest.model == '' || this.dataRequest.model === null))
             }
         },
@@ -77,7 +77,7 @@
                   })
             }
 
-            axios.get('/api/data_access_request/123456789/model')
+            axios.get('/api/data_access_request/model')
                 .then(response => {
                     this.models = response.data
                 })
@@ -87,13 +87,19 @@
         },
         beforeRouteUpdate (to, from, next) {
             next()
-            this.dataRequest = {}
+            this.dataRequest = {
+                    id: null,
+                    nom: '',
+                    email: '',
+                    organization: '',
+                    model: ''
+                }
             //Empty typeahead inputValue when updating route
             this.$refs.typeahead.$data.inputValue = this.dataRequest.model
         },
         methods: {
             createDataRequestModel() {
-                axios.post(`/api/data_access_request/123456789/send`, this.dataRequest)
+                axios.post(`/api/data_access_request/send`, this.dataRequest)
                     .then(response => {
                         this.response = response.data
                         this.$router.push({ name: 'dashboard' })
@@ -103,7 +109,7 @@
                     })
             },
             getModels(name){
-                axios.get('/api/data_access_request/123456789/model?name=' + name)
+                axios.get('/api/data_access_request/model?name=' + name)
                 .then(response => {
                     this.models = response.data
                 })

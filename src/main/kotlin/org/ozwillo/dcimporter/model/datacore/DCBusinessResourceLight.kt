@@ -71,11 +71,11 @@ class DCBusinessResourceLight(
 
         val result = valueList.firstOrNull { value ->
             val langIndex = when {
-                value.values.indexOf(lang) > 0 -> {
+                value.values.indexOf(lang) >= 0 -> {
                     correctedLang = "fr"
                     value.values.indexOf(lang)
                 }
-                value.values.indexOf("en") > 0 -> {
+                value.values.indexOf("en") >= 0 -> {
                     correctedLang = "en"
                     errorMessage = "No FR organization legal name found. EN match taken. Please check database"
                     value.values.indexOf("en")
