@@ -4,8 +4,8 @@
         <table class="table table-sm">
             <thead class="thead-dark">
                 <tr>
-                    <th>Nom</th>
                     <th>DC Model</th>
+                    <th>Date</th>
                     <th>Organization</th>
                     <th>State</th>
                 </tr>
@@ -13,11 +13,11 @@
             <tbody>
                 <tr v-for="dataRequest in dataRequests">
                     <td>
-                        <router-link :to="{ name: 'request', params: { id: dataRequest.id }}">
-                          {{ dataRequest.nom }}
+                        <router-link :to="{ name: 'check', params: { id: dataRequest.id }}">
+                            {{ dataRequest.model }}
                         </router-link>
                     </td>
-                    <td>{{ dataRequest.model }}</td>
+                    <td>{{ dataRequest.creationDate | dateDistanceInWords }}</td>
                     <td>{{ dataRequest.organization }}</td>
                     <td>{{ dataRequest.state }}</td>
                 </tr>
@@ -28,7 +28,8 @@
 
 <script>
     import axios from 'axios'
-    import  VueRouter from 'vue-router'
+    import VueRouter from 'vue-router'
+    import '@/utils/filters'
 
     export default {
         name: "Dashboard",

@@ -12,6 +12,7 @@
     "dependencies": {
         "axios": "^0.18.0",
         "bootstrap": "^4.1.3",
+        "date-fns": "^1.29.0",
         "lodash": "^4.17.11",
         "vue": "^2.5.11",
         "vue-bootstrap-typeahead": "^0.2.6",

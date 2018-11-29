@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Router from 'vue-router'
 import Dashboard from './views/Dashboard'
 import DataRequest from './views/DataRequest'
-import Validation from './views/Validation'
+import CheckDataAccess from './views/CheckDataAccess'
 
 Vue.use(Router)
 
@@ -20,9 +20,9 @@ export default new Router({
           component: DataRequest
         },
         {
-            path: '/tovalidate',
-            name: 'validation',
-            component: Validation
+            path: '/request/:id/check',
+            name: 'check',
+            component: CheckDataAccess
         }
     ]
 })

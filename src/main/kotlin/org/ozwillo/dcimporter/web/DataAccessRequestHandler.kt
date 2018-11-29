@@ -149,7 +149,7 @@ class DataAccessRequestHandler(
                                 state = state
                             )
                         ).subscribe()
-                        ok().body(BodyInserters.empty<String>())
+                        ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
                     }
             }
             .onErrorResume { e ->

@@ -126,7 +126,7 @@
                     organization: this.organizationSelected.uri,
                     model: this.modelSelected
                 })
-                axios.post(`/api/data_access_request/123456789/send`, this.dataAccessRequest)
+                axios.post(`/api/data_access_request/send`, this.dataAccessRequest)
                     .then(() => {
                         this.$router.push({ name: 'dashboard' })
                     })
@@ -135,7 +135,7 @@
                     })
             },
             getModels(name) {
-                axios.get('/api/data_access_request/123456789/model', {params: {name: name}})
+                axios.get('/api/data_access_request/model', {params: {name: name}})
                     .then(response => {
                         this.models = response.data
                     })
