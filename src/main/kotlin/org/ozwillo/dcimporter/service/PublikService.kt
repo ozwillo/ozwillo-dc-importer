@@ -131,6 +131,7 @@ class PublikService(
         val orgResource =
             datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
         return convertToDCResource(orgResource, form).map { result ->
+
             val businessMapping = BusinessMapping(
                 applicationName = name, businessId = form.url,
                 dcId = result.second.getUri(), type = result.first

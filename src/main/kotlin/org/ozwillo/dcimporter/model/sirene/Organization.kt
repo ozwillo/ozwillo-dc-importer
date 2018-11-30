@@ -6,6 +6,7 @@ import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
 
 data class Organization(
+    val uri: String = "",
     val cp: String = "",
     val voie: String = "",
     val commune: String = "",
@@ -62,14 +63,14 @@ data class Organization(
 
         fun fromDcObject(dcOrg: DCBusinessResourceLight): Organization =
             Organization(
+                uri = dcOrg.getUri(),
                 cp = dcOrg.getStringValue("adrpost:postCode"),
                 voie = dcOrg.getStringValue("adrpost:streetAndNumber"),
                 commune = dcOrg.getStringValue("adrpost:postName"),
                 pays = dcOrg.getStringValue("org:country"),
                 denominationUniteLegale = dcOrg.getI18nFieldValueFromList(
                     dcOrg.getStringListValue("org:legalName") as List<I18nOrgDenomination>,
-                    "fr"
-                ),
+                    "fr"),
                 siret = dcOrg.getStringValue("org:regNumber"),
                 tel = dcOrg.getStringValue("org:phoneNumber"),
                 url = dcOrg.getStringValue("org:webSite")

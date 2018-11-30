@@ -13,7 +13,7 @@ class ScheduledTask(private val marcheSecuriseListingService: MarcheSecuriseList
         marcheSecuriseListingService.refreshDatacoreRegistreReponse()
     }
 
-    @Scheduled(initialDelay = 30000, fixedRate = 86400000)  //fixedRate 1/24H
+    @Scheduled(initialDelay = 3000000, fixedRate = 86400000)  //fixedRate 1/24H
     fun scheduledUpdateFirstHundredConsultationState() {
         marcheSecuriseListingService.updateFirstHundredPublishedConsultation().subscribe()
     }

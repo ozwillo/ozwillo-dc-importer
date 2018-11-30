@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter
 import com.fasterxml.jackson.annotation.JsonAnySetter
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
@@ -16,6 +17,10 @@ class DCBusinessResourceLight(
     uri: String,
     @JsonAnySetter private var values: Map<String, Any> = HashMap()
 ) : DCResourceLight(uri) {
+
+    companion object {
+        private val LOGGER = LoggerFactory.getLogger(DCBusinessResourceLight::class.java)
+    }
 
     @JsonIgnore
     val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
@@ -60,10 +65,36 @@ class DCBusinessResourceLight(
     fun getStringListValue(s: String): List<String> = values[s] as List<String>
 
     fun getI18nFieldValueFromList(valueList: List<I18nOrgDenomination>, lang: String): String {
+        var nameIndex = 0
+        var errorMessage = ""
+        var correctedLang = ""
+
         val result = valueList.firstOrNull { value ->
-            value.values.toTypedArray()[0] == lang
+            val langIndex = when {
+                value.values.indexOf(lang) >= 0 -> {
+                    correctedLang = "fr"
+                    value.values.indexOf(lang)
+                }
+                value.values.indexOf("en") >= 0 -> {
+                    correctedLang = "en"
+                    errorMessage = "No FR organization legal name found. EN match taken. Please check database"
+                    value.values.indexOf("en")
+                }
+                else -> {
+                    correctedLang = value["l"]!!
+                    errorMessage = "No FR or EN organization legal name found. First match taken. Please check database."
+                    value.values.indexOf(correctedLang)
+                }
+            }
+
+            nameIndex = if (langIndex == 0) 1 else 0
+
+            value.values.toTypedArray()[langIndex] == correctedLang
         }
-        return if (result != null) result.values.toTypedArray()[1] else ""
+        if (!errorMessage.isEmpty() && result != null){
+            LOGGER.debug("${result.values.toTypedArray()[nameIndex]} : $errorMessage")
+        }
+        return if (result != null) result.values.toTypedArray()[nameIndex] else ""
     }
 
     override fun toString(): String {
