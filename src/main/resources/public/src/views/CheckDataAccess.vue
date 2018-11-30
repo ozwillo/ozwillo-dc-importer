@@ -30,7 +30,7 @@
             }
         },
         beforeCreate() {
-            axios.get(`/api/data_access_request/${this.$route.params.id}`)
+            axios.get(`/api/data-access/${this.$route.params.id}`)
                 .then(response => {
                     this.dataRequest = response.data
                 })
@@ -49,7 +49,7 @@
                 this.modifyStateOfRequest('reject', this.dataRequest.id)
             },
             modifyStateOfRequest(action, id) {
-                axios.put(`/api/data_access_request/${action}/${id}`, this.dataRequest)
+                axios.put(`/api/data-access/${id}/${action}`, this.dataRequest)
                     .then(() => {
                         this.$router.push({ name: 'dashboard' })
                     })

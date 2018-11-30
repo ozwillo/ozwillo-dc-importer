@@ -89,7 +89,7 @@
         },
         beforeCreate() {
             if(this.$route.params.id != null) {
-                axios.get(`/api/data_access_request/${this.$route.params.id}`)
+                axios.get(`/api/data-access/${this.$route.params.id}`)
                   .then(response => {
                       this.dataAccessRequest = response.data
                       this.modelSelected = this.dataAccessRequest.model
@@ -126,7 +126,7 @@
                     organization: this.organizationSelected.uri,
                     model: this.modelSelected
                 })
-                axios.post(`/api/data_access_request/send`, this.dataAccessRequest)
+                axios.post(`/api/data-access`, this.dataAccessRequest)
                     .then(() => {
                         this.$router.push({ name: 'dashboard' })
                     })
@@ -135,7 +135,7 @@
                     })
             },
             getModels(name) {
-                axios.get('/api/data_access_request/model', {params: {name: name}})
+                axios.get('/dc/models', {params: {name: name}})
                     .then(response => {
                         this.models = response.data
                     })
@@ -144,7 +144,7 @@
                     })
             },
             getOrganizations(name) {
-                axios.get('/api/data_access_request/organizations', {params: {name: name}})
+                axios.get('/dc/organizations', {params: {name: name}})
                     .then(response => {
                         this.organizations = response.data
                     })
@@ -156,7 +156,7 @@
 	                var splitedUri = this.dataAccessRequest.organization.split("/")
 	                var siret = splitedUri[splitedUri.length - 1]
 
-	                axios.get('/api/data_access_request/organizations?siret=' + siret)
+	                axios.get('/dc/organizations', {params: {siret: siret}})
 	                .then(response => {
 	                    this.organizationSelected = response.data[0]
 	                    this.$refs.claimerorganization.$data.inputValue = this.organizationSelected.denominationUniteLegale

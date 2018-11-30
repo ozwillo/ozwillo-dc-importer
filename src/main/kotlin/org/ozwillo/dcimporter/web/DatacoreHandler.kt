@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCOperator
+import org.ozwillo.dcimporter.model.datacore.DCOrdering
+import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
@@ -20,6 +23,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
+import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
@@ -47,6 +51,62 @@ class DatacoreHandler(
     private val secretClient = ""
     @Value("\${datacore.model.modelORG}")
     private val modelOrg = ""
+
+    fun getModels(req: ServerRequest): Mono<ServerResponse>{
+
+        val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
+
+        return try {
+            val dcModels = datacoreService.findModels(100, name)
+                .map { it ->
+                    val modelName = it.getStringValue("dcmo:name")
+                    modelName
+                }
+                .collectList()
+            ok().contentType(MediaType.APPLICATION_JSON).body(dcModels)
+        }catch (e: HttpClientErrorException){
+            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+        }
+    }
+
+    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse>{
+
+        val queryParameter:String
+        val queryObject:String
+        val queryOperator: DCOperator
+
+        when {
+            req.queryParam("name").isPresent -> {
+                queryParameter = req.queryParam("name").get()
+                queryObject = "org:legalName"
+                queryOperator = DCOperator.REGEX
+            }
+            req.queryParam("siret").isPresent -> {
+                queryParameter = req.queryParam("siret").get()
+                queryObject = "org:regNumber"
+                queryOperator = DCOperator.EQ
+            }
+            else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Missing query parameter \"name\" or \"siret\""))
+        }
+
+        return try {
+            val organizations = datacoreService.findResources(
+                "oasis.main",
+                modelOrg,
+                DCQueryParameters(queryObject, queryOperator, DCOrdering.DESCENDING, queryParameter),
+                0,
+                100
+            )
+                .map { dcOrganization ->
+                    val organization = Organization.fromDcObject(dcOrganization)
+                    organization
+                }
+            ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
+
+        }catch (e: HttpClientErrorException){
+            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+        }
+    }
 
     fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
