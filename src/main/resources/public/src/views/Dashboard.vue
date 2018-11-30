@@ -40,7 +40,7 @@
             }
         },
         beforeCreate() {
-            axios.get(`/api/data-access?state=sent`)
+            axios.get(`/api/data-access`, {params: {state: 'sent'}})
                 .then(response => {
                     this.dataRequests = response.data
                 })
