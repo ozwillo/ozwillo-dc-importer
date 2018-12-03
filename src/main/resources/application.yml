@@ -24,7 +24,7 @@ management:
 info: #Informations displayed on actuator/info endpoint TODO: Complete if needed with other useful information
   application:
     name: DC Importer
-    version: 0.0.4
+    version: 0.0.5
     description: See README.md for further information
 
 security:
