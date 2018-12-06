@@ -1,15 +1,15 @@
 package org.ozwillo.dcimporter.handler
 
-import org.apache.http.HttpResponse
-import org.apache.http.HttpStatus
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.methods.HttpUriRequest
-import org.apache.http.impl.client.HttpClientBuilder
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import wiremock.org.apache.http.HttpResponse
+import wiremock.org.apache.http.HttpStatus
+import wiremock.org.apache.http.client.methods.HttpGet
+import wiremock.org.apache.http.client.methods.HttpUriRequest
+import wiremock.org.apache.http.impl.client.HttpClientBuilder
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
