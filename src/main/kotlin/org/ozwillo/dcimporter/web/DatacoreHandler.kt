@@ -6,6 +6,7 @@ import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCOperator
+import org.ozwillo.dcimporter.model.datacore.DCModel
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
@@ -57,13 +58,19 @@ class DatacoreHandler(
         val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
 
         return try {
-            val dcModels = datacoreService.findModels(100, name)
-                .map { it ->
-                    val modelName = it.getStringValue("dcmo:name")
-                    modelName
-                }
-                .collectList()
-            ok().contentType(MediaType.APPLICATION_JSON).body(dcModels)
+            val dcModels = datacoreService.findModels(10, name)
+            ok().contentType(MediaType.APPLICATION_JSON).body(dcModels, DCModel::class.java)
+        }catch (e: HttpClientErrorException){
+            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+        }
+    }
+
+    fun getModel(req: ServerRequest): Mono<ServerResponse> {
+        val type = req.pathVariable("type")
+
+        return try {
+            val dcModel = datacoreService.findModel(type)
+            ok().contentType(MediaType.APPLICATION_JSON).body(dcModel)
         }catch (e: HttpClientErrorException){
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }

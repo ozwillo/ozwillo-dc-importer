@@ -6,7 +6,6 @@ import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.router
 import java.net.URI
-import org.springframework.core.io.ClassPathResource
 
 @Configuration
 class Routes(
@@ -75,6 +74,7 @@ class Routes(
             PUT("/type/{type}", datacoreHandler::updateResourceWithOrganization)
             GET("/organizations", datacoreHandler::getAllOrganization)
             GET("/models", datacoreHandler::getModels)
+            GET("/model/{type}", datacoreHandler::getModel)
         }
 
         "/configuration".nest {

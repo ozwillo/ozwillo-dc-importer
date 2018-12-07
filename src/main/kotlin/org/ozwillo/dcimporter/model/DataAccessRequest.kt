@@ -12,8 +12,11 @@ data class DataAccessRequest(
     val organization: String,
     val email: String,
     val creationDate: LocalDateTime = LocalDateTime.now(),
-    var state: AccessRequestState = AccessRequestState.SAVED
+    var state: AccessRequestState = AccessRequestState.SAVED,
+    val fields: List<DataAccessRequestField>?
 )
+
+data class DataAccessRequestField(val name: String, val requested: Boolean)
 
 enum class AccessRequestState{
     SAVED,

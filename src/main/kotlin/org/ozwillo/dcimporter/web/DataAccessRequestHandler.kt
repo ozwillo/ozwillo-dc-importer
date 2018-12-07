@@ -3,7 +3,6 @@ package org.ozwillo.dcimporter.web
 import org.ozwillo.dcimporter.model.AccessRequestState
 import org.ozwillo.dcimporter.model.DataAccessRequest
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
-import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -76,7 +75,8 @@ class DataAccessRequestHandler(
                                 organization = currentDataAccessRequest.organization,
                                 email = currentDataAccessRequest.email,
                                 creationDate = currentDataAccessRequest.creationDate,
-                                state = state
+                                state = state,
+                                fields = currentDataAccessRequest.fields
                             )
                         ).subscribe()
                         ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
