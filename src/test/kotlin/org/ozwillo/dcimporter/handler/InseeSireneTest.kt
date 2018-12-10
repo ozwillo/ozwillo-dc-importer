@@ -16,7 +16,7 @@ import wiremock.org.apache.http.impl.client.HttpClientBuilder
 class InseeSireneTest {
 
     @Test
-    fun `is Insee Sirene API respond test`() {
+    fun `is Insee Sirene API responding test`() {
 
         val request: HttpUriRequest = HttpGet("https://api.insee.fr/entreprises/sirene/V3/siret")
 

@@ -1,0 +1,172 @@
+<template>
+    <div class="container">
+        <h2>Declared connectors management</h2>
+        <form>
+            <div class="form-group row">
+                <label for="cm-claimer-organization" class="col-sm-3 col-form-label col-form-label-sm">
+                    Organization
+                </label>
+                <vue-bootstrap-typeahead 
+                id="cm-claimer-organization"
+                ref="cmclaimerorganization"
+                placeholder="Search by organization"
+                v-model="organizationSearch"
+                :data="organizations"
+                :serializer="displayingResultOfOrganizationSearch"
+                :append="organizationSelected.siret"
+                @hit="organizationSelected = $event"
+                @input="checkOrganizationSearch"/>
+            </div>
+            <div class="form-group row">
+                <label for="cm-claimer-appName" class="col-sm-3 col-form-label col-form-label-sm">
+                    Application Name
+                </label>
+                <input 
+                id="cm-claimer-appName"
+                v-model="appName"/>
+            </div>
+            <div class="form-group row">
+                <table class="table table-sm">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Application Name</th>
+                            <th>Organization Name</th>
+                            <th>Organization Siret</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="connector in connectors">
+                            <td>{{connector.applicationName}}</td>
+                            <td>{{findOrganizationNameInMap(connector.organizationSiret)}}</td>
+                            <td>{{connector.organizationSiret}}</td>
+                            <td>++</td>
+                            <td>X</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</template>
+
+<script>
+import VueBootstrapTypeahead from 'vue-bootstrap-typeahead'
+import axios from 'axios'
+import debounce from 'lodash/debounce'
+
+export default {
+    name: 'ConnectorsManagement',
+    components: {
+        VueBootstrapTypeahead
+    },
+    data (){
+        return {
+            organizations: [],
+            organizationSearch: '',
+            organizationSelected: {},
+            connectors: [],
+            siret: '',
+            siretList: [],
+            siretAndOrgNameMaps: [],
+            appName: '',
+            errors: []
+        }
+    },
+    watch: {
+        organizationSearch: debounce(function(name){this.getOrganizations(name)}, 500),
+        appName: debounce(function(appName){this.getConnectors(this.siret, appName)}, 500),
+        organizationSelected: {
+            handler (val, oldVal){
+                this.$refs.cmclaimerorganization.$data.inputValue = val.denominationUniteLegale
+                this.siret = this.organizationSelected.siret
+                this.getConnectors(this.siret, this.appName)
+            },
+            deep: true
+        }
+    },
+    created (){
+        axios.get('/configuration/connectors')
+                .then(response => {
+                    this.connectors = response.data
+                    this.findOrganizationName(response.data)
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
+    },
+    methods: {
+        checkOrganizationSearch (){
+            if(this.organizationSearch === ''){
+                this.organizationSelected = {
+                    siret: ''
+                }
+            }
+        },
+        findOrganizationName (connectors){
+            this.siretAndOrgNameMaps = []
+                connectors.forEach(element => {
+                    if(this.siretList.indexOf(element.organizationSiret) < 0)
+                    this.siretList.push(element.organizationSiret)
+                })
+                this.siretList.forEach(siret => {
+                    axios.get('/dc/organizations', {params: {siret: siret}})
+                    .then(response => {
+                        var siretAndOrgNameMap = {
+                            siret: siret,
+                            orgName: response.data[0].denominationUniteLegale
+                        }
+                        this.siretAndOrgNameMaps.push(siretAndOrgNameMap)
+                    })
+                    .catch(e => {
+                        this.errors.push(e)
+                    })
+                })
+        },
+        findOrganizationNameInMap (siret){
+            var organization = this.siretAndOrgNameMaps.find( o => {
+                    return o.siret === siret
+                })
+            //Use stored mapping of siret and name to display organization name improve responsiveness
+            //But Map not always fully initialized when tab is displayed and findOrganizationName is called
+            if(typeof organization !== 'undefined')
+                return organization.orgName
+            else
+                return ''
+        },
+        displayingResultOfOrganizationSearch (organization){
+            return `${organization.denominationUniteLegale}, ${organization.siret}`
+        },
+        getOrganizations (name){
+            axios.get('/dc/organizations', {params: {name: name}})
+            .then(response => {
+                this.organizations = response.data
+            })
+            .catch(e => {
+                this.errors.push(e)
+            })
+        },
+        getConnectors (siret, appName){
+            this.connectors = []
+            axios.get('/configuration/connectors?siret=' + siret + '&application=' + appName)
+                .then(response => {
+                    this.connectors = response.data
+                })
+                .catch(e => {
+                    this.errors.push(e)
+                })
+        }
+    }
+}
+</script>
+
+<style scoped>
+.table .thead-dark th {
+  color: #fff;
+  background-color: #6f438e;
+  border-color: #32383e;
+}
+</style>
+
+
