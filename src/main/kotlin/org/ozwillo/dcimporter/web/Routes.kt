@@ -78,6 +78,8 @@ class Routes(
         }
 
         "/configuration".nest {
+            GET("/connectors", connectorsHandler::getAllWithoutSecret)
+            GET("/connectors/{id}", connectorsHandler::get)
             GET("/{applicationName}/{siret}/connectors", connectorsHandler::getAllByAppName)
             POST("/{applicationName}/{siret}/connectors", connectorsHandler::createNewConnectors)
             PUT("/{applicationName}/{siret}/connectors", connectorsHandler::updateConnectors)

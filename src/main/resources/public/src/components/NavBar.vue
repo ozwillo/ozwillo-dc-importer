@@ -27,6 +27,12 @@
                       <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
+                <li class="nav-item">
+                    <router-link class="nav-link" to="/connectors-management" style="color:#fff">
+                      Connectors management
+                      <span class="sr-only">(current)</span>
+                    </router-link>
+                </li>
             </ul>
         </div>
     </nav>

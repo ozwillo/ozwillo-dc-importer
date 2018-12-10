@@ -3,6 +3,7 @@ import Router from 'vue-router'
 import Dashboard from './views/Dashboard'
 import DataRequest from './views/DataRequest'
 import CheckDataAccess from './views/CheckDataAccess'
+import ConnectorsManagement from './views/ConnectorsManagement'
 
 Vue.use(Router)
 
@@ -15,14 +16,19 @@ export default new Router({
             component: Dashboard
         },
         {
-          path: '/request/:id?',
-          name: 'request',
-          component: DataRequest
+            path: '/request/:id?',
+            name: 'request',
+            component: DataRequest
         },
         {
             path: '/request/:id/check',
             name: 'check',
             component: CheckDataAccess
+        },
+        {
+            path: '/connectors-management',
+            name: 'connectors',
+            component: ConnectorsManagement
         }
     ]
 })
