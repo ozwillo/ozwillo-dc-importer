@@ -61,6 +61,7 @@ dependencies {
     compile('org.springframework.boot:spring-boot-starter-security')
     compile('org.springframework.boot:spring-boot-configuration-processor')
     compile('org.springframework.boot:spring-boot-starter-amqp')
+    compile 'org.springframework.boot:spring-boot-starter-mail'
     compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")  //updated from jre8 (depreciated)
     compile("org.jetbrains.kotlin:kotlin-reflect")
     compile('com.fasterxml.jackson.module:jackson-module-kotlin')

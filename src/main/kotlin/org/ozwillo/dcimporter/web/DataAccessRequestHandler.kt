@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.web
 import org.ozwillo.dcimporter.model.AccessRequestState
 import org.ozwillo.dcimporter.model.DataAccessRequest
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
+import org.ozwillo.dcimporter.service.EmailService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -14,10 +15,12 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
+import javax.mail.SendFailedException
 
 @Component
 class DataAccessRequestHandler(
-    private val dataAccessRequestRepository: DataAccessRequestRepository
+    private val dataAccessRequestRepository: DataAccessRequestRepository,
+    private val emailService: EmailService
 ) {
 
     companion object {
@@ -79,6 +82,16 @@ class DataAccessRequestHandler(
                                 fields = currentDataAccessRequest.fields
                             )
                         ).subscribe()
+
+                        try { //TODO: #5350 decoupling of the e-mail sending feature
+                            emailService.sendSimpleMessage(
+                                currentDataAccessRequest.email,
+                                "[DC-Importer] Your data access request ${state.name.toLowerCase()}",
+                                "The data access request for ${currentDataAccessRequest.model} model was ${state.name.toLowerCase()}")
+                        } catch (sendFailedException: SendFailedException) {
+                            throwableToResponse(sendFailedException)
+                        }
+
                         ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
                     }
             }

@@ -11,6 +11,9 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
+  mail:
+    host: yourMailHost
+    port: 587
 
 server:
   compression.enabled: true
