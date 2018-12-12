@@ -15,7 +15,8 @@ class Routes(
     private val marchePublicHandler: MarchePublicHandler,
     private val connectorsHandler: ConnectorsHandler,
     private val datacoreHandler: DatacoreHandler,
-    private val dataAccessRequestHandler: DataAccessRequestHandler
+    private val dataAccessRequestHandler: DataAccessRequestHandler,
+    private val processingStatHandler: ProcessingStatHandler
 ) {
 
     @Bean
@@ -33,6 +34,12 @@ class Routes(
                 PUT("/{id}/{action}", dataAccessRequestHandler::update)     //action = valid (push "Valider" button, update state to VALIDATED) or reject (push "Annuler" button, update state to REFUSED) or send (in case of pre-filled form sent to validation) or save (in case or updating pre-filled form)
                 GET("", dataAccessRequestHandler::get)
                 GET("/{id}", dataAccessRequestHandler::dataAccess)
+            }
+
+            "/stat-view".nest {
+                GET("/processing", processingStatHandler::getAll)
+                GET("/processing-resume", processingStatHandler::getGeneralResume)
+                GET("/search", processingStatHandler::search)
             }
 
             "/publik".nest {

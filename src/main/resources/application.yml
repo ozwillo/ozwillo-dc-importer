@@ -69,6 +69,9 @@ amqp:
     publik:
       queueName: publik
       bindingKey: citizenreq_0.#
+    processingStat:
+      queueName: stat
+      bindingKey: '#'
 
 kernel:
   baseUri: https://kernel.ozwillo-preprod.eu
