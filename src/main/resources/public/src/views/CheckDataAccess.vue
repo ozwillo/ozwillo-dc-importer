@@ -5,8 +5,19 @@
         <div class="form-check">
             <input id="agreeAllData" class="form-check-input" type="checkbox" :value="agreeAllData" @change="handleAgreeAllData">
             <label for="agreeAllData" class="form-check-label">
-                Authorize access to all data of "{{ dataRequest.model }}" model
+                Authorize access to all checked data of "{{ dataRequest.model }}" model
             </label>
+        </div>
+        <div class="form-group row" v-if="dataRequest.fields != null">
+            <label for="fields-model" class="col-sm-3 col-form-label col-form-label-sm">
+                Fields
+            </label>
+            <ul id="fields-model" class="list-group">
+                <li class="list-group-item" v-for="field in dataRequest.fields">
+                    <input type="checkbox" :id="field.name" v-model="field.requested" disabled>
+                    <label :for="field.name">{{ field.name }}</label>
+                </li>
+            </ul>
         </div>
         <button class="btn btn-outline-primary" type="button" @click="validateAccess" :disabled="!agreeAllData">
             Valid
@@ -19,24 +30,18 @@
 
 <script>
     import axios from 'axios'
+    import DataAccessRequestMixin from '@/utils/mixins/DataAccessRequestMixin'
 
     export default {
         name: 'CheckDataAccess',
+        mixins: [DataAccessRequestMixin],
         data() {
             return {
-                dataRequest: {},
-                errors: [],
                 agreeAllData: false
             }
         },
-        beforeCreate() {
-            axios.get(`/api/data-access/${this.$route.params.id}`)
-                .then(response => {
-                    this.dataRequest = response.data
-                })
-                .catch(e => {
-                    this.errors.push(e)
-                })
+        created() {
+            this.fetchDataAccessRequest(this.$route.params.id)
         },
         methods: {
             handleAgreeAllData() {
@@ -47,15 +52,6 @@
             },
             refuseAccess() {
                 this.modifyStateOfRequest('reject', this.dataRequest.id)
-            },
-            modifyStateOfRequest(action, id) {
-                axios.put(`/api/data-access/${id}/${action}`, this.dataRequest)
-                    .then(() => {
-                        this.$router.push({ name: 'dashboard' })
-                    })
-                    .catch(e => {
-                        this.errors.push(e)
-                    })
             }
         }
     }
