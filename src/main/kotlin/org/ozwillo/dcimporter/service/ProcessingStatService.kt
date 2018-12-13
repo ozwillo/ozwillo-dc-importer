@@ -54,6 +54,7 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
                         resumeByOrganization.add(
                             ProcessingResumeByOrganizationFields(
                                 orgSiret = siret,
+                                nbreProcessing = processingListByOrganization.count(),
                                 nbreDistinctModel = processingListByOrganization.distinctBy { p -> p.model }.count(),
                                 nbreOfCreation = totalCreated,
                                 nbreOfUpdate = processingListByOrganization.filter { p -> (p.action == BindingKeyAction.UPDATE.value
@@ -81,6 +82,7 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
 
         return ProcessingResumeByModelFields(
                     modelName = model,
+                    nbreProcessing = processingList.count(),
                     nbreCreated = created,
                     nbreOfUpdate = processingList.filter { p -> (p.action == BindingKeyAction.UPDATE.value
                             || p.action == BindingKeyAction.PUBLISH.value) }.count(),
@@ -107,6 +109,7 @@ data class ProcessingResumeFields(
 
 data class ProcessingResumeByModelFields(
     val modelName: String,
+    val nbreProcessing: Int,
     val nbreCreated: Int,
     val nbreOfUpdate: Int,
     val nbreDeleted: Int,
@@ -116,6 +119,7 @@ data class ProcessingResumeByModelFields(
 
 data class ProcessingResumeByOrganizationFields(
     val orgSiret: String,
+    val nbreProcessing: Int,
     val nbreDistinctModel: Int,
     val nbreOfCreation: Int,
     val nbreOfUpdate: Int,

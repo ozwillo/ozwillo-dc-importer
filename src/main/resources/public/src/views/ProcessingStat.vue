@@ -33,6 +33,16 @@
                 </div>
             </div>
         </div>
+        <div class="form-group row">
+            <div class="col">
+                <label for="model-pie">Processed Models: </label>
+                <pie-chart id="model-pie" :data="pieData" :donut="true" width="500px" :colors="colors" legend="right"></pie-chart>
+            </div>
+            <div class="col">
+                <label for="organization-column">Concerned Organizations</label>
+                <column-chart id="organization-column" :data="columnData" width="500px" :colors="colors" :legend="false"></column-chart>
+            </div>
+        </div>
         <div class="row">
             <p>Processed since {{date | formatDate}}:</p>
         </div>
@@ -145,10 +155,15 @@
 
 <script>
 
+import Vue from 'vue'
+import VueChartkick from 'vue-chartkick'
+import Chart from 'chart.js'
 import axios from 'axios'
 import debounce from 'lodash/debounce'
 import VueBootstrapTypeahead from 'vue-bootstrap-typeahead'
 import '@/utils/filters'
+
+Vue.use(VueChartkick, {adapter: Chart})
 
 export default {
     name: 'ProcessingStat',
@@ -170,6 +185,9 @@ export default {
             resumeOrganization: {},
             selectedModelForOrganization: 'All',
             siret: '',
+            colors: [],
+            pieData: [],
+            columnData: [],
             errors: []
         }
     },
@@ -193,6 +211,8 @@ export default {
             this.getResumeModel(val)
         },
         generalResume (val, oldVal){
+            this.pieData = this.countProcessByModel()
+            this.columnData = this.countProcessByOrganization()
             this.getResumeModel(this.modelSelected)
         },
         siret (val, oldVal){
@@ -290,7 +310,8 @@ export default {
         var dt = new Date()
         dt.setMonth(dt.getMonth() - 3)
         this.date = dt
-        this.getGeneralStats(this.date)  
+        this.getGeneralStats(this.date)
+        this.colors = ['#4c2d62', '#a673e3', '#660066', '#9350dc', '#7a6490', '#802ed5', '#9d5ea9', '#c0a1ce', '#a068a9', '#a193b6', '#6c0cce', '#8c4592', '#b8aecc', '#79227c', '#663399', '#660066']  
     },
     methods: {
         getGeneralStats (date){
@@ -383,6 +404,28 @@ export default {
         },
         displayingResultOfOrganizationSearch(organization) {
             return `${organization.denominationUniteLegale}, ${organization.siret}`
+        },
+        countProcessByModel (){
+            var processByModel = []
+            this.generalResume.resumeByModel.forEach(el => {
+                var nameAndNbreProcess = []
+                nameAndNbreProcess.push(el.modelName)
+                nameAndNbreProcess.push(el.nbreProcessing)
+                processByModel.push(nameAndNbreProcess)
+            })
+
+            return processByModel
+        },
+        countProcessByOrganization (){
+            var processByOrganization = []
+            this.generalResume.resumeByOrganization.forEach(el => {
+                var nameAndNbreProcess = []
+                nameAndNbreProcess.push(el.orgSiret)
+                nameAndNbreProcess.push(el.nbreProcessing)
+                processByOrganization.push(nameAndNbreProcess)
+            })
+
+            return processByOrganization
         }
     }
 }
