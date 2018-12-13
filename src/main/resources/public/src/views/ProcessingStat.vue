@@ -2,58 +2,62 @@
     <div class="container">
         <h2>Processing Statistics</h2>
         <div class="form-group row">
-            <label for="claimer-stat-display-date" class="col-sm-3 col-form-label col-form-label-sm">
-                From: 
-            </label>
-            <input type="date" id="claimer-stat-display-date" v-model="datePicker"/>
-        </div>
-        <div class="form-group row">
-            <div class="general-stat">
-                <p class="p-text">DC Importer has completed 
-                <br/> 
-                <span class="displayed-stat-value">{{generalNbreProcess}}</span> 
-                <br/>
-                processing<span v-if="generalNbreProcess > 1">s</span> since 
-                <br/>
-                {{date | formatDate}}</p>
-            </div>
-            <div class="general-stat">
-                <p class="p-text">On 
-                <br/> 
-                <span class="displayed-stat-value">{{generalDistinctModel}}</span> 
-                <br/>
-                <span v-if="generalDistinctModel > 1">distinct</span> DC model<span v-if="generalDistinctModel > 1">s</span>
-                </p>
-            </div>
-            <div class="general-stat">
-                <p class="p-text">For 
-                <br/>
-                <span class="displayed-stat-value">{{generalDistinctOrganization}}</span> 
-                <br/>
-                <span v-if="generalDistinctOrganization > 1">different</span> organization<span v-if="generalDistinctOrganization > 1">s</span>
-                </p>
+            <div class="col">
+                <label for="claimer-stat-display-date" class="col-sm-3 col-form-label col-form-label-sm">
+                    From: 
+                </label>
+                <input type="date" id="claimer-stat-display-date" v-model="datePicker"/>
             </div>
         </div>
         <div class="form-group row">
-            <label for="select-model" class="col-sm-3 col-form-label col-form-label-sm">
-                Models processed since {{date | formatDate}}:
-            </label>
-            <select id="select-model" class="select-model-list" v-model="modelSelected">
-                <option></option>
-                <option v-for="model in generalResume.resumeByModel">{{model.modelName}}</option>
-            </select>
+            <div class="general-stat">
+                <div class="center-text">
+                    <div>DC Importer has completed</div>
+                    <div class="displayed-stat-value">{{generalNbreProcess}}</div> 
+                    <div>{{displayedProcessing}} since</div>
+                    <div>{{date | formatDate}}</div>
+                </div>
+            </div>
+            <div class="general-stat">
+                <div class="center-text">
+                    <div>On</div>
+                    <div class="displayed-stat-value">{{generalDistinctModel}}</div>
+                    <div>{{displayedDistinctGeneralModel}}</div> 
+                </div>
+            </div>
+            <div class="general-stat">
+                <div class="center-text">
+                    <div>For </div>
+                    <div class="displayed-stat-value">{{generalDistinctOrganization}}</div> 
+                    <div>{{displayedDistinctGeneralOrganization}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <p>Processed since {{date | formatDate}}:</p>
         </div>
         <div class="form-group row">
-            <label for="select-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                Organization processed since {{date | formatDate}}:
-            </label>
-            <select id="select-organization" class="select-organization-list" v-model="siret">
-                <option></option>
-                <option v-for="organization in generalResume.resumeByOrganization">{{organization.orgSiret}}</option>
-            </select>
-            <input type="text" disabled="true" v-model="organizationSelected.denominationUniteLegale"/>
+            <div class="col">
+                <label for="select-model" class="col-sm-3 col-form-label col-form-label-sm">
+                    Models: 
+                </label>
+                <select id="select-model" class="form-control-sm" v-model="modelSelected">
+                    <option></option>
+                    <option v-for="model in generalResume.resumeByModel">{{model.modelName}}</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="select-organization" class="col-sm-3 col-form-label col-form-label-sm">
+                    Organization:
+                </label>
+                <select id="select-organization" class="form-control-sm" v-model="siret">
+                    <option></option>
+                    <option v-for="organization in generalResume.resumeByOrganization">{{organization.orgSiret}}</option>
+                </select>
+                <input type="text" class="form-control-sm" disabled=true v-model="organizationSelected.denominationUniteLegale"/>
+            </div>
         </div>
-        <div class="form-group row">
+        <div class="row">
             Search:
         </div>
         <div class="form-group row">
@@ -69,37 +73,34 @@
                 :serializer="displayingResultOfModelSearch"
                 @hit="modelSelected = $event.name"/>
         </div>
-        <div class="form-group row" v-if="modelSelected !== null">
+        <div class="form-group row" v-if="modelSelected !== ''">
             <div class="general-stat">
-                <p class="p-text">DC Importer has registered
-                <br/> 
-                <span class="displayed-stat-value">{{nbreActiveModelForModel}}</span> 
-                <br/>
-                active 
-                <br/>
-                {{modelSelected}}</p>
+                <div class="center-text">
+                    <div>DC Importer has registered</div>
+                    <div class="displayed-stat-value">{{nbreActiveModelForModel}}</div> 
+                    <div>active</div>
+                    <div>{{modelSelected}}</div>
+                </div>
             </div>
             <div class="general-stat">
-                <p class="p-text">With
-                <br/> 
-                <span class="secondary-displayed-stat-value">{{nbreCreatedModelForModel}}</span> Creation
-                <br/>
-                <span class="secondary-displayed-stat-value">{{nbreDeletedModelForModel}}</span> Deletion
-                <br/>
-                <span class="secondary-displayed-stat-value">{{nbreOfUpdateForModel}}</span> Update
-                </p>
+                <div class="center-text">
+                    <div>With</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreCreatedModelForModel}}</span> {{displayedCreationForModel}}</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreDeletedModelForModel}}</span> {{displayedDeletionForModel}}</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreOfUpdateForModel}}</span> {{displayedUpdateForModel}}</div>
+                </div>
             </div>
             <div class="general-stat">
-                <p class="p-text">For 
-                <br/> 
-                <span class="displayed-stat-value">{{nbreOrganizationForModel}}</span> 
-                <br/>
-                <span v-if="nbreOrganizationForModel > 1">different</span> organization<span v-if="nbreOrganizationForModel > 1">s</span></p>
+                <div class="center-text">
+                    <div>For</div> 
+                    <div class="displayed-stat-value">{{nbreOrganizationForModel}}</div> 
+                    <div>{{displayedOrganizationForModel}}</div>
+                </div>
             </div>
         </div>
         <div class="form-group row">
             <label for="claimer-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                For Organization:
+                By Organization:
             </label>
             <vue-bootstrap-typeahead
                 id="claimer-organization"
@@ -115,32 +116,28 @@
             <label for="organization-model-list" class="col-sm-3 col-form-label col-form-label-sm">
                 Models processed for selected Organization:
             </label>
-            <select id="organization-model-list" class="organization-model-list" v-model="selectedModelForOrganization">
+            <select id="organization-model-list" class="form-control-sm" v-model="selectedModelForOrganization">
                 <option>All</option>
                 <option v-for="model in resumeOrganization.modelResume">{{model.modelName}}</option>
             </select>
         </div>
         <div class="form-group row" v-if="organizationSearch !== ''">
             <div class="general-stat">
-                <p class="p-text">DC Importer has registered 
-                <br/> 
-                <span class="secondary-displayed-stat-value">{{nbreActiveModelForOrganization}}</span> 
-                <br/>
-                <span v-if="selectedModelForOrganization === 'All'">model<span v-if="nbreActiveModelForOrganization > 1">s</span></span>
-                <span v-if="selectedModelForOrganization !== 'All'">{{selectedModelForOrganization}}</span> 
-                for organization 
-                <br/>
-                {{organizationSelected.denominationUniteLegale}}</p>
+                <div class="center-text">
+                    <div>DC Importer has registered</div> 
+                    <div class="secondary-displayed-stat-value">{{nbreActiveModelForOrganization}}</div> 
+                    <div>{{displayedModelForOrganization}}</div>
+                    <div>for Organization</div>
+                    <div>{{organizationSelected.denominationUniteLegale}}</div>
+                </div>
             </div>
             <div class="general-stat">
-                <p class="p-text">With
-                <br/> 
-                <span class="secondary-displayed-stat-value">{{nbreCreatedModelForOrganization}}</span> Creation
-                <br/>
-                <span class="secondary-displayed-stat-value">{{nbreDeletedModelForOrganization}}</span> Deletion
-                <br/>
-                <span class="secondary-displayed-stat-value">{{nbreOfUpdateForOrganization}}</span> Update
-                </p>
+                <div class="center-text">
+                    <div>With</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreCreatedModelForOrganization}}</span> {{displayedCreationForOrganization}}</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreDeletedModelForOrganization}}</span> {{displayedDeletionForOrganization}}</div>
+                    <div><span class="secondary-displayed-stat-value">{{nbreOfUpdateForOrganization}}</span> {{displayedUpdateForOrganization}}</div>
+                </div>
             </div>
         </div>
     </div>
@@ -163,7 +160,7 @@ export default {
             generalResume: {},
             date: '',
             datePicker: '',
-            modelSelected: null,
+            modelSelected: '',
             modelSearch: '',
             models: [],
             resumeModel: {},
@@ -242,6 +239,51 @@ export default {
         nbreOfUpdateForOrganization (){
             if(this.selectedModelForOrganization === 'All') return this.resumeOrganization.nbreOfUpdate
             else return this.getResumeModelForOrganization(this.selectedModelForOrganization).nbreOfUpdate
+        },
+        displayedProcessing (){
+            if(this.generalNbreProcess > 1) return 'processings' 
+            else return 'processing'
+        },
+        displayedDistinctGeneralModel (){
+            if(this.generalDistinctModel > 1) return 'distinct DC Models'
+            else return 'Model'
+        },
+        displayedDistinctGeneralOrganization (){
+            if(this.generalDistinctOrganization > 1) return 'different Organizations'
+            else return 'Organization'
+        },
+        displayedCreationForModel (){
+            if(this.nbreCreatedModelForModel > 1) return 'Creations'
+            else return 'Creation'
+        },
+        displayedDeletionForModel (){
+            if(this.nbreDeletedModelForModel > 1) return 'Deletions'
+            else return 'Deletion'
+        },
+        displayedUpdateForModel (){
+            if(this.nbreOfUpdateForModel > 1) return 'Updates'
+            else return 'Update'
+        },
+        displayedOrganizationForModel (){
+            if(this.nbreOrganizationForModel > 1) return 'different Organizations'
+            else return 'Organization'
+        },
+        displayedModelForOrganization (){
+            if(this.selectedModelForOrganization === 'All' && this.nbreActiveModelForOrganization > 1) return 'distinct Models'
+            else if(this.selectedModelForOrganization === 'All') return 'Model'
+            else return this.selectedModelForOrganization
+        },
+        displayedCreationForOrganization (){
+            if(this.nbreCreatedModelForOrganization > 1) return 'Creations'
+            else return 'Creation'
+        },
+        displayedDeletionForOrganization (){
+            if(this.nbreDeletedModelForOrganization > 1) return 'Deletions'
+            else return 'Deletion'
+        },
+        displayedUpdateForOrganization (){
+            if(this.nbreOfUpdateForOrganization > 1) return 'Updates'
+            else return 'Update'
         }
     },
     created () {
@@ -261,7 +303,7 @@ export default {
             })
         },
         getModels(name) {
-            if(this.modelSearch.length <= 0) this.modelSelected = null
+            if(this.modelSearch.length <= 0) this.modelSelected = ''
             axios.get('/dc/models', {params: {name: name}})
                 .then(response => {
                     this.models = response.data
@@ -356,7 +398,10 @@ export default {
     color: #fff;
     text-align: center;
 }
-.p-text{
+.center-el{
+    margin: 0 auto;
+}
+.center-text{
     margin: auto;
     padding: 5%;
 }

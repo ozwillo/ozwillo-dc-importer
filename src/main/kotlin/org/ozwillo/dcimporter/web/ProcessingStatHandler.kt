@@ -46,20 +46,4 @@ class ProcessingStatHandler(
             }
     }
 
-    fun search(req: ServerRequest): Mono<ServerResponse> {
-
-        val date = if (req.queryParam("date").isPresent) req.queryParam("date").get() else ""
-        val model = if (req.queryParam("model").isPresent) req.queryParam("model").get() else ""
-        val organization = if (req.queryParam("siret").isPresent) req.queryParam("siret").get() else ""
-        val action = if (req.queryParam("action").isPresent) req.queryParam("action").get() else ""
-
-        return try {
-            val processingStats = processingStatService.searchBy(date, model, organization, action)
-            ok().contentType(MediaType.APPLICATION_JSON).body(processingStats, ProcessingStat::class.java)
-        }catch (e: IllegalArgumentException){
-            badRequest().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message!!))
-        }
-
-    }
-
 }

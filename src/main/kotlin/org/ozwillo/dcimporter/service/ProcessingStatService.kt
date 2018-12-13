@@ -20,60 +20,7 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
         return processingStatRepository.findAll()
     }
 
-    //No use yet but just in case, it's here
-    fun searchBy(date: String, model: String, organization: String, action: String): Flux<ProcessingStat> {
-
-        return when {
-            //date
-            !date.isEmpty() && model.isEmpty() && organization.isEmpty() && action.isEmpty() ->
-                getByDate(stringToLocalDateTime(date))
-            //model
-            date.isEmpty() && !model.isEmpty() && organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByModel(model)
-            //organization
-            date.isEmpty() && model.isEmpty() && !organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByOrganization(organization)
-            //action
-            date.isEmpty() && model.isEmpty() && organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByAction(action)
-            //date+model
-            !date.isEmpty() && !model.isEmpty() && organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByModelAndCreationDateAfter(model, stringToLocalDateTime(date))
-            //date+organization
-            !date.isEmpty() && model.isEmpty() && !organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByOrganizationAndCreationDateAfter(organization, stringToLocalDateTime(date))
-            //date+action
-            !date.isEmpty() && model.isEmpty() && organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByActionAndCreationDateAfter(action, stringToLocalDateTime(date))
-            //date+model+organization
-            !date.isEmpty() && !model.isEmpty() && !organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByModelAndOrganizationAndCreationDateAfter(model, organization, stringToLocalDateTime(date))
-            //date+model+action
-            !date.isEmpty() && !model.isEmpty() && organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByModelAndActionAndCreationDateAfter(model, action, stringToLocalDateTime(date))
-            //date+organization+action
-            !date.isEmpty() && model.isEmpty() && !organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByOrganizationAndActionAndCreationDateAfter(organization, action, stringToLocalDateTime(date))
-            //model+organization
-            date.isEmpty() && !model.isEmpty() && !organization.isEmpty() && action.isEmpty() ->
-                processingStatRepository.findByModelAndOrganization(model, organization)
-            //model+action
-            date.isEmpty() && !model.isEmpty() && organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByModelAndAction(model, action)
-            //model+organization+action
-            date.isEmpty() && !model.isEmpty() && !organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByModelAndOrganizationAndAction(model, organization, action)
-            //organization+action
-            date.isEmpty() && model.isEmpty() && !organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByOrganizationAndAction(organization, action)
-            //model+organization+action+date
-            !date.isEmpty() && !model.isEmpty() && !organization.isEmpty() && !action.isEmpty() ->
-                processingStatRepository.findByModelAndOrganizationAndActionAndCreationDateAfter(model, organization, action, stringToLocalDateTime(date))
-            else -> processingStatRepository.findAll()
-        }
-    }
-
-    fun getByDate(date: LocalDateTime): Flux<ProcessingStat> {
+    fun getByDateAfter(date: LocalDateTime): Flux<ProcessingStat> {
         return processingStatRepository.findByCreationDateAfter(date)
     }
 
@@ -82,7 +29,7 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
         val resumeByModel = mutableListOf<ProcessingResumeByModelFields>()
         val resumeByOrganization = mutableListOf<ProcessingResumeByOrganizationFields>()
 
-        return getByDate(stringToLocalDateTime(date))
+        return getByDateAfter(stringToLocalDateTime(date))
             .collectList()
             .map { processingList ->
 

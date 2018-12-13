@@ -39,7 +39,6 @@ class Routes(
             "/stat-view".nest {
                 GET("/processing", processingStatHandler::getAll)
                 GET("/processing-resume", processingStatHandler::getGeneralResume)
-                GET("/search", processingStatHandler::search)
             }
 
             "/publik".nest {

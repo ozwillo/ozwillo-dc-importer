@@ -40,7 +40,7 @@
 
 <script>
     import Vue from 'vue'
-    import  VueRouter from 'vue-router'
+    import VueRouter from 'vue-router'
     import Button from './atoms/Button.vue'
 
     export default {
