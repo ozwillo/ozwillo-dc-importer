@@ -82,4 +82,21 @@ class RabbitMQConfig {
             return BindingBuilder.bind(queue).to(topic).with(BINDING_KEY)
         }
     }
+
+    private class ProcessingStatReceiverConfig {
+        @Value("\${amqp.config.processingStat.queueName}")
+        private val QUEUE_PROCESSING_STAT_NAME = ""
+        @Value("\${amqp.config.processingStat.bindingKey}")
+        private val BINDING_KEY = ""
+
+        @Bean(name = ["queue_processing_stat"])
+        fun queueProcessingStat(): Queue {
+            return Queue(QUEUE_PROCESSING_STAT_NAME)
+        }
+
+        @Bean
+        fun bindingToProcessingStat(topic: TopicExchange, @Qualifier("queue_processing_stat") queue: Queue): Binding {
+            return BindingBuilder.bind(queue).to(topic).with(BINDING_KEY)
+        }
+    }
 }

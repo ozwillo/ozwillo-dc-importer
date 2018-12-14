@@ -33,6 +33,12 @@
                       <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
+                <li class="nav-item">
+                    <router-link class="nav-link" to="/stat-view" style="color:#fff">
+                      Statistics
+                      <span class="sr-only">(current)</span>
+                    </router-link>
+                </li>
             </ul>
         </div>
     </nav>
@@ -40,7 +46,7 @@
 
 <script>
     import Vue from 'vue'
-    import  VueRouter from 'vue-router'
+    import VueRouter from 'vue-router'
     import Button from './atoms/Button.vue'
 
     export default {

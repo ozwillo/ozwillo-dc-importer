@@ -4,6 +4,7 @@ import Dashboard from './views/Dashboard'
 import DataRequest from './views/DataRequest'
 import CheckDataAccess from './views/CheckDataAccess'
 import ConnectorsManagement from './views/ConnectorsManagement'
+import ProcessingStat from './views/ProcessingStat'
 
 Vue.use(Router)
 
@@ -29,6 +30,11 @@ export default new Router({
             path: '/connectors-management',
             name: 'connectors',
             component: ConnectorsManagement
+        },
+        {
+            path: '/stat-view',
+            name: 'stat',
+            component: ProcessingStat
         }
     ]
 })
