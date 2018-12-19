@@ -36,7 +36,7 @@
                             <th></th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="tbody-connector-management">
                         <tr v-for="connector in connectors">
                             <td>{{connector.applicationName}}</td>
                             <td>{{findOrganizationNameInMap(connector.organizationSiret)}}</td>
@@ -164,8 +164,13 @@ export default {
 <style scoped>
 .table .thead-dark th {
   color: #fff;
-  background-color: #6f438e;
-  border-color: #32383e;
+  font-weight: normal;
+  background-color: #2C55A2;
+  border-color: #CCC;
+}
+.tbody-connector-management {
+    color: #4c4c4c;
+
 }
 </style>
 
