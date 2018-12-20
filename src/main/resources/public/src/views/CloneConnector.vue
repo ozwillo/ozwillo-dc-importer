@@ -53,8 +53,8 @@
                 <input type="text" id="instance-id-claimer" v-model="selectedConnector.instanceId"/>
             </div>
             <div class="for-group row">
-                <input type="button" value="Create" :disabled="disabled" @click="cloneConnector"/>
-                <input type="button" value="Cancel" @click="backToConnectorsManagament"/>
+                <button class="btn btn-outline-primary" :disabled="disabled" @click="cloneConnector">Create</button>
+                <button class="btn btn-outline-primary" @click="backToConnectorsManagament">Cancel</button>
             </div>
         </form>
     </div>

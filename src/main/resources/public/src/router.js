@@ -6,6 +6,8 @@ import CheckDataAccess from './views/CheckDataAccess'
 import ConnectorsManagement from './views/ConnectorsManagement'
 import CloneConnector from './views/CloneConnector'
 import ProcessingStat from './views/ProcessingStat'
+import ProcessingStatByModel from './views/ProcessingStatByModel'
+import ProcessingStatByOrganization from './views/ProcessingStatByOrganization'
 
 Vue.use(Router)
 
@@ -41,6 +43,16 @@ export default new Router({
             path: '/stat-view',
             name: 'stat',
             component: ProcessingStat
+        },
+        {
+            path: '/stat-view/models',
+            name: 'statByModel',
+            component: ProcessingStatByModel
+        },
+        {
+            path: '/stat-view/organizations',
+            name: 'statByOrganization',
+            component: ProcessingStatByOrganization
         }
     ]
 })

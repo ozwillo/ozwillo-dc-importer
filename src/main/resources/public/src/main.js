@@ -5,8 +5,8 @@ import { i18n } from "@/utils/plugins/i18n"
 import 'bootstrap'
 
 new Vue({
-  router: router,
-  el: '#app',
-  i18n,
-  render: h => h(App)
+    router: router,
+    el: '#app',
+    i18n,
+    render: h => h(App)
 });
