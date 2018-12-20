@@ -277,7 +277,7 @@ export default {
         dt.setMonth(dt.getMonth() - 3)
         this.date = dt
         this.getGeneralStats(this.date)
-        this.colors = ['#4c2d62', '#a673e3', '#660066', '#9350dc', '#7a6490', '#802ed5', '#9d5ea9', '#c0a1ce', '#a068a9', '#a193b6', '#6c0cce', '#8c4592', '#b8aecc', '#79227c', '#663399', '#660066']  
+        this.colors = ['#2c55a2', '#e62984', '#4c6eb0', '#eb549d', '#5a4a9a', '#a5388e', '#7690c3', '#ef74af', '#644899', '#893f93', '#96aad0', '#f49fc8', '#4c4c4c', '#e4e4e4']  
     },
     methods: {
         getGeneralStats (date){
@@ -403,8 +403,8 @@ export default {
     width: 250px;
     height: 150px;
     border-radius: 5px;
-    background-color:#4c2d62;
-    color: #fff;
+    background-color:#2C55A2;
+    color: #FFF;
     text-align: center;
 }
 .center-el{
