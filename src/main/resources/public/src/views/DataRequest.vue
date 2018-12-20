@@ -1,15 +1,15 @@
 <template>
     <div id="container" class="container">
-        <h2>Request for access to dataset</h2>
+        <h2>{{ $t('request_access_to_dataset') }}</h2>
         <form>
             <div class="form-group row">
                 <label for="claimer-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                    Organization
+                    {{ $tc('organization') }}
                 </label>
                 <vue-bootstrap-typeahead
                     id="claimer-organization"
                     ref="claimerorganization"
-                    placeholder="Find a organization"
+                    :placeholder="$t('search_organization')"
                     :minMatchingChars="0"
                     v-model="organizationSearch"
                     :append="organizationSelected.siret"
@@ -19,18 +19,18 @@
             </div>
             <div class="form-group row">
                 <label for="claimer-email" class="col-sm-3 col-form-label col-form-label-sm">
-                    Email
+                    {{ $t('email') }}
                 </label>
                 <input id="claimer-email" v-model="dataAccessRequest.email"/>
             </div>
             <div class="form-group row">
                 <label for="claimer-model" class="col-sm-3 col-form-label col-form-label-sm">
-                    Model
+                    {{ $tc('model', 1) }}
                 </label>
                 <vue-bootstrap-typeahead
                     id="claimer-model"
                     ref="claimermodel"
-                    placeholder="Find a model of dataset"
+                    :placeholder="$t('search_model')"
                     v-model="modelSearch"
                     :data="models"
                     :serializer="displayingResultOfModelSearch"
@@ -38,7 +38,7 @@
             </div>
             <div class="form-group row" v-if="modelSelected != null">
                 <label for="fields-model" class="col-sm-3 col-form-label col-form-label-sm">
-                    Fields
+                    {{ $tc('field') }}
                 </label>
                 <ul id="fields-model" class="list-group">
                     <li class="list-group-item" v-for="field in modelSelected.fields">
@@ -47,7 +47,7 @@
                     </li>
                 </ul>
             </div>
-            <input type="button" @click="createDataAccessRequest" value="submit" v-bind:disabled="disabled">
+            <input type="button" @click="createDataAccessRequest" :value="$t('save')" v-bind:disabled="disabled">
         </form>
     </div>
 </template>

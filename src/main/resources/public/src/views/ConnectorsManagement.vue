@@ -1,15 +1,15 @@
 <template>
     <div class="container">
-        <h2>Declared connectors management</h2>
+        <h2>{{ $t('connectors_management') }}</h2>
         <form>
             <div class="form-group row">
                 <label for="cm-claimer-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                    Organization
+                    {{ $tc('organization') }}
                 </label>
                 <vue-bootstrap-typeahead 
                 id="cm-claimer-organization"
                 ref="cmclaimerorganization"
-                placeholder="Search by organization"
+                :placeholder="$t('search_by_organization')"
                 v-model="organizationSearch"
                 :data="organizations"
                 :serializer="displayingResultOfOrganizationSearch"
@@ -19,19 +19,20 @@
             </div>
             <div class="form-group row">
                 <label for="cm-claimer-appName" class="col-sm-3 col-form-label col-form-label-sm">
-                    Application Name
+                    {{ $t('application_name') }}
                 </label>
                 <input 
-                id="cm-claimer-appName"
-                v-model="appName"/>
+                    id="cm-claimer-appName"
+                    :placeholder="$t('search_by_application')"
+                    v-model="appName"/>
             </div>
             <div class="form-group row">
                 <table class="table table-sm">
                     <thead class="thead-dark">
                         <tr>
-                            <th>Application Name</th>
-                            <th>Organization Name</th>
-                            <th>Organization Siret</th>
+                            <th>{{ $t('application_name') }}</th>
+                            <th>{{ $t('organization_name') }}</th>
+                            <th>{{ $t('siret_number') }}</th>
                             <th></th>
                             <th></th>
                         </tr>

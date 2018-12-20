@@ -1,13 +1,13 @@
 <template>
     <div id="container" class="container">
-        <h2>Dashboard</h2>
+        <h2>{{ $t('dashboard') }}</h2>
         <table class="table table-sm">
             <thead class="thead-dark">
                 <tr>
-                    <th>DC Model</th>
-                    <th>Date</th>
-                    <th>Organization</th>
-                    <th>State</th>
+                    <th>{{ $t('dc_model') }}</th>
+                    <th>{{ $t('since') }}</th>
+                    <th>{{ $tc('organization') }}</th>
+                    <th>{{ $t('state') }}</th>
                 </tr>
             </thead>
             <tbody>

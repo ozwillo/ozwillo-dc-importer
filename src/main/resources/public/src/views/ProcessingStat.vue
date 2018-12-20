@@ -1,10 +1,10 @@
 <template>
     <div class="container">
-        <h2>Processing Statistics</h2>
+        <h2>{{ $t('processing_statistics') }}</h2>
         <div class="form-group row">
             <div class="col">
                 <label for="claimer-stat-display-date" class="col-sm-3 col-form-label col-form-label-sm">
-                    From: 
+                    {{ $t('since') }}
                 </label>
                 <input type="date" id="claimer-stat-display-date" v-model="datePicker"/>
             </div>
@@ -12,44 +12,41 @@
         <div class="form-group row">
             <div class="general-stat">
                 <div class="center-text">
-                    <div>DC Importer has completed</div>
-                    <div class="displayed-stat-value">{{generalNbreProcess}}</div> 
-                    <div>{{displayedProcessing}} since</div>
-                    <div>{{date | formatDate}}</div>
+                    <div class="displayed-stat-value">{{ this.generalResume.nbreProcessing }}</div>
+                    <div>{{ $tc('processing_completed', this.generalResume.nbreProcessing) }}</div>
+                    <div>{{ $t('since') }} {{ date | formatDate }}</div>
                 </div>
             </div>
             <div class="general-stat">
                 <div class="center-text">
-                    <div>On</div>
-                    <div class="displayed-stat-value">{{generalDistinctModel}}</div>
-                    <div>{{displayedDistinctGeneralModel}}</div> 
+                    <div class="displayed-stat-value">{{ this.generalResume.nbreDistinctModel }}</div>
+                    <div>{{ $tc('model', this.generalResume.nbreDistinctModel) }}</div>
                 </div>
             </div>
             <div class="general-stat">
                 <div class="center-text">
-                    <div>For </div>
-                    <div class="displayed-stat-value">{{generalDistinctOrganization}}</div> 
-                    <div>{{displayedDistinctGeneralOrganization}}</div>
+                    <div class="displayed-stat-value">{{ this.generalResume.nbreDistinctOrg }}</div>
+                    <div>{{ $tc('organization', this.generalResume.nbreDistinctOrg) }}</div>
                 </div>
             </div>
         </div>
         <div class="form-group row">
             <div class="col">
-                <label for="model-pie">Processed Models: </label>
+                <label for="model-pie">{{ $tc('processed_model', pieData.length) }}</label>
                 <pie-chart id="model-pie" :data="pieData" :donut="true" width="500px" :colors="colors" legend="right"></pie-chart>
             </div>
             <div class="col">
-                <label for="organization-column">Concerned Organizations</label>
+                <label for="organization-column">{{ $tc('concerned_organization', columnData.length) }}</label>
                 <column-chart id="organization-column" :data="columnData" width="500px" :colors="colors" :legend="false"></column-chart>
             </div>
         </div>
         <div class="row">
-            <p>Processed since {{date | formatDate}}:</p>
+            <p>{{ $tc('processing_since', this.generalResume.nbreProcessing) }} {{date | formatDate}}</p>
         </div>
         <div class="form-group row">
             <div class="col">
                 <label for="select-model" class="col-sm-3 col-form-label col-form-label-sm">
-                    Models: 
+                    {{ $tc('model') }}
                 </label>
                 <select id="select-model" class="form-control-sm" v-model="modelSelected">
                     <option></option>
@@ -58,7 +55,7 @@
             </div>
             <div class="col">
                 <label for="select-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                    Organization:
+                    {{ $tc('organization') }}
                 </label>
                 <select id="select-organization" class="form-control-sm" v-model="siret">
                     <option></option>
@@ -68,16 +65,16 @@
             </div>
         </div>
         <div class="row">
-            Search:
+            {{ $t('search') }}
         </div>
         <div class="form-group row">
             <label for="claimer-model" class="col-sm-3 col-form-label col-form-label-sm">
-                By Model: 
+                {{ $t('by_model') }}
             </label>
             <vue-bootstrap-typeahead
                 id="claimer-model"
                 ref="claimermodel"
-                placeholder="Find a model of dataset"
+                :placeholder="$t('search_model')"
                 v-model="modelSearch"
                 :data="models"
                 :serializer="displayingResultOfModelSearch"
@@ -86,36 +83,48 @@
         <div class="form-group row" v-if="modelSelected !== ''">
             <div class="general-stat">
                 <div class="center-text">
-                    <div>DC Importer has registered</div>
-                    <div class="displayed-stat-value">{{nbreActiveModelForModel}}</div> 
-                    <div>active</div>
+                    <div class="displayed-stat-value">{{ this.resumeModel.nbreActive }}</div>
                     <div>{{modelSelected}}</div>
+                    <div>{{ $t('being_processed') }}</div>
                 </div>
             </div>
             <div class="general-stat">
                 <div class="center-text">
-                    <div>With</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreCreatedModelForModel}}</span> {{displayedCreationForModel}}</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreDeletedModelForModel}}</span> {{displayedDeletionForModel}}</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreOfUpdateForModel}}</span> {{displayedUpdateForModel}}</div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ this.resumeModel.nbreCreated }}
+                        </span>
+                        {{ $tc('creation', this.resumeModel.nbreCreated) }}
+                    </div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ this.resumeModel.nbreDeleted }}
+                        </span>
+                        {{ $tc('deletion', this.resumeModel.nbreCreated) }}
+                    </div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ this.resumeModel.nbreOfUpdate }}
+                        </span>
+                        {{ $tc('update', this.resumeModel.nbreCreated) }}
+                    </div>
                 </div>
             </div>
             <div class="general-stat">
                 <div class="center-text">
-                    <div>For</div> 
-                    <div class="displayed-stat-value">{{nbreOrganizationForModel}}</div> 
-                    <div>{{displayedOrganizationForModel}}</div>
+                    <div class="displayed-stat-value">{{ this.resumeModel.nbreOrganization }}</div>
+                    <div>{{ $tc('organization') }}</div>
                 </div>
             </div>
         </div>
         <div class="form-group row">
             <label for="claimer-organization" class="col-sm-3 col-form-label col-form-label-sm">
-                By Organization:
+                {{ $t('by_organization') }}
             </label>
             <vue-bootstrap-typeahead
                 id="claimer-organization"
                 ref="claimerorganization"
-                placeholder="Find an organization"
+                :placeholder="$t('search_by_organization')"
                 v-model="organizationSearch"
                 :append="organizationSelected.siret"
                 :data="organizations"
@@ -124,29 +133,56 @@
         </div>
         <div class="form-group row" v-if="organizationSearch !== ''">
             <label for="organization-model-list" class="col-sm-3 col-form-label col-form-label-sm">
-                Models processed for selected Organization:
+                {{ $t('models_processed_for_selected_organization') }}
             </label>
             <select id="organization-model-list" class="form-control-sm" v-model="selectedModelForOrganization">
-                <option>All</option>
+                <option></option>
                 <option v-for="model in resumeOrganization.modelResume">{{model.modelName}}</option>
             </select>
         </div>
         <div class="form-group row" v-if="organizationSearch !== ''">
             <div class="general-stat">
                 <div class="center-text">
-                    <div>DC Importer has registered</div> 
-                    <div class="secondary-displayed-stat-value">{{nbreActiveModelForOrganization}}</div> 
-                    <div>{{displayedModelForOrganization}}</div>
-                    <div>for Organization</div>
+                    <div v-if="this.selectedModelForOrganization === 'All'">
+                        <div class="secondary-displayed-stat-value">
+                            {{ this.resumeOrganization.nbreActiveMode }}
+                        </div>
+                        <div>
+                            {{ $tc('model', this.resumeOrganization.nbreActiveMode) }}
+                        </div>
+                    </div>
+                    <div v-else>
+                        <div class="secondary-displayed-stat-value">
+                            {{ this.getResumeModelForOrganization(this.selectedModelForOrganization).nbreActive }}
+                        </div>
+                        <div>
+                            {{ displayedModelForOrganization }}
+                        </div>
+                    </div>
+                    <div>{{ $t('for_organization') }}</div>
                     <div>{{organizationSelected.denominationUniteLegale}}</div>
                 </div>
             </div>
             <div class="general-stat">
                 <div class="center-text">
-                    <div>With</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreCreatedModelForOrganization}}</span> {{displayedCreationForOrganization}}</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreDeletedModelForOrganization}}</span> {{displayedDeletionForOrganization}}</div>
-                    <div><span class="secondary-displayed-stat-value">{{nbreOfUpdateForOrganization}}</span> {{displayedUpdateForOrganization}}</div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ nbreCreatedModelForOrganization }}
+                        </span>
+                        {{ $tc('creation', nbreCreatedModelForOrganization) }}
+                    </div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ nbreDeletedModelForOrganization }}
+                        </span>
+                        {{ $tc('deletion', nbreDeletedModelForOrganization) }}
+                    </div>
+                    <div>
+                        <span class="secondary-displayed-stat-value">
+                            {{ nbreOfUpdateForOrganization }}
+                        </span>
+                        {{ $tc('update', nbreOfUpdateForOrganization) }}
+                    </div>
                 </div>
             </div>
         </div>
@@ -220,34 +256,6 @@ export default {
         }
     },
     computed: {
-        generalNbreProcess (){
-            return this.generalResume.nbreProcessing
-        },
-        generalDistinctModel (){
-            return this.generalResume.nbreDistinctModel
-        },
-        generalDistinctOrganization (){
-            return this.generalResume.nbreDistinctOrg
-        },
-        nbreActiveModelForModel (){
-            return this.resumeModel.nbreActive
-        },
-        nbreCreatedModelForModel (){
-            return this.resumeModel.nbreCreated
-        },
-        nbreDeletedModelForModel (){
-            return this.resumeModel.nbreDeleted
-        },
-        nbreOfUpdateForModel (){
-            return this.resumeModel.nbreOfUpdate
-        },
-        nbreOrganizationForModel (){
-            return this.resumeModel.nbreOrganization
-        },
-        nbreActiveModelForOrganization (){
-            if(this.selectedModelForOrganization === 'All') return this.resumeOrganization.nbreActiveModel
-            else return this.getResumeModelForOrganization(this.selectedModelForOrganization).nbreActive
-        },
         nbreCreatedModelForOrganization (){
             if(this.selectedModelForOrganization === 'All') return this.resumeOrganization.nbreOfCreation
             else return this.getResumeModelForOrganization(this.selectedModelForOrganization).nbreCreated
@@ -260,50 +268,8 @@ export default {
             if(this.selectedModelForOrganization === 'All') return this.resumeOrganization.nbreOfUpdate
             else return this.getResumeModelForOrganization(this.selectedModelForOrganization).nbreOfUpdate
         },
-        displayedProcessing (){
-            if(this.generalNbreProcess > 1) return 'processings' 
-            else return 'processing'
-        },
-        displayedDistinctGeneralModel (){
-            if(this.generalDistinctModel > 1) return 'distinct DC Models'
-            else return 'Model'
-        },
-        displayedDistinctGeneralOrganization (){
-            if(this.generalDistinctOrganization > 1) return 'different Organizations'
-            else return 'Organization'
-        },
-        displayedCreationForModel (){
-            if(this.nbreCreatedModelForModel > 1) return 'Creations'
-            else return 'Creation'
-        },
-        displayedDeletionForModel (){
-            if(this.nbreDeletedModelForModel > 1) return 'Deletions'
-            else return 'Deletion'
-        },
-        displayedUpdateForModel (){
-            if(this.nbreOfUpdateForModel > 1) return 'Updates'
-            else return 'Update'
-        },
-        displayedOrganizationForModel (){
-            if(this.nbreOrganizationForModel > 1) return 'different Organizations'
-            else return 'Organization'
-        },
         displayedModelForOrganization (){
-            if(this.selectedModelForOrganization === 'All' && this.nbreActiveModelForOrganization > 1) return 'distinct Models'
-            else if(this.selectedModelForOrganization === 'All') return 'Model'
-            else return this.selectedModelForOrganization
-        },
-        displayedCreationForOrganization (){
-            if(this.nbreCreatedModelForOrganization > 1) return 'Creations'
-            else return 'Creation'
-        },
-        displayedDeletionForOrganization (){
-            if(this.nbreDeletedModelForOrganization > 1) return 'Deletions'
-            else return 'Deletion'
-        },
-        displayedUpdateForOrganization (){
-            if(this.nbreOfUpdateForOrganization > 1) return 'Updates'
-            else return 'Update'
+            if(this.selectedModelForOrganization !== 'All') return this.selectedModelForOrganization
         }
     },
     created () {

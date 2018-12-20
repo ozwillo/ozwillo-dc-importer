@@ -17,25 +17,25 @@
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
                     <router-link class="nav-link" to="/" style="color:#fff">
-                        Dashboard
+                        {{ $t('dashboard') }}
                         <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
                 <li class="nav-item">
                     <router-link class="nav-link" to="/request" style="color:#fff">
-                      Data request
-                      <span class="sr-only">(current)</span>
+                        {{ $t('data_request') }}
+                        <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
                 <li class="nav-item">
                     <router-link class="nav-link" to="/connectors-management" style="color:#fff">
-                      Connectors management
+                        {{ $t('connectors_management') }}
                       <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
                 <li class="nav-item">
                     <router-link class="nav-link" to="/stat-view" style="color:#fff">
-                      Statistics
+                        {{ $t('statistics') }}
                       <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
