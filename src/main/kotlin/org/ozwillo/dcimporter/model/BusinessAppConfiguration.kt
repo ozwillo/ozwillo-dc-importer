@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 data class BusinessAppConfiguration(
     @Id val id: String? = null,
     val applicationName: String,
+    val displayName: String,
     val baseUrl: String,
     val organizationSiret: String,
     val instanceId: String? = null,

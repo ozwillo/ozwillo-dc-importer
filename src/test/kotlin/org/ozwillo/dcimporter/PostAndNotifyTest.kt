@@ -43,7 +43,7 @@ class PostAndNotifyTest : AbstractIntegrationTests() {
         if (!optPublikConfiguration.isPresent) {
             val publikConfiguration = BusinessAppConfiguration(
                 baseUrl = "https://demarches-sve.test-demarches.sictiam.fr",
-                organizationSiret = "20003019500115", secretOrToken = "aSYZexOBIzl8", applicationName = "Publik"
+                organizationSiret = "20003019500115", secretOrToken = "aSYZexOBIzl8", applicationName = "publik", displayName = "Publik"
             )
             businessAppConfigurationRepository.save(publikConfiguration).subscribe()
         }

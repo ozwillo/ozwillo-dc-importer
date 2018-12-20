@@ -13,9 +13,9 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
 
     fun searchConnectors(siret: String, appName: String): Flux<BusinessAppConfiguration> {
         return when {
-            !siret.isEmpty() && !appName.isEmpty() -> this.getAllBySiretAndContainingAppName(siret, appName)
+            !siret.isEmpty() && !appName.isEmpty() -> this.getAllBySiretAndContainingDisplayName(siret, appName)
             !siret.isEmpty() && appName.isEmpty() -> this.getAllBySiret(siret)
-            siret.isEmpty() && !appName.isEmpty() -> this.getAllContainingAppName(appName)
+            siret.isEmpty() && !appName.isEmpty() -> this.getAllContainingDisplayName(appName)
             else -> this.getAll()
         }
     }
@@ -36,12 +36,12 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
         return businessAppConfigurationRepository.findByOrganizationSiret(siret)
     }
 
-    fun getAllContainingAppName(appName: String): Flux<BusinessAppConfiguration>{
-        return businessAppConfigurationRepository.findByApplicationNameIgnoreCaseContaining(appName)
+    fun getAllContainingDisplayName(appName: String): Flux<BusinessAppConfiguration>{
+        return businessAppConfigurationRepository.findByDisplayNameIgnoreCaseContaining(appName)
     }
 
-    fun getAllBySiretAndContainingAppName(siret: String, appName: String): Flux<BusinessAppConfiguration> {
-        return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationNameIgnoreCaseContaining(siret, appName)
+    fun getAllBySiretAndContainingDisplayName(siret: String, appName: String): Flux<BusinessAppConfiguration> {
+        return businessAppConfigurationRepository.findByOrganizationSiretAndDisplayNameIgnoreCaseContaining(siret, appName)
     }
 
     fun create(siret: String, appName: String, businessAppConfiguration: BusinessAppConfiguration): Mono<BusinessAppConfiguration> {
@@ -53,6 +53,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             .defaultIfEmpty(
                 BusinessAppConfiguration(
                     applicationName = "",
+                    displayName = "",
                     organizationSiret = siret,
                     baseUrl = businessAppConfiguration.baseUrl
                 )
@@ -67,6 +68,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                             login = businessAppConfiguration.login,
                             password = businessAppConfiguration.password,
                             applicationName = appName,
+                            displayName = businessAppConfiguration.displayName,
                             secretOrToken = businessAppConfiguration.secretOrToken
                         )
                     )
@@ -117,6 +119,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                                 login = businessAppConfiguration.login,
                                 password = businessAppConfiguration.password,
                                 applicationName = appName,
+                                displayName = businessAppConfiguration.displayName,
                                 secretOrToken = businessAppConfiguration.secretOrToken
                             )
                         ).subscribe()

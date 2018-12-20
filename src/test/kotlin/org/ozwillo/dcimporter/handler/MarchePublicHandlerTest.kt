@@ -76,6 +76,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         )
         businessAppConfiguration = BusinessAppConfiguration(
             applicationName = MarcheSecuriseService.name,
+            displayName = "Marchés Sécurisés",
             baseUrl = "http://localhost:8089",
             organizationSiret = siret,
             instanceId = "pa",

@@ -39,7 +39,7 @@
                     </thead>
                     <tbody class="tbody-connector-management">
                         <tr v-for="connector in connectors">
-                            <td>{{connector.applicationName}}</td>
+                            <td>{{connector.displayName}}</td>
                             <td>{{findOrganizationNameInMap(connector.organizationSiret)}}</td>
                             <td>{{connector.organizationSiret}}</td>
                             <td>
