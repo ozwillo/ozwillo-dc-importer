@@ -3,15 +3,15 @@
         <router-link to="/" class="navbar-brand">
             <span id="app-name" class="ml-sm-1">DC Importer</span>
         </router-link>
-        <Button
-            className="navbar-toggler"
+        <button
+            class="navbar-toggler"
             data-toggle="collapse"
             data-target="#navbarSupportedContent"
             aria-expanded="false"
             aria-label="Toggle navigation"
             aria-controls="navbarSupportedContent">
-            <span class="navbar-toggler-icon"/>
-        </Button>
+            <span class="navbar-toggler-icon"></span>
+        </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
