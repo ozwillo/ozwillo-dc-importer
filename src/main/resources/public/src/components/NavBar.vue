@@ -3,15 +3,15 @@
         <router-link to="/" class="navbar-brand">
             <span id="app-name" class="ml-sm-1">DC Importer</span>
         </router-link>
-        <Button
-            className="navbar-toggler"
+        <button
+            class="navbar-toggler"
             data-toggle="collapse"
             data-target="#navbarSupportedContent"
             aria-expanded="false"
             aria-label="Toggle navigation"
             aria-controls="navbarSupportedContent">
             <span class="navbar-toggler-icon"/>
-        </Button>
+        </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">
@@ -32,11 +32,22 @@
                       <span class="sr-only">(current)</span>
                     </router-link>
                 </li>
-                <li class="nav-item">
-                    <router-link class="nav-link nav-link-title" to="/stat-view">
+                <li class="nav-item dropdown">
+                    <router-link class="nav-link dropdown-toggle nav-link-title" to="#" id="navbarDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Statistics
                       <span class="sr-only">(current)</span>
                     </router-link>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <router-link class="dropdown-item nav-link-title" to="/stat-view">
+                            General Stats
+                        </router-link>
+                        <router-link class="dropdown-item nav-link-title" to="/stat-view/models">
+                            Search by Model
+                        </router-link>
+                        <router-link class="dropdown-item nav-link-title" to="/stat-view/organizations">
+                            Search by Organization
+                        </router-link>
+                    </div>
                 </li>
             </ul>
         </div>
@@ -66,5 +77,9 @@
   .nav-link-title {
       color: #4c4c4c;
       text-transform: uppercase;
+  }
+  .dropdown-item:hover {
+      background-color: #2C55A2;
+      color: #FFF
   }
 </style>
