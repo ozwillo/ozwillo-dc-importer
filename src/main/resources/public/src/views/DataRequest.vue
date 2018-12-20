@@ -47,7 +47,7 @@
                     </li>
                 </ul>
             </div>
-            <button class="btn btn-outline-primary" type="button" @click="createDataAccessRequest" v-bind:disabled="disabled">$t('save')</button>
+            <button class="btn btn-outline-primary" type="button" @click="createDataAccessRequest" v-bind:disabled="disabled">{{ $t('save') }}</button>
         </form>
     </div>
 </template>
