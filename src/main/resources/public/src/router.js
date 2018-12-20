@@ -4,6 +4,7 @@ import Dashboard from './views/Dashboard'
 import DataRequest from './views/DataRequest'
 import CheckDataAccess from './views/CheckDataAccess'
 import ConnectorsManagement from './views/ConnectorsManagement'
+import CloneConnector from './views/CloneConnector'
 import ProcessingStat from './views/ProcessingStat'
 
 Vue.use(Router)
@@ -30,6 +31,11 @@ export default new Router({
             path: '/connectors-management',
             name: 'connectors',
             component: ConnectorsManagement
+        },
+        {
+            path: '/connectors/:id/:appName/clone',
+            name: 'clone',
+            component: CloneConnector
         },
         {
             path: '/stat-view',

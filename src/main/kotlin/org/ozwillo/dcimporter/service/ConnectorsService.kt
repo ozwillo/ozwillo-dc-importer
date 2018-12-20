@@ -2,15 +2,11 @@ package org.ozwillo.dcimporter.service
 
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
+import org.ozwillo.dcimporter.web.ConflictException
 import org.ozwillo.dcimporter.web.EmptyException
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
 
 @Service
 class ConnectorsService(private val businessAppConfigurationRepository: BusinessAppConfigurationRepository){
@@ -48,7 +44,10 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
         return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationNameIgnoreCaseContaining(siret, appName)
     }
 
-    fun create(siret: String, appName: String, businessAppConfiguration: BusinessAppConfiguration): Mono<HttpStatus> {
+    fun create(siret: String, appName: String, businessAppConfiguration: BusinessAppConfiguration): Mono<BusinessAppConfiguration> {
+
+        val fallback: Mono<BusinessAppConfiguration> =
+            Mono.error(ConflictException("Connectors have already been created for application \"$appName\" and siret \"$siret\", please update"))
 
         return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, appName)
             .defaultIfEmpty(
@@ -58,7 +57,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                     baseUrl = businessAppConfiguration.baseUrl
                 )
             )
-            .map { existingConnector ->
+            .flatMap { existingConnector ->
                 if (existingConnector.applicationName.isEmpty()) {
                     businessAppConfigurationRepository.save(
                         BusinessAppConfiguration(
@@ -70,14 +69,31 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                             applicationName = appName,
                             secretOrToken = businessAppConfiguration.secretOrToken
                         )
-                    ).subscribe()
-                    HttpStatus.CREATED
+                    )
                 }else{
-                    HttpStatus.CONFLICT
+                    fallback
                 }
             }
-            .onErrorResume { e ->
-                HttpStatus.BAD_REQUEST.toMono()
+    }
+
+    fun clone(businessAppConfiguration: BusinessAppConfiguration): Mono<BusinessAppConfiguration>{
+        val fallback: Mono<BusinessAppConfiguration> =
+                Mono.error(EmptyException("No connector found with id ${businessAppConfiguration.id!!}"))
+
+        return businessAppConfigurationRepository.findById(businessAppConfiguration.id)
+            .switchIfEmpty(fallback)
+            .flatMap { existingConnector ->
+                val connector =
+                    BusinessAppConfiguration(
+                        baseUrl = existingConnector.baseUrl,
+                        organizationSiret = businessAppConfiguration.organizationSiret,
+                        instanceId = businessAppConfiguration.instanceId,
+                        login = businessAppConfiguration.login,
+                        password = businessAppConfiguration.password,
+                        applicationName = existingConnector.applicationName,
+                        secretOrToken = businessAppConfiguration.secretOrToken
+                    )
+                create(businessAppConfiguration.organizationSiret, existingConnector.applicationName, connector)
             }
     }
 
@@ -109,16 +125,29 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             }
     }
 
-    fun delete(siret: String, appName: String):Mono<BusinessAppConfiguration>{
+    fun delete(id: String): Mono<BusinessAppConfiguration>{
+        val fallback: Mono<BusinessAppConfiguration> =
+                Mono.error(EmptyException("Connector not found for id: \"$id\""))
+
+        return businessAppConfigurationRepository.findById(id)
+            .switchIfEmpty(fallback)
+            .flatMap {
+                businessAppConfigurationRepository.deleteById(id)
+                    .subscribe()
+                Mono.empty<BusinessAppConfiguration>()
+            }
+    }
+
+    fun deleteBySiretAndAppName(siret: String, appName: String):Mono<BusinessAppConfiguration>{
         val fallback: Mono<BusinessAppConfiguration> =
             Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
         return businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(siret, appName)
             .switchIfEmpty(fallback)
-            .map {businessAppConfiguration ->
+            .flatMap {
                 businessAppConfigurationRepository.deleteByOrganizationSiretAndApplicationName(siret, appName)
                     .subscribe()
-                businessAppConfiguration
+                Mono.empty<BusinessAppConfiguration>()
             }
     }
 

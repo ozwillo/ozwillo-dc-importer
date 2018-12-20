@@ -1,7 +1,6 @@
 package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
-import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.service.ConnectorsService
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
@@ -79,11 +78,31 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             .flatMap { businessAppConfiguration ->
                 connectorsService.create(siret, appName, businessAppConfiguration)
             }
-            .flatMap { status ->
-                val message = if (status == HttpStatus.CONFLICT) "Connectors have already been created for application \"$appName\" and siret $siret, please update" else ""
-                status(status).body(BodyInserters.fromObject(message))
+            .flatMap {
+                status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
             }
-            .onErrorResume(this::throwableToResponse)
+            .onErrorResume{ e ->
+                when (e) {
+                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromObject(e.message))
+                    else -> this.throwableToResponse(e)
+                }
+            }
+    }
+
+    fun clone(req: ServerRequest): Mono<ServerResponse> {
+        return req.bodyToMono<BusinessAppConfiguration>()
+            .flatMap { connector ->
+                connectorsService.clone(connector)
+            }
+            .flatMap {
+                status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
+            }
+            .onErrorResume { e ->
+                when (e) {
+                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromObject(e.message))
+                    else -> this.throwableToResponse(e)
+                }
+            }
     }
 
     fun updateConnectors(req: ServerRequest): Mono<ServerResponse> {
@@ -104,11 +123,26 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             }
     }
 
-    fun deleteConnectors(req: ServerRequest): Mono<ServerResponse> {
+    fun delete(req: ServerRequest): Mono<ServerResponse> {
+        val id = req.pathVariable("id")
+
+        return connectorsService.delete(id)
+            .flatMap {
+                status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
+            }
+            .onErrorResume { e ->
+                when(e){
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message))
+                    else -> this.throwableToResponse(e)
+                }
+            }
+    }
+
+    fun deleteBySiretAndAppName(req: ServerRequest): Mono<ServerResponse> {
         val siret = req.pathVariable("siret")
         val appName = req.pathVariable("applicationName")
 
-        return connectorsService.delete(siret, appName)
+        return connectorsService.deleteBySiretAndAppName(siret, appName)
             .flatMap {
                 ServerResponse.status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
             }
@@ -133,3 +167,4 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
 }
 
 class EmptyException(override var message: String) : Exception(message)
+class ConflictException(override var message: String) : Exception(message)
