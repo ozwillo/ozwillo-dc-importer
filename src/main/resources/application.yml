@@ -5,9 +5,9 @@ spring:
     mongodb:
       database: dcimporter
   rabbitmq:
-    addresses: localhost
-    username: guest
-    password: guest
+    addresses: 31.172.165.217:1883
+    username: egm-iot
+    password: v8s822or18hH
     listener:
       simple:
         acknowledge-mode: manual
@@ -75,6 +75,9 @@ amqp:
     processingStat:
       queueName: stat
       bindingKey: '#'
+    egm:
+      queueName: egm
+      bindingKey: egm-lora/risingHF/8cf9574000000217
 
 kernel:
   baseUri: https://kernel.ozwillo-preprod.eu

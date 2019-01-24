@@ -65,6 +65,24 @@ class RabbitMQConfig {
         }
     }
 
+    private class EGMReceiverConfig {
+
+        @Value("\${amqp.config.egm.queueName}")
+        private val QUEUE_EGM_NAME = ""
+        @Value("\${amqp.config.egm.bindingKey}")
+        private val BINDING_KEY = ""
+
+        @Bean(name = ["queue_egm"])
+        fun queueEGM(): Queue {
+            return Queue(QUEUE_EGM_NAME)
+        }
+
+        @Bean
+        fun bindingToEGM(topic: TopicExchange, @Qualifier("queue_egm") queue: Queue): Binding {
+            return BindingBuilder.bind(queue).to(topic).with(BINDING_KEY)
+        }
+    }
+
     private class PublikReceiverConfig {
 
         @Value("\${amqp.config.publik.queueName}")
