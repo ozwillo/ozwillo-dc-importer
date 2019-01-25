@@ -5,7 +5,7 @@ spring:
     mongodb:
       database: dcimporter
   rabbitmq:
-    addresses: 31.172.165.217:1883
+    addresses: 31.172.165.217
     username: egm-iot
     password: v8s822or18hH
     listener:
