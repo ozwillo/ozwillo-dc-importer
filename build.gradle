@@ -26,6 +26,7 @@ apply plugin: 'kotlin-spring'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'org.jetbrains.kotlin.plugin.noarg'
+apply plugin: 'kotlin-android-extensions'
 
 noArg {
     annotation("org.springframework.boot.context.properties.ConfigurationPro‌​perties")
@@ -99,10 +100,10 @@ test {
     environment 'spring.profiles.active', 'test'
 }
 
-task wrapper(type: Wrapper) {
-    // at least 4.6 for JUnit 5 support
-    gradleVersion = '4.7'
-}
+//task wrapper(type: Wrapper) {
+//    // at least 4.6 for JUnit 5 support
+//    gradleVersion = '5.1'
+//}
 
 bootJar {
     launchScript {
