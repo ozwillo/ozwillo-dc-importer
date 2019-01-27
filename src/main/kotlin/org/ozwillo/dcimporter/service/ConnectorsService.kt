@@ -87,6 +87,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             .flatMap { existingConnector ->
                 val connector =
                     BusinessAppConfiguration(
+                        displayName = businessAppConfiguration.displayName,
                         baseUrl = existingConnector.baseUrl,
                         organizationSiret = businessAppConfiguration.organizationSiret,
                         instanceId = businessAppConfiguration.instanceId,
