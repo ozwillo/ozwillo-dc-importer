@@ -280,7 +280,7 @@ class DatacoreHandler(
     }
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
-        DatacoreHandler.logger.error("Operation failed with error $throwable")
+        logger.error("Operation failed with error $throwable")
         return when (throwable) {
             is HttpClientErrorException -> ServerResponse.badRequest().body(
                 BodyInserters.fromObject(throwable.responseBodyAsString))

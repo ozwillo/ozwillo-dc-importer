@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.util
 
-import org.apache.commons.codec.binary.Base64
+import java.util.*
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
@@ -9,5 +9,5 @@ fun String.hmac(algorithm: String, salt: String): String {
     val mac = Mac.getInstance(algorithm)
     mac.init(secretKeySpec)
     val bytes = mac.doFinal(this.toByteArray())
-    return Base64.encodeBase64String(bytes)
+    return Base64.getEncoder().encodeToString(bytes)
 }
