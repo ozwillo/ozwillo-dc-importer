@@ -5,12 +5,13 @@ spring:
     mongodb:
       database: dcimporter
   rabbitmq:
-    addresses: 31.172.165.217
     username: egm-iot
     password: v8s822or18hH
     listener:
       simple:
         acknowledge-mode: manual
+    host: 10.28.9.8
+    port: 5672
   mail:
     host: yourMailHost
     port: 587
@@ -77,7 +78,7 @@ amqp:
       bindingKey: '#'
     egm:
       queueName: egm
-      bindingKey: egm-lora/risingHF/8cf9574000000217
+      bindingKey: egm-lora.#
 
 kernel:
   baseUri: https://kernel.ozwillo-preprod.eu
@@ -98,6 +99,8 @@ datacore:
     modelSVE: citizenreq:sve_0
     modelORG: orgfr:Organisation_0
     modelUser: citizenreq:user_0
+    iotProject: iot_0
+    iotModel: iot:device_0
 
 insee:
   api:
