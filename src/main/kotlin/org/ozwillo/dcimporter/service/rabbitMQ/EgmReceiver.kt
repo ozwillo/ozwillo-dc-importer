@@ -89,7 +89,7 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
             dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
             dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
             dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-            dcBusinessResource.setFloatValue("iotdevice:baseTime", measure.bt)
+            dcBusinessResource.setDoubleValue("iotdevice:baseTime", measure.bt)
             dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
             logger.debug("Created DC business resource : $dcBusinessResource")
 
@@ -104,7 +104,7 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class DeviceMeasure(
-        val bt: Float,
+        val bt: Double,
         val bn: String,
         val vs: String,
         val v: Float,
