@@ -104,9 +104,9 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class DeviceMeasure(
-        val bt: Double,
-        val bn: String,
-        val vs: String,
+        val bt: Double = Double.MIN_VALUE,
+        val bn: String = "",
+        val vs: String = "",
         val v: Float,
         val u: String,
         val n: String
