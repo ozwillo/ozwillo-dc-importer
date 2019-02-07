@@ -14,10 +14,9 @@ import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
+import java.time.*
 import java.time.format.DateTimeFormatter
+
 
 @Service
 class EgmReceiver(private val datacoreService: DatacoreService) {
@@ -83,13 +82,14 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
             dcResource.baseUri = datacoreBaseUri
             dcResource.iri = finalIri
             val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
+            val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
             dcBusinessResource.setStringValue("iotdevice:id", deviceId)
             dcBusinessResource.setDateTimeValue("iotdevice:time", now)
             dcBusinessResource.setStringValue("iotdevice:name", measure.n)
             dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
             dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
             dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-            dcBusinessResource.setDoubleValue("iotdevice:baseTime", measure.bt)
+            dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
             dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
             logger.debug("Created DC business resource : $dcBusinessResource")
 
@@ -104,7 +104,7 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class DeviceMeasure(
-        val bt: Double = Double.MIN_VALUE,
+        val bt: Long = Long.MIN_VALUE,
         val bn: String = "",
         val vs: String = "",
         val v: Float,
