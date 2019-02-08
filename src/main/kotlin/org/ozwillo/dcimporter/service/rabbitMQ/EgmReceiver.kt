@@ -14,8 +14,10 @@ import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
+import java.text.SimpleDateFormat
 import java.time.*
 import java.time.format.DateTimeFormatter
+import java.util.*
 
 
 @Service
@@ -82,14 +84,19 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
             dcResource.baseUri = datacoreBaseUri
             dcResource.iri = finalIri
             val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
-            val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
+           System.out.println(measure.bt)
+
+
             dcBusinessResource.setStringValue("iotdevice:id", deviceId)
             dcBusinessResource.setDateTimeValue("iotdevice:time", now)
             dcBusinessResource.setStringValue("iotdevice:name", measure.n)
             dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
             dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
             dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-            dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
+            if (measure.bt>0) {
+                val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
+                dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
+            }
             dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
             logger.debug("Created DC business resource : $dcBusinessResource")
 
@@ -107,8 +114,8 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
         val bt: Long = Long.MIN_VALUE,
         val bn: String = "",
         val vs: String = "",
-        val v: Float,
-        val u: String,
-        val n: String
+        val v: Float = Float.MIN_VALUE,
+        val u: String = "",
+        val n: String = ""
     )
 }
