@@ -42,6 +42,14 @@ class DCBusinessResourceLight(
         this.values = this.values.plus(Pair(key, value))
     }
 
+    fun setFloatValue(key: String, value: Float) {
+        this.values = this.values.plus(Pair(key, value))
+    }
+
+    fun setDoubleValue(key: String, value: Double) {
+        this.values = this.values.plus(Pair(key, value))
+    }
+
     fun setDateTimeValue(key: String, value: LocalDateTime) {
         val zonedDateTime = ZonedDateTime.of(value, ZoneOffset.UTC)
         val formattedDate = (zonedDateTime.format(df))
