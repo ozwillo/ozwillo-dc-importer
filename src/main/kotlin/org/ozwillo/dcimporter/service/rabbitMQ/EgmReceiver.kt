@@ -14,11 +14,8 @@ import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
-import java.text.SimpleDateFormat
 import java.time.*
 import java.time.format.DateTimeFormatter
-import java.util.*
-
 
 @Service
 class EgmReceiver(private val datacoreService: DatacoreService) {
@@ -84,8 +81,6 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
             dcResource.baseUri = datacoreBaseUri
             dcResource.iri = finalIri
             val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
-           System.out.println(measure.bt)
-
 
             dcBusinessResource.setStringValue("iotdevice:id", deviceId)
             dcBusinessResource.setDateTimeValue("iotdevice:time", now)
@@ -93,7 +88,7 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
             dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
             dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
             dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-            if (measure.bt>0) {
+            if (measure.bt > 0) {
                 val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
             }
