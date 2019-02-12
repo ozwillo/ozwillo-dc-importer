@@ -126,7 +126,6 @@ class PublikService(
     fun formToDCResource(organizationSiret: String, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
         LOGGER.debug("Got form from Publik : $form")
-        LOGGER.debug("Form has URL ${form.url}")
 
         val orgResource =
             datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)

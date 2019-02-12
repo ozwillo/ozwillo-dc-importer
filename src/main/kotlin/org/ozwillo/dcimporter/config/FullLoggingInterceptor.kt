@@ -28,11 +28,9 @@ class FullLoggingInterceptor : ClientHttpRequestInterceptor {
 
     @Throws(IOException::class)
     private fun traceRequest(request: HttpRequest, body: ByteArray) {
-        logger.debug("===========================request begin================================================")
         logger.debug("URI         : {}", request.uri)
         logger.debug("Method      : {}", request.method)
         logger.debug("Headers     : {}", request.headers)
         logger.debug("Request body: {}", String(body, Charset.forName("UTF-8")))
-        logger.debug("==========================request end================================================")
     }
 }

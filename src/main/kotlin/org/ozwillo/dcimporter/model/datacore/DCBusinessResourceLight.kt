@@ -106,6 +106,6 @@ class DCBusinessResourceLight(
     }
 
     override fun toString(): String {
-        return "DCBusinessResourceLight(values=$values)"
+        return "DCBusinessResourceLight(values=${values.filterKeys { key -> key != "citizenreqem:fileContent" }})"
     }
 }

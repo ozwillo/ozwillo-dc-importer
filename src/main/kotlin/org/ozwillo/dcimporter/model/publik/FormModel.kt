@@ -25,4 +25,12 @@ data class FormModel(
         val status = workflow["status"] as Map<String, String>
         this.workflowStatus = status["name"].orEmpty()
     }
+
+    override fun toString(): String {
+        return "FormModel(display_id='$display_id', last_update_time='$last_update_time', " +
+                "display_name='$display_name', submission=$submission, url='$url', " +
+                "fields=${fields.filterKeys { key -> key != "courrier" }}, " +
+                "receipt_time='$receipt_time', user=$user, criticality_level=$criticality_level, id='$id', " +
+                "workflowStatus=$workflowStatus)"
+    }
 }
