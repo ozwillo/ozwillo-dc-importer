@@ -32,7 +32,6 @@ class MaarchService(
 
     fun createCitizenRequest(siret: String, dcResource: DCBusinessResourceLight) {
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
-        LOGGER.debug("\tcontaining $dcResource")
 
         if (dcResource.getValues()["citizenreqem:fileContent"] == null) {
             LOGGER.warn("No file attached to resource, not sending it to Maarch GED")
