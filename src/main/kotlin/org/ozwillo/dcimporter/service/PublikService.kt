@@ -330,7 +330,8 @@ class PublikService(
     }
 
     private fun isEMrequest(form: FormModel): Boolean {
-        return form.id.contains(this.formTypeEM!!)
+        LOGGER.debug("Guessing type from ${form.url}")
+        return form.url.contains(this.formTypeEM!!)
     }
 
     private fun isSVErequest(form: FormModel): Boolean {
