@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.google.gson.Gson
 import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResource
@@ -12,10 +13,14 @@ import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.configurationprocessor.json.JSONArray
+import org.springframework.boot.configurationprocessor.json.JSONObject
+import org.springframework.boot.configurationprocessor.json.JSONTokener
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 import java.time.*
 import java.time.format.DateTimeFormatter
+
 
 @Service
 class EgmReceiver(private val datacoreService: DatacoreService) {
@@ -55,13 +60,23 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
         // Parse the received data into a list of measures
         // (this is how data is received)
         val mapper = jacksonObjectMapper()
-        mapper.findAndRegisterModules()
-        val parsedMeasures: List<DeviceMeasure> = mapper.readValue(
-            message,
-            mapper.typeFactory.constructCollectionType(
-                List::class.java, DeviceMeasure::class.java))
+        val json = JSONTokener(message).nextValue()
+        var parsedMeasures =  ArrayList<DeviceMeasure>()
+        if (json is JSONObject) {
+            var deviceMeasure: DeviceMeasure =
+                Gson().fromJson(json.toString(), DeviceMeasure::class.java)
+            parsedMeasures.add(deviceMeasure)
+        }
+        else {
+            mapper.findAndRegisterModules()
+             parsedMeasures = mapper.readValue(
+                message,
+                mapper.typeFactory.constructCollectionType(
+                    List::class.java, DeviceMeasure::class.java
+                )
+            )
         logger.debug("Parsed measures : $parsedMeasures")
-
+        }
         // Generate the base IRI for all the measures
         // We'll add the final part on each mesure
         // TODO : there is some copypasta going on here
