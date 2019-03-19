@@ -5,6 +5,12 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.amqp.core.TopicExchange
+import org.springframework.amqp.core.BindingBuilder
+
+
+
+
 
 @Configuration
 class RabbitMQConfig {
@@ -77,11 +83,20 @@ class RabbitMQConfig {
             return Queue(QUEUE_EGM_NAME)
         }
 
+
         @Bean
         fun bindingToEGM(topic: TopicExchange, @Qualifier("queue_egm") queue: Queue): Binding {
             // TODO : make topic name a config parameter
             return BindingBuilder.bind(queue).to(TopicExchange("amq.topic")).with(BINDING_KEY)
         }
+
+//        @Bean
+//        fun binding1a(topic: TopicExchange, @Qualifier("queue_egm") queue: Queue
+//        ): Binding {
+//            return BindingBuilder.bind(queue)
+//                .to(topic)
+//                .with(BINDING_KEY)
+//        }
     }
 
     private class PublikReceiverConfig {

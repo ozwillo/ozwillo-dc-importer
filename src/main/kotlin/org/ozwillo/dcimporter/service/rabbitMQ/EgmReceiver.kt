@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.google.gson.Gson
 import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResource
@@ -13,9 +12,6 @@ import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.configurationprocessor.json.JSONArray
-import org.springframework.boot.configurationprocessor.json.JSONObject
-import org.springframework.boot.configurationprocessor.json.JSONTokener
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 import java.time.*
@@ -60,23 +56,15 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
         // Parse the received data into a list of measures
         // (this is how data is received)
         val mapper = jacksonObjectMapper()
-        val json = JSONTokener(message).nextValue()
-        var parsedMeasures =  ArrayList<DeviceMeasure>()
-        if (json is JSONObject) {
-            var deviceMeasure: DeviceMeasure =
-                Gson().fromJson(json.toString(), DeviceMeasure::class.java)
-            parsedMeasures.add(deviceMeasure)
-        }
-        else {
-            mapper.findAndRegisterModules()
-             parsedMeasures = mapper.readValue(
-                message,
-                mapper.typeFactory.constructCollectionType(
-                    List::class.java, DeviceMeasure::class.java
-                )
-            )
+        mapper.findAndRegisterModules()
+        // Making sure that the routing key respects the Queue bindingKey format
+        if (routingKey.startsWith("egm-lora.#")) {
+        val parsedMeasures: List<DeviceMeasure> = mapper.readValue(
+            message,
+            mapper.typeFactory.constructCollectionType(
+                List::class.java, DeviceMeasure::class.java))
         logger.debug("Parsed measures : $parsedMeasures")
-        }
+
         // Generate the base IRI for all the measures
         // We'll add the final part on each mesure
         // TODO : there is some copypasta going on here
@@ -90,31 +78,34 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
         logger.debug("Generated base resource IRI : $baseIri")
 
         parsedMeasures.forEach { measure ->
-            // TODO : this is quite an ugly way to bootstrap our DC resource
-            val finalIri = baseIri + "/" + measure.n
-            val dcResource = DCResource(id = finalIri, type = datacoreIotModel)
-            dcResource.baseUri = datacoreBaseUri
-            dcResource.iri = finalIri
-            val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
+        // TODO : this is quite an ugly way to bootstrap our DC resource
+        val finalIri = baseIri + "/" + measure.n
+        val dcResource = DCResource(id = finalIri, type = datacoreIotModel)
+        dcResource.baseUri = datacoreBaseUri
+        dcResource.iri = finalIri
+        val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
+        System.out.println(measure.bt)
 
-            dcBusinessResource.setStringValue("iotdevice:id", deviceId)
-            dcBusinessResource.setDateTimeValue("iotdevice:time", now)
-            dcBusinessResource.setStringValue("iotdevice:name", measure.n)
-            dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
-            dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
-            dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-            if (measure.bt > 0) {
-                val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
-            }
-            dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
-            logger.debug("Created DC business resource : $dcBusinessResource")
 
-            datacoreService.saveResource(datacoreIotProject, datacoreIotModel, dcBusinessResource, null)
-                .subscribe { result ->
-                    logger.debug("Saved resource in DC with result $result")
-                }
+        dcBusinessResource.setStringValue("iotdevice:id", deviceId)
+        dcBusinessResource.setDateTimeValue("iotdevice:time", now)
+        dcBusinessResource.setStringValue("iotdevice:name", measure.n)
+        dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
+        dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
+        dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
+        if (measure.bt > 0) {
+            val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
+            dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
         }
+        dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
+        logger.debug("Created DC business resource : $dcBusinessResource")
+
+        datacoreService.saveResource(datacoreIotProject, datacoreIotModel, dcBusinessResource, null)
+            .subscribe { result ->
+                logger.debug("Saved resource in DC with result $result")
+            }
+        }
+    }
 
         channel.basicAck(tag, false)
     }

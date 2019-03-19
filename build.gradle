@@ -69,7 +69,6 @@ dependencies {
     compile('com.google.guava:guava:24.1.1-jre')
     compile('org.codehaus.groovy:groovy')
     compile('org.codehaus.groovy:groovy-templates')
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.8.5'
 
     runtime('org.springframework.boot:spring-boot-devtools')
     runtime('org.codehaus.groovy:groovy:2.4.7')
