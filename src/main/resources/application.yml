@@ -60,6 +60,9 @@ marchesecurise:
     piece: /webserv/?module=dce|serveur_fichier_dce
     registre: /webserv/?module=registres|serveur_registres
 
+iot:
+  baseBindingKey: egm-lora
+
 amqp:
   config:
     exchangerName: dcimporter

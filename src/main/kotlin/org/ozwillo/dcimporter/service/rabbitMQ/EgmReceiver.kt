@@ -32,6 +32,9 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
     @Value("\${datacore.baseUri}")
     private val datacoreBaseUri: String? = null
 
+    @Value("\${iot.baseBindingKey}")
+    private val baseBindingKey: String  = ""
+
     /*
      * sample data received :
      *   [{"bt": 1548582039.971496, "bn": "8cf9574000000217:FrancK2", "v": 6.786213378906247, "u": "Cel", "n": "temperature"},
@@ -58,7 +61,7 @@ class EgmReceiver(private val datacoreService: DatacoreService) {
         val mapper = jacksonObjectMapper()
         mapper.findAndRegisterModules()
         // Making sure that the routing key respects the Queue bindingKey format
-        if (routingKey.startsWith("egm-lora.#")) {
+        if (routingKey.startsWith(baseBindingKey)) {
         val parsedMeasures: List<DeviceMeasure> = mapper.readValue(
             message,
             mapper.typeFactory.constructCollectionType(

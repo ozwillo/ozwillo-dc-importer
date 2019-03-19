@@ -89,14 +89,6 @@ class RabbitMQConfig {
             // TODO : make topic name a config parameter
             return BindingBuilder.bind(queue).to(TopicExchange("amq.topic")).with(BINDING_KEY)
         }
-
-//        @Bean
-//        fun binding1a(topic: TopicExchange, @Qualifier("queue_egm") queue: Queue
-//        ): Binding {
-//            return BindingBuilder.bind(queue)
-//                .to(topic)
-//                .with(BINDING_KEY)
-//        }
     }
 
     private class PublikReceiverConfig {
