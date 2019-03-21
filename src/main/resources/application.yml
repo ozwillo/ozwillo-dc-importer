@@ -5,8 +5,8 @@ spring:
     mongodb:
       database: dcimporter
   rabbitmq:
-    username: egm-iot
-    password: v8s822or18hH
+    username: guest
+    password: guest
     listener:
       simple:
         acknowledge-mode: manual
