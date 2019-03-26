@@ -4,10 +4,11 @@ DC Importer is a data synchronizer allowing external application to communicate 
 
 ### Features
 
-* Integration of _Marchés Publiques_
+* Integration of _Marchés Publics_
 * Integration of _Maarch_
 * Integration of _Publik_
 * Integration of _Marchés Sécurisés_
+* Integration of IoT data sent in the SenML format
 
 ### Infos
 
@@ -25,7 +26,7 @@ Activated actuator endpoints :
 Following external applications and plugins are needed for the DC Importer application to work : 
 
 * [RabbitMQ](http://www.rabbitmq.com/)
-  * Recommended version : 3.7.6
-  * Recommended plugins : `rabbitmq_management`, `rabbitmq_shovel` and `rabbitmq_shovel_management`
+  * Recommended version : 3.7.6+
+  * Required plugins : `rabbitmq_management`, `rabbitmq_shovel` and `rabbitmq_shovel_management`, `rabbitmq_mqtt`
 * [Erlang](http://www.erlang.org/downloads)
-  * Recommended version : 8.3 
+  * Recommended version : 8.3 (RabbitMQ dependency)
