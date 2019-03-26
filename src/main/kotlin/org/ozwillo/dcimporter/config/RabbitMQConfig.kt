@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.amqp.core.TopicExchange
+import org.springframework.amqp.core.BindingBuilder
 
 @Configuration
 class RabbitMQConfig {
@@ -65,20 +67,20 @@ class RabbitMQConfig {
         }
     }
 
-    private class EGMReceiverConfig {
+    private class IoTReceiverConfig {
 
-        @Value("\${amqp.config.egm.queueName}")
-        private val QUEUE_EGM_NAME = ""
-        @Value("\${amqp.config.egm.bindingKey}")
+        @Value("\${amqp.config.iot.queueName}")
+        private val QUEUE_IOT_NAME = ""
+        @Value("\${amqp.config.iot.bindingKey}")
         private val BINDING_KEY = ""
 
-        @Bean(name = ["queue_egm"])
+        @Bean(name = ["queue_iot"])
         fun queueEGM(): Queue {
-            return Queue(QUEUE_EGM_NAME)
+            return Queue(QUEUE_IOT_NAME)
         }
 
         @Bean
-        fun bindingToEGM(topic: TopicExchange, @Qualifier("queue_egm") queue: Queue): Binding {
+        fun bindingToIoT(topic: TopicExchange, @Qualifier("queue_iot") queue: Queue): Binding {
             // TODO : make topic name a config parameter
             return BindingBuilder.bind(queue).to(TopicExchange("amq.topic")).with(BINDING_KEY)
         }
