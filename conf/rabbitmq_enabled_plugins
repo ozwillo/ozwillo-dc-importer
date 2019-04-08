@@ -1,2 +1,2 @@
-[rabbitmq_management,rabbitmq_delayed_message_exchange].
+[rabbitmq_management,rabbitmq_delayed_message_exchange,rabbitmq_mqtt].
 
