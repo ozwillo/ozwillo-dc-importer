@@ -60,10 +60,7 @@ class MarchePublicHandler(
                 startParam,
                 maxParam
             )
-                .map { dcConsultation ->
-                    val consultation = Consultation.fromDCObject(dcConsultation)
-                    consultation
-                }
+                .map { dcConsultation -> Consultation.fromDCObject(dcConsultation) }
             ok().contentType(MediaType.APPLICATION_JSON).body(consultations, Consultation::class.java)
         } catch (e: HttpClientErrorException) {
             val body = when (e.statusCode) {

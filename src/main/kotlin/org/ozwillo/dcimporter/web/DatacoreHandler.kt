@@ -219,7 +219,7 @@ class DatacoreHandler(
     }
 
     private fun getOrgFromSireneAPI(siret: String): DCBusinessResourceLight {
-        val sireneToken = "Bearer " + getSireneToken()
+        val sireneToken = "Bearer ${getSireneToken()}"
         val encodedUri =
             UriComponentsBuilder.fromUriString("$baseUri$siretPath/$siret$siretParameters").build().encode()
                 .toUriString()
@@ -262,8 +262,7 @@ class DatacoreHandler(
         return organization.toDcObject(datacoreProperties.baseUri, siret)
     }
 
-    private fun extractProject(
-        headers: org.springframework.web.reactive.function.server.ServerRequest.Headers): String {
+    private fun extractProject(headers: ServerRequest.Headers): String {
         val project = headers.header("X-Datacore-Project")
         if (project.isEmpty() || project.size > 1)
             return ""
