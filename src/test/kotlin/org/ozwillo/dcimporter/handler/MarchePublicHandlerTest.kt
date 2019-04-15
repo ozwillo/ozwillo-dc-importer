@@ -332,7 +332,7 @@ class MarchePublicHandlerTest(@Autowired val restTemplate: TestRestTemplate) {
         val response =
             restTemplate.exchange("/api/marche-public/$siret/consultation", HttpMethod.POST, entity, String::class.java)
         assertThat(response.statusCode).isEqualTo(HttpStatus.BAD_REQUEST)
-        assertThat(response.body).startsWith("JSON decoding error")
+        assertThat(response.body).contains("JSON decoding error")
     }
 
     @Test
