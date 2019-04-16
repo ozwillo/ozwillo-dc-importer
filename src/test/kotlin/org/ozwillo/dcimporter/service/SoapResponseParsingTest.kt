@@ -2,23 +2,18 @@ package org.ozwillo.dcimporter.service
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.model.marchepublic.*
 import org.ozwillo.dcimporter.util.*
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.*
 
-@ExtendWith(SpringExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class SoapResponseParsingTest {
 
     private var pa: String = "instance pa"
-
-    private val siret = "123456789"
 
     val dce = "1533297690p44lmzk2fidz"
     val msReference = "F-SICTIAM_06_20180925W2_01"
