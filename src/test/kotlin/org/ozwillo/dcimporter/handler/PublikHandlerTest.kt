@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.AbstractIntegrationTests
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
-import org.ozwillo.dcimporter.model.datacore.DCResourceLight
 import org.ozwillo.dcimporter.model.datacore.DCResultSingle
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.model.publik.Submission
@@ -66,7 +65,7 @@ class PublikHandlerTest : AbstractIntegrationTests() {
             datacoreService.getDCOrganization(orgLegalName = "SICTIAM")
         } answers {
             Mono.just(
-                DCResourceLight("http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/250601879"))
+                DCBusinessResourceLight("http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/250601879"))
         }
         every {
             datacoreService.getResourceFromIRI("citizenreq_0", "orgfr:Organisation_0", "FR/250601879", null)
@@ -89,7 +88,8 @@ class PublikHandlerTest : AbstractIntegrationTests() {
             Mono.just(
                 DCResultSingle(
                     HttpStatus.OK,
-                    DCResourceLight("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4")))
+                    DCBusinessResourceLight("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4")
+                ))
         }
 
         val formModel = FormModel(

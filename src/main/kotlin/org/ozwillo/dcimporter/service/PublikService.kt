@@ -82,7 +82,7 @@ class PublikService(
 
     fun syncPublikForms(
         businessAppConfiguration: BusinessAppConfiguration,
-        dcOrganization: DCResourceLight,
+        dcOrganization: DCBusinessResourceLight,
         formType: String
     ): Mono<DCResult> {
 
@@ -142,18 +142,15 @@ class PublikService(
     }
 
     private fun convertToDCResource(
-        dcOrganization: DCResourceLight,
+        dcOrganization: DCBusinessResourceLight,
         form: FormModel
     ): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
 
         return getOrCreateUser(form).map { userUri ->
             val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
-            val dcResource = DCResource(id = dcOrganization.getIri() + "/" + form.display_id, type = type!!)
 
-            dcResource.baseUri = datacoreBaseUri
-            dcResource.iri = dcOrganization.getIri() + "/" + form.display_id
-
-            val dcFormResource = DCBusinessResourceLight(dcResource.getUri())
+            val dcFormResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+                type = type!!, iri = dcOrganization.getIri() + "/" + form.display_id)
 
             dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
             dcFormResource.setStringValue("citizenreq:lastUpdateTime", form.last_update_time)
@@ -252,10 +249,8 @@ class PublikService(
     }
 
     private fun createUser(user: User): Mono<String> {
-        val dcResource = DCResource(id = user.nameID[0], type = datacoreModelUser)
-        dcResource.baseUri = datacoreBaseUri
-        dcResource.iri = user.nameID[0]
-        val dcUserResource = DCBusinessResourceLight(dcResource.getUri())
+        val dcUserResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+            type = datacoreModelUser, iri = user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:email", user.email)
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())

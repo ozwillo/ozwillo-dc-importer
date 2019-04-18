@@ -51,7 +51,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
 
-    fun saveResource(project: String, type: String, resource: DCResourceLight, bearer: String?): Mono<DCResultSingle> {
+    fun saveResource(project: String, type: String, resource: DCBusinessResourceLight, bearer: String?): Mono<DCResultSingle> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
             .path("/dc/type/{type}")
@@ -70,8 +70,8 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
         try {
-            val response = restTemplate.exchange(request, DCResourceLight::class.java)
-            val result: DCResourceLight = response.body!!
+            val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
+            val result: DCBusinessResourceLight = response.body!!
 
             sender.send(resource, project, type, BindingKeyAction.CREATE)
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
@@ -141,16 +141,12 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
                 uri,
                 HttpMethod.DELETE,
                 HttpEntity<HttpHeaders>(headers),
-                DCResourceLight::class.java
+                DCBusinessResourceLight::class.java
             )
             sender.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
             return Mono.just(response.statusCode)
         } catch (e: HttpClientErrorException) {
             LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            LOGGER.error(
-                "[Marche Securise] : no delete request sent to Marche Securise for resource {}",
-                dcCurrentResource
-            )
             throw e
         }
     }
@@ -188,12 +184,12 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    fun getDCOrganization(orgLegalName: String): Mono<DCResourceLight> {
+    fun getDCOrganization(orgLegalName: String): Mono<DCBusinessResourceLight> {
         val queryParametersOrg = DCQueryParameters("org:legalName", DCOperator.EQ, DCOrdering.DESCENDING, orgLegalName)
         return findResource(datacoreProject, datacoreModelORG, queryParametersOrg).map { it[0] }
     }
 
-    fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCResourceLight>> {
+    fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCBusinessResourceLight>> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
             .path("/dc/type/{type}")
@@ -228,10 +224,10 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(requestUri))
-        val respType = object : ParameterizedTypeReference<List<DCResourceLight>>() {}
+        val respType = object : ParameterizedTypeReference<List<DCBusinessResourceLight>>() {}
 
         val response = restTemplate.exchange(request, respType)
-        val results: List<DCResourceLight> = response.body!!
+        val results: List<DCBusinessResourceLight> = response.body!!
         return Mono.just(results)
     }
 
@@ -385,15 +381,13 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         return response.body!!.accessToken!! //Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
-    private fun dcResourceUri(type: String, iri: String): String {
+    private fun dcResourceUri(type: DCModelType, iri: String): String {
         return StringBuilder(datacoreUrl)
             .append(typePrefix)
             .append('/')
-            .append(DCResource.encodeUriPathSegment(type))
+            .append(type.encodeUriPathSegment())
             .append('/')
             .append(iri) // already encoded
             .toString()
     }
 }
-
-typealias DCModelType = String

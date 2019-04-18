@@ -4,6 +4,6 @@ import org.springframework.http.HttpStatus
 
 open class DCResult(status: HttpStatus)
 
-class DCResultSingle(status: HttpStatus, val resource: DCResourceLight) : DCResult(status)
+class DCResultSingle(status: HttpStatus, val resource: DCBusinessResourceLight) : DCResult(status)
 
 class DCResultError(status: HttpStatus, vararg errors: String) : DCResult(status)

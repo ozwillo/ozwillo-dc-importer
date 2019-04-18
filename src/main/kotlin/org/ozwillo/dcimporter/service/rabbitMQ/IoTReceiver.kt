@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
-import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -83,12 +82,9 @@ class IoTReceiver(private val datacoreService: DatacoreService) {
             logger.debug("Generated base resource IRI : $baseIri")
 
             parsedMeasures.forEach { measure ->
-                // TODO : this is quite an ugly way to bootstrap our DC resource
                 val finalIri = baseIri + "/" + measure.n
-                val dcResource = DCResource(id = finalIri, type = datacoreIotModel)
-                dcResource.baseUri = datacoreBaseUri
-                dcResource.iri = finalIri
-                val dcBusinessResource = DCBusinessResourceLight(dcResource.getUri())
+                val dcBusinessResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+                    type = datacoreIotModel, iri = finalIri)
 
                 dcBusinessResource.setStringValue("iotdevice:id", deviceId)
                 dcBusinessResource.setDateTimeValue("iotdevice:time", now)

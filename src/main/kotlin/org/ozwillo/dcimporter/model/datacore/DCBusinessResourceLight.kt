@@ -1,9 +1,6 @@
 package org.ozwillo.dcimporter.model.datacore
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter
-import com.fasterxml.jackson.annotation.JsonAnySetter
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.*
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -14,16 +11,33 @@ typealias I18nOrgDenomination = HashMap<String, String>
 
 @JsonIgnoreProperties("@type")
 class DCBusinessResourceLight(
-    uri: String,
+    private val uri: String,
     @JsonAnySetter private var values: Map<String, Any> = HashMap()
-) : DCResourceLight(uri) {
+) {
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DCBusinessResourceLight::class.java)
+
+        const val dcTypeMidfix = "/dc/type/"
     }
 
     @JsonIgnore
     val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
+
+    constructor(datacoreBaseUri: String, type: DCModelType, iri: String): this("$datacoreBaseUri/${type.encodeUriPathSegment()}/$iri")
+
+    @JsonProperty("@id")
+    fun getUri(): String {
+        return uri
+    }
+
+    @JsonIgnore
+    fun getIri(): String {
+        val modelTypeIndex = uri.indexOf(dcTypeMidfix) + dcTypeMidfix.length
+        val idSlashIndex = uri.indexOf('/', modelTypeIndex)
+
+        return uri.substring(idSlashIndex + 1)
+    }
 
     @JsonAnyGetter
     fun getValues(): Map<String, Any> {
