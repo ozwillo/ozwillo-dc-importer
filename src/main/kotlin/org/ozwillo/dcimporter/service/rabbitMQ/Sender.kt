@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
@@ -22,7 +22,7 @@ class Sender(private val template: RabbitTemplate) {
     private val exchangerName = ""
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(resource: DCBusinessResourceLight, project: String, type: String, action: BindingKeyAction) {
+    fun send(resource: DCResource, project: String, type: String, action: BindingKeyAction) {
 
         val uri = resource.getUri()
         val splittedUri = uri.split("/")

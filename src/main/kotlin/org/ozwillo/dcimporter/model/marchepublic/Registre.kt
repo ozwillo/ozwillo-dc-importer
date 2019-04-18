@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.sirene.Organization
 
 open class Registre(
@@ -10,8 +10,8 @@ open class Registre(
     open val entreprise: Organization
 ) {
 
-    open fun toDcObject(baseUri: String, msCle: String): DCBusinessResourceLight {
-        return DCBusinessResourceLight("")
+    open fun toDcObject(baseUri: String, msCle: String): DCResource {
+        return DCResource("")
     }
 }
 

@@ -3,7 +3,7 @@ package org.ozwillo.dcimporter.service
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.BusinessMapping
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
@@ -307,7 +307,7 @@ class MarcheSecuriseListingService(
         }
     }
 
-    fun createOrUpdateRegistre(type: String, registreType: Registre, dcRegistre: DCBusinessResourceLight) {
+    fun createOrUpdateRegistre(type: String, registreType: Registre, dcRegistre: DCResource) {
         try {
             datacoreService.getResourceFromIRI(
                 MP_PROJECT,

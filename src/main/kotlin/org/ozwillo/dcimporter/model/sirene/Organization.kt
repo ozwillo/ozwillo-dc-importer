@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.sirene
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.I18nOrgDenomination
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
@@ -18,8 +18,8 @@ data class Organization(
     val url: String = ""
 ) {
 
-    fun toDcObject(baseUri: String, siret: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(DCUtils.getUri(baseUri, "orgfr:Organisation_0", "FR/$siret"))
+    fun toDcObject(baseUri: String, siret: String): DCResource {
+        val resourceLight = DCResource(DCUtils.getUri(baseUri, "orgfr:Organisation_0", "FR/$siret"))
         resourceLight.setStringValue("adrpost:postCode", cp)
         resourceLight.setStringValue("adrpost:streetAndNumber", voie)
         resourceLight.setStringValue("adrpost:country", pays)
@@ -61,7 +61,7 @@ data class Organization(
             )
         }
 
-        fun fromDcObject(dcOrg: DCBusinessResourceLight): Organization =
+        fun fromDcObject(dcOrg: DCResource): Organization =
             Organization(
                 uri = dcOrg.getUri(),
                 cp = dcOrg.getStringValue("adrpost:postCode"),

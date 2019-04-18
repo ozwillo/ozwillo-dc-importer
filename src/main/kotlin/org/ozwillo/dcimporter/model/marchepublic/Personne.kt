@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
 import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
@@ -15,8 +15,8 @@ data class Personne(
     val fax: String
 ) {
 
-    fun toDcObject(baseUri: String): DCBusinessResourceLight {
-        return DCBusinessResourceLight(
+    fun toDcObject(baseUri: String): DCResource {
+        return DCResource(
             DCUtils.getUri(baseUri, MSUtils.PERSONNE_TYPE, cle),
             mapOf(
                 "mppersonne:genre" to genre,
@@ -49,7 +49,7 @@ data class Personne(
             )
         }
 
-        fun fromDCObject(dcPersonne: DCBusinessResourceLight): Personne {
+        fun fromDCObject(dcPersonne: DCResource): Personne {
 
             return Personne(
                 cle = dcPersonne.getIri().substringAfterLast("/"),

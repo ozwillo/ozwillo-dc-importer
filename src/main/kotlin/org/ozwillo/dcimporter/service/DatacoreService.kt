@@ -51,7 +51,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     @Value("\${datacore.systemAdminUser.refreshToken}")
     private val refreshToken: String = "refresh_token"
 
-    fun saveResource(project: String, type: String, resource: DCBusinessResourceLight, bearer: String?): Mono<DCResultSingle> {
+    fun saveResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<DCResultSingle> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
             .path("/dc/type/{type}")
@@ -70,8 +70,8 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
         try {
-            val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
-            val result: DCBusinessResourceLight = response.body!!
+            val response = restTemplate.exchange(request, DCResource::class.java)
+            val result: DCResource = response.body!!
 
             sender.send(resource, project, type, BindingKeyAction.CREATE)
             return Mono.just(DCResultSingle(HttpStatus.OK, result))
@@ -84,7 +84,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     fun updateResource(
         project: String,
         type: String,
-        resource: DCBusinessResourceLight,
+        resource: DCResource,
         bearer: String?
     ): Mono<HttpStatus> {
 
@@ -141,7 +141,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
                 uri,
                 HttpMethod.DELETE,
                 HttpEntity<HttpHeaders>(headers),
-                DCBusinessResourceLight::class.java
+                DCResource::class.java
             )
             sender.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
             return Mono.just(response.statusCode)
@@ -151,7 +151,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCBusinessResourceLight {
+    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCResource {
         val resourceUri = checkEncoding(
             dcResourceUri(
                 type,
@@ -170,7 +170,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
 
-        val response = restTemplate.exchange(request, DCBusinessResourceLight::class.java)
+        val response = restTemplate.exchange(request, DCResource::class.java)
         LOGGER.debug("Got response : ${response.body}")
         return response.body!!
     }
@@ -184,12 +184,12 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    fun getDCOrganization(orgLegalName: String): Mono<DCBusinessResourceLight> {
+    fun getDCOrganization(orgLegalName: String): Mono<DCResource> {
         val queryParametersOrg = DCQueryParameters("org:legalName", DCOperator.EQ, DCOrdering.DESCENDING, orgLegalName)
         return findResource(datacoreProject, datacoreModelORG, queryParametersOrg).map { it[0] }
     }
 
-    fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCBusinessResourceLight>> {
+    fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCResource>> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
             .path("/dc/type/{type}")
@@ -224,10 +224,10 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("X-Datacore-Project", project)
         headers.set("Authorization", "Bearer $accessToken")
         val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(requestUri))
-        val respType = object : ParameterizedTypeReference<List<DCBusinessResourceLight>>() {}
+        val respType = object : ParameterizedTypeReference<List<DCResource>>() {}
 
         val response = restTemplate.exchange(request, respType)
-        val results: List<DCBusinessResourceLight> = response.body!!
+        val results: List<DCResource> = response.body!!
         return Mono.just(results)
     }
 
@@ -290,7 +290,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         queryParameters: DCQueryParameters,
         start: Int,
         maxResult: Int
-    ): Flux<DCBusinessResourceLight> {
+    ): Flux<DCResource> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
             .path("/dc/type/{type}")
@@ -330,7 +330,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
                     .header("Authorization", "Bearer $accessToken")
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
-                    .bodyToFlux(DCBusinessResourceLight::class.java)
+                    .bodyToFlux(DCResource::class.java)
             }
         } catch (e: HttpClientErrorException) {
             Flux.empty() // this.getDCResultFromHttpErrorException(e)

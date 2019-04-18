@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCModel
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
@@ -120,8 +120,8 @@ class DatacoreHandler(
         val project = extractProject(req.headers())
         val bearer = extractBearer(req.headers())
 
-        return req.bodyToMono<DCBusinessResourceLight>()
-            .flatMap { resource: DCBusinessResourceLight ->
+        return req.bodyToMono<DCResource>()
+            .flatMap { resource: DCResource ->
                 val filteredResource = resource.getValues()
                     .filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
                 if (!filteredResource.isEmpty()) {
@@ -154,8 +154,8 @@ class DatacoreHandler(
         val project = extractProject(req.headers())
         val bearer = extractBearer(req.headers())
 
-        return req.bodyToMono<DCBusinessResourceLight>()
-            .flatMap { resource: DCBusinessResourceLight ->
+        return req.bodyToMono<DCResource>()
+            .flatMap { resource: DCResource ->
                 val filteredResource = resource.getValues()
                     .filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
                 if (!filteredResource.isEmpty()) {
@@ -180,7 +180,7 @@ class DatacoreHandler(
 
     private fun findOrCreateDCOrganization(project: String, bearer: String, filteredMap: Map<String, Any>) {
 
-        var dcOrg: DCBusinessResourceLight
+        var dcOrg: DCResource
 
         filteredMap.forEach { _, value ->
 
@@ -218,7 +218,7 @@ class DatacoreHandler(
         return response.body!!.accessToken!!
     }
 
-    private fun getOrgFromSireneAPI(siret: String): DCBusinessResourceLight {
+    private fun getOrgFromSireneAPI(siret: String): DCResource {
         val sireneToken = "Bearer ${getSireneToken()}"
         val encodedUri =
             UriComponentsBuilder.fromUriString("$baseUri$siretPath/$siret$siretParameters").build().encode()

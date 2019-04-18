@@ -3,7 +3,7 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -83,7 +83,7 @@ class IoTReceiver(private val datacoreService: DatacoreService) {
 
             parsedMeasures.forEach { measure ->
                 val finalIri = baseIri + "/" + measure.n
-                val dcBusinessResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+                val dcBusinessResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
                     type = datacoreIotModel, iri = finalIri)
 
                 dcBusinessResource.setStringValue("iotdevice:id", deviceId)

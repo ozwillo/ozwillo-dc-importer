@@ -82,7 +82,7 @@ class PublikService(
 
     fun syncPublikForms(
         businessAppConfiguration: BusinessAppConfiguration,
-        dcOrganization: DCBusinessResourceLight,
+        dcOrganization: DCResource,
         formType: String
     ): Mono<DCResult> {
 
@@ -123,7 +123,7 @@ class PublikService(
         @JsonProperty("err") val err: Int
     )
 
-    fun formToDCResource(organizationSiret: String, form: FormModel): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
+    fun formToDCResource(organizationSiret: String, form: FormModel): Mono<Pair<DCModelType, DCResource>> {
 
         LOGGER.debug("Got form from Publik : $form")
 
@@ -142,14 +142,14 @@ class PublikService(
     }
 
     private fun convertToDCResource(
-        dcOrganization: DCBusinessResourceLight,
+        dcOrganization: DCResource,
         form: FormModel
-    ): Mono<Pair<DCModelType, DCBusinessResourceLight>> {
+    ): Mono<Pair<DCModelType, DCResource>> {
 
         return getOrCreateUser(form).map { userUri ->
             val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
 
-            val dcFormResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+            val dcFormResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
                 type = type!!, iri = dcOrganization.getIri() + "/" + form.display_id)
 
             dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
@@ -180,7 +180,7 @@ class PublikService(
 
     }
 
-    private fun convertToDCResourceEM(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {
+    private fun convertToDCResourceEM(dcResource: DCResource, form: FormModel): DCResource {
 
         dcResource.setStringValue("citizenreqem:familyName", form.fields["nom"].toString())
         dcResource.setStringValue("citizenreqem:firstName", form.fields["prenom"].toString())
@@ -203,7 +203,7 @@ class PublikService(
         return dcResource
     }
 
-    private fun convertToDCResourceSVE(dcResource: DCBusinessResourceLight, form: FormModel): DCBusinessResourceLight {
+    private fun convertToDCResourceSVE(dcResource: DCResource, form: FormModel): DCResource {
 
         dcResource.setStringValue("citizenreqsve:title", form.fields["civilite"].toString())
         dcResource.setStringValue("citizenreqsve:familyName", form.fields["nom"].toString())
@@ -249,7 +249,7 @@ class PublikService(
     }
 
     private fun createUser(user: User): Mono<String> {
-        val dcUserResource = DCBusinessResourceLight(datacoreBaseUri = datacoreBaseUri!!,
+        val dcUserResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
             type = datacoreModelUser, iri = user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:email", user.email)
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
@@ -263,7 +263,7 @@ class PublikService(
 
     data class PublikStatusResponse(val url: String?, val err: Int?)
 
-    fun changeStatus(siret: String, dcResource: DCBusinessResourceLight) {
+    fun changeStatus(siret: String, dcResource: DCResource) {
 
         if (dcResource.getStringValue("citizenreq:workflowStatus") != "Terminé") {
             LOGGER.debug("Ignoring unhandled workflow status ${dcResource.getStringValue("citizenreq:workflowStatus")}")

@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
@@ -20,12 +20,12 @@ data class RegistreReponse(
     override val consultationUri: String
 ) : Registre(cle = cle, siret = siret, consultationUri = consultationUri, entreprise = entreprise) {
 
-    override fun toDcObject(baseUri: String, msCle: String): DCBusinessResourceLight {
+    override fun toDcObject(baseUri: String, msCle: String): DCResource {
 
         val consultationReference = consultationUri.substringAfterLast("/")
         val siretOrgfr = consultationUri.split("/")[7]
 
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 baseUri, MSUtils.REPONSE_TYPE,
                 "FR/$siretOrgfr/$consultationReference/$msCle"
@@ -69,7 +69,7 @@ data class RegistreReponse(
             )
         }
 
-        fun fromDCObject(dcRegistreReponse: DCBusinessResourceLight): RegistreReponse {
+        fun fromDCObject(dcRegistreReponse: DCResource): RegistreReponse {
 
             return RegistreReponse(
                 cle = dcRegistreReponse.getStringValue("mpreponse:mscle"),

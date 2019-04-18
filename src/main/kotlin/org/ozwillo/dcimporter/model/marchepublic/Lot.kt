@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.DCUtils
 import java.util.*
 
@@ -10,8 +10,8 @@ data class Lot(
     val numero: Int,
     val uuid: String = UUID.randomUUID().toString()
 ) {
-    fun toDcObject(baseUri: String, siret: String, reference: String, uuid: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(
+    fun toDcObject(baseUri: String, siret: String, reference: String, uuid: String): DCResource {
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 baseUri, "marchepublic:lot_0",
                 "FR/$siret/$reference/$uuid"
@@ -31,7 +31,7 @@ data class Lot(
 
     companion object {
 
-        fun toLot(dcLot: DCBusinessResourceLight): Lot =
+        fun toLot(dcLot: DCResource): Lot =
             Lot(
                 libelle = dcLot.getStringValue("mplot:libelle"),
                 ordre = dcLot.getIntValue("mplot:ordre"),

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.RabbitMockConfig
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.DCUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -131,7 +131,7 @@ class DatacoreHandlerTest(
                 .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
         )
 
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 datacoreProperties.baseUri, "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
@@ -193,7 +193,7 @@ class DatacoreHandlerTest(
                 .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
         )
 
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 datacoreProperties.baseUri, "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
@@ -256,7 +256,7 @@ class DatacoreHandlerTest(
                 .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
         )
 
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 datacoreProperties.baseUri, "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
@@ -356,7 +356,7 @@ class DatacoreHandlerTest(
                 .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
         )
 
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 datacoreProperties.baseUri, "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"

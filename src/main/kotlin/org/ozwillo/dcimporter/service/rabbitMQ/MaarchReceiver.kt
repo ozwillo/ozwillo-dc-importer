@@ -1,7 +1,7 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.rabbitmq.client.Channel
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.MaarchService
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.JsonConverter
@@ -32,7 +32,7 @@ class MaarchReceiver(private val maarchService: MaarchService) {
         routingByBindingKey(resource, routingKey, channel, tag)
     }
 
-    fun routingByBindingKey(resource: DCBusinessResourceLight, routingKey: String, channel: Channel, tag: Long) {
+    fun routingByBindingKey(resource: DCResource, routingKey: String, channel: Channel, tag: Long) {
         when {
             routingBindingKeyOfAction(routingKey, BindingKeyAction.CREATE) ->
                 when {

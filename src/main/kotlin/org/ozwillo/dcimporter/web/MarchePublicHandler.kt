@@ -2,7 +2,7 @@ package org.ozwillo.dcimporter.web
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
@@ -229,7 +229,7 @@ class MarchePublicHandler(
 
     fun publish(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
-        val currentDcResource: DCBusinessResourceLight
+        val currentDcResource: DCResource
         return try {
             currentDcResource = datacoreService.getResourceFromIRI(
                 MP_PROJECT,

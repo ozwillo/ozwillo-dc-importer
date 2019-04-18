@@ -10,13 +10,13 @@ import java.time.format.DateTimeFormatter
 typealias I18nOrgDenomination = HashMap<String, String>
 
 @JsonIgnoreProperties("@type")
-class DCBusinessResourceLight(
+class DCResource(
     private val uri: String,
     @JsonAnySetter private var values: Map<String, Any> = HashMap()
 ) {
 
     companion object {
-        private val LOGGER = LoggerFactory.getLogger(DCBusinessResourceLight::class.java)
+        private val LOGGER = LoggerFactory.getLogger(DCResource::class.java)
 
         const val dcTypeMidfix = "/dc/type/"
     }

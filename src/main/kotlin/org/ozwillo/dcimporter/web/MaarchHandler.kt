@@ -1,7 +1,7 @@
 package org.ozwillo.dcimporter.web
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -31,7 +31,7 @@ class MaarchHandler(private val datacoreService: DatacoreService) {
                 val values = dcResource.getValues().filter { entry ->
                     entry.key.startsWith("citizenreq")
                 }
-                val updatedResource = DCBusinessResourceLight(maarchRequest.dcId, values)
+                val updatedResource = DCResource(maarchRequest.dcId, values)
                 updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
                 datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
             }.flatMap {

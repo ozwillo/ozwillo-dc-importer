@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.DCUtils
 import java.nio.charset.Charset
 import java.util.*
@@ -16,8 +16,8 @@ data class Piece(
     val contenu: ByteArray,
     val poids: Int
 ) {
-    fun toDcObject(baseUri: String, siret: String, reference: String, uuid: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(
+    fun toDcObject(baseUri: String, siret: String, reference: String, uuid: String): DCResource {
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 baseUri, "marchepublic:piece_0",
                 "FR/$siret/$reference/$uuid"
@@ -47,7 +47,7 @@ data class Piece(
 
     companion object {
 
-        fun toPiece(dcPiece: DCBusinessResourceLight): Piece =
+        fun toPiece(dcPiece: DCResource): Piece =
             Piece(
                 uuid = dcPiece.getStringValue("mppiece:uuid"),
                 uuidLot = dcPiece.getStringValue("mppiece:lot"),

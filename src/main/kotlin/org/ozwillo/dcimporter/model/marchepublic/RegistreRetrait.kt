@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.util.DCUtils
 import org.ozwillo.dcimporter.util.MSUtils
@@ -22,10 +22,10 @@ data class RegistreRetrait(
     override var entreprise: Organization
 ) : Registre(cle = cle, siret = siret, consultationUri = consultationUri, entreprise = entreprise) {
 
-    fun toDcObject(baseUri: String, msCle: String, clePersonne: String, pieceUri: String): DCBusinessResourceLight {
+    fun toDcObject(baseUri: String, msCle: String, clePersonne: String, pieceUri: String): DCResource {
         val consultationReference = consultationUri.substringAfterLast("/")
         val siretOrgfr = consultationUri.split("/")[7]
-        val resourceLight = DCBusinessResourceLight(
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 baseUri, MSUtils.RETRAIT_TYPE,
                 "FR/$siretOrgfr/$consultationReference/$msCle"
@@ -83,7 +83,7 @@ data class RegistreRetrait(
             )
         }
 
-        fun fromDCObject(dcRegistreRetrait: DCBusinessResourceLight): RegistreRetrait {
+        fun fromDCObject(dcRegistreRetrait: DCResource): RegistreRetrait {
 
             return RegistreRetrait(
                 cle = dcRegistreRetrait.getStringValue("mpretrait:mscle"),

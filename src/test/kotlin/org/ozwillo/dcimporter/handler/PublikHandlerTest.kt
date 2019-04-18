@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.AbstractIntegrationTests
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.DCResultSingle
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.model.publik.Submission
@@ -65,19 +65,19 @@ class PublikHandlerTest : AbstractIntegrationTests() {
             datacoreService.getDCOrganization(orgLegalName = "SICTIAM")
         } answers {
             Mono.just(
-                DCBusinessResourceLight("http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/250601879"))
+                DCResource("http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/250601879"))
         }
         every {
             datacoreService.getResourceFromIRI("citizenreq_0", "orgfr:Organisation_0", "FR/250601879", null)
         } answers {
-            DCBusinessResourceLight(
+            DCResource(
                 "http://data.ozwillo.com/dc/type/citizenreq:user_0/5c977a7f1d444fa1ab0f777325fdda93")
         }
         every {
             datacoreService.getResourceFromIRI(
                 "citizenreq_0", "citizenreq:user_0", "5c977a7f1d444fa1ab0f777325fdda93", null)
         } answers {
-            DCBusinessResourceLight(
+            DCResource(
                 "http://data.ozwillo.com/dc/type/citizenreq:user_0/5c977a7f1d444fa1ab0f777325fdda93")
         }
         every {
@@ -88,7 +88,7 @@ class PublikHandlerTest : AbstractIntegrationTests() {
             Mono.just(
                 DCResultSingle(
                     HttpStatus.OK,
-                    DCBusinessResourceLight("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4")
+                    DCResource("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4")
                 ))
         }
 

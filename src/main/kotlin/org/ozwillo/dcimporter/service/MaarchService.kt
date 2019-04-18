@@ -2,7 +2,7 @@ package org.ozwillo.dcimporter.service
 
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.BusinessMapping
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.maarch.MaarchArrayData
 import org.ozwillo.dcimporter.model.maarch.MaarchContact
 import org.ozwillo.dcimporter.model.maarch.MaarchFile
@@ -30,7 +30,7 @@ class MaarchService(
     @Value("\${datacore.model.modelEM}")
     private val type = "type"
 
-    fun createCitizenRequest(siret: String, dcResource: DCBusinessResourceLight) {
+    fun createCitizenRequest(siret: String, dcResource: DCResource) {
         LOGGER.debug("Preparing to send resource ${dcResource.getUri()}")
 
         if (dcResource.getValues()["citizenreqem:fileContent"] == null) {

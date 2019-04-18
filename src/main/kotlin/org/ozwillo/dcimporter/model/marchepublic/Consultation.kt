@@ -1,6 +1,6 @@
 package org.ozwillo.dcimporter.model.marchepublic
 
-import org.ozwillo.dcimporter.model.datacore.DCBusinessResourceLight
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.DCUtils
 import java.time.LocalDateTime
 
@@ -23,8 +23,8 @@ data class Consultation(
     val nbLots: Int,
     var etat: Etat = Etat.CREATED
 ) {
-    fun toDcObject(baseUri: String, siret: String, reference: String): DCBusinessResourceLight {
-        val resourceLight = DCBusinessResourceLight(
+    fun toDcObject(baseUri: String, siret: String, reference: String): DCResource {
+        val resourceLight = DCResource(
             DCUtils.getUri(
                 baseUri, "marchepublic:consultation_0",
                 "FR/$siret/$reference"
@@ -57,7 +57,7 @@ data class Consultation(
 
     companion object {
 
-        fun fromDCObject(dcConsultation: DCBusinessResourceLight): Consultation =
+        fun fromDCObject(dcConsultation: DCResource): Consultation =
             Consultation(
                 reference = dcConsultation.getStringValue("mpconsultation:reference"),
                 objet = dcConsultation.getStringValue("mpconsultation:objet"),
