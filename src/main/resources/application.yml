@@ -89,6 +89,7 @@ kernel:
 
 datacore:
   containerUrl: http://data.ozwillo.com
+  typePrefix: /dc/type
   url: https://data.ozwillo-preprod.eu
   systemAdminUser:  # Get it using Node.js lib / with DC importer clientId
     refreshToken: refreshToken

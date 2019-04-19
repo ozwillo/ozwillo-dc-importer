@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.service
 
 import com.google.common.io.BaseEncoding
+import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
@@ -9,14 +10,12 @@ import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.HttpStatusCodeException
 import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
@@ -29,31 +28,18 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 @Service
-class DatacoreService(private val kernelProperties: KernelProperties) {
+class DatacoreService(private val kernelProperties: KernelProperties, private val datacoreProperties: DatacoreProperties) {
 
     @Autowired
     private lateinit var sender: Sender
 
     companion object {
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
-        private const val typePrefix = "/dc/type"
     }
-
-    @Value("\${datacore.url: http://localhost:8080}")
-    private val datacoreUrl: String = "datacoreUrl"
-
-    @Value("\${datacore.model.project}")
-    private val datacoreProject: String = "datacoreProject"
-
-    @Value("\${datacore.model.modelORG}")
-    private val datacoreModelORG: String = "datacoreModelOrg"
-
-    @Value("\${datacore.systemAdminUser.refreshToken}")
-    private val refreshToken: String = "refresh_token"
 
     fun saveResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<DCResultSingle> {
 
-        val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
             .build()
             .expand(type)
@@ -88,7 +74,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         bearer: String?
     ): Mono<HttpStatus> {
 
-        val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
             .build()
             .expand(type)
@@ -122,7 +108,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
 
     fun deleteResource(project: String, type: String, iri: String, bearer: String?): Mono<HttpStatus> {
 
-        val uri = "$datacoreUrl/dc/type/$type/$iri"
+        val uri = "${datacoreProperties.url}/${datacoreProperties.typePrefix}/$type/$iri"
         LOGGER.debug("Deleting resource at URI $uri")
 
         val dcCurrentResource = getResourceFromIRI(project, type, iri, bearer)
@@ -184,14 +170,9 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    fun getDCOrganization(orgLegalName: String): Mono<DCResource> {
-        val queryParametersOrg = DCQueryParameters("org:legalName", DCOperator.EQ, DCOrdering.DESCENDING, orgLegalName)
-        return findResource(datacoreProject, datacoreModelORG, queryParametersOrg).map { it[0] }
-    }
-
     fun findResource(project: String, model: String, queryParameters: DCQueryParameters): Mono<List<DCResource>> {
 
-        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
             .queryParam("start", 0)
             .queryParam("limit", 1)
@@ -233,7 +214,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
 
     fun findModels(limit: Int, name: String): Flux<DCModel>{
 
-        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/dcmo:model_0")
             .queryParam("limit", limit)
             .queryParam("dcmo:name", "${DCOperator.REGEX.value}$name")
@@ -260,7 +241,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
 
     fun findModel(type: String): Mono<DCModel>{
 
-        val uri = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/dcmo:model_0/{type}")
             .build()
             .expand(type)
@@ -292,7 +273,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         maxResult: Int
     ): Flux<DCResource> {
 
-        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreUrl)
+        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
             .queryParam("start", start)
             .queryParam("limit", maxResult)
@@ -319,7 +300,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
 
         if (LOGGER.isDebugEnabled) {
-            LOGGER.debug("Fetching limited Resources: URI String is " + requestUri)
+            LOGGER.debug("Fetching limited Resources: URI String is $requestUri")
         }
 
         return try {
@@ -337,12 +318,6 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         }
     }
 
-    private fun getDCResultFromHttpErrorException(e: HttpStatusCodeException): Mono<DCResult> {
-        LOGGER.error("Error caught while querying data core", e)
-        LOGGER.debug("Response body: {}", e.responseBodyAsString)
-        return Mono.just(DCResultError(HttpStatus.valueOf(e.statusCode.value()), e.responseBodyAsString))
-    }
-
     private fun getAccessToken(): Mono<String> {
         val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
         val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
@@ -353,10 +328,11 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         return client.post()
             .header("Authorization", authorizationHeaderValue)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("grant_type", "refresh_token").with("refresh_token", refreshToken))
+            .body(BodyInserters.fromFormData("grant_type", "refresh_token")
+                .with("refresh_token", datacoreProperties.systemAdminUser.refreshToken))
             .retrieve()
             .bodyToMono(TokenResponse::class.java)
-            .map { it -> it.accessToken }
+            .map { it.accessToken }
     }
 
     private fun getSyncAccessToken(): String {
@@ -373,7 +349,7 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
         headers.set("Authorization", authorizationHeaderValue)
         val map = LinkedMultiValueMap<String, String>()
         map.add("grant_type", "refresh_token")
-        map.add("refresh_token", refreshToken)
+        map.add("refresh_token", datacoreProperties.systemAdminUser.refreshToken)
 
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
         val response = restTemplate.postForEntity(kernelProperties.tokenEndpoint, request, TokenResponse::class.java)
@@ -382,8 +358,8 @@ class DatacoreService(private val kernelProperties: KernelProperties) {
     }
 
     private fun dcResourceUri(type: DCModelType, iri: String): String {
-        return StringBuilder(datacoreUrl)
-            .append(typePrefix)
+        return StringBuilder(datacoreProperties.url)
+            .append(datacoreProperties.typePrefix)
             .append('/')
             .append(type.encodeUriPathSegment())
             .append('/')
