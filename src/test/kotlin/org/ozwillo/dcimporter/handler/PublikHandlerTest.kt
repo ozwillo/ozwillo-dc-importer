@@ -62,12 +62,6 @@ class PublikHandlerTest : AbstractIntegrationTests() {
     @Test
     fun `Verify notification of a Publik form`() {
         every {
-            datacoreService.getDCOrganization(orgLegalName = "SICTIAM")
-        } answers {
-            Mono.just(
-                DCResource("http://data.ozwillo.com/dc/type/orgfr:Organisation_0/FR/250601879"))
-        }
-        every {
             datacoreService.getResourceFromIRI("citizenreq_0", "orgfr:Organisation_0", "FR/250601879", null)
         } answers {
             DCResource(
