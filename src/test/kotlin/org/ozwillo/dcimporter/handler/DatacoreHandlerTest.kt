@@ -133,12 +133,12 @@ class DatacoreHandlerTest(
 
         val resourceLight = DCResource(
             DCUtils.getUri(
-                datacoreProperties.baseUri, "grant:association_0",
+                datacoreProperties.baseResourceUri(), "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
             )
         )
-        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
-        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
+        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$siret")
+        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
         resourceLight.setStringValue("grantassociation:idBeneficiaire", grantedOrgUri)
         resourceLight.setStringValue("grantassociation:conditionsVersement", "unique")
@@ -195,12 +195,12 @@ class DatacoreHandlerTest(
 
         val resourceLight = DCResource(
             DCUtils.getUri(
-                datacoreProperties.baseUri, "grant:association_0",
+                datacoreProperties.baseResourceUri(), "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
             )
         )
-        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
-        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
+        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$siret")
+        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
         resourceLight.setStringValue("grantassociation:idBeneficiaire", grantedOrgUri)
         resourceLight.setStringValue("grantassociation:conditionsVersement", "unique")
@@ -258,12 +258,12 @@ class DatacoreHandlerTest(
 
         val resourceLight = DCResource(
             DCUtils.getUri(
-                datacoreProperties.baseUri, "grant:association_0",
+                datacoreProperties.baseResourceUri(), "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
             )
         )
-        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
-        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
+        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$siret")
+        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
         resourceLight.setStringValue("grantassociation:idBeneficiaire", grantedOrgUri)
         resourceLight.setStringValue("grantassociation:conditionsVersement", "unique")
@@ -358,12 +358,12 @@ class DatacoreHandlerTest(
 
         val resourceLight = DCResource(
             DCUtils.getUri(
-                datacoreProperties.baseUri, "grant:association_0",
+                datacoreProperties.baseResourceUri(), "grant:association_0",
                 "FR/$siret/$dateConvention/$objet"
             )
         )
-        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$siret")
-        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseUri, "orgfr:Organisation_0", "FR/$grantedSiret")
+        val giverOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$siret")
+        val grantedOrgUri = DCUtils.getUri(datacoreProperties.baseResourceUri(), "orgfr:Organisation_0", "FR/$grantedSiret")
         resourceLight.setStringValue("grantassociation:idAttribuant", giverOrgUri)
         resourceLight.setStringValue("grantassociation:idBeneficiaire", grantedOrgUri)
         resourceLight.setStringValue("grantassociation:conditionsVersement", "unique")

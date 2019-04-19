@@ -77,7 +77,7 @@ class MarcheSecuriseListingService(
                                     checkOrCreateOrganization(registreType, type)
                                 }
                                 (registreType as RegistreReponse).toDcObject(
-                                    datacoreProperties.baseUri,
+                                    datacoreProperties.baseResourceUri(),
                                     registreType.cle
                                 )
                             }
@@ -87,14 +87,14 @@ class MarcheSecuriseListingService(
                                     checkOrCreateOrganization(registreType, type)
                                 }
                                 registreType.toDcObject(
-                                    datacoreProperties.baseUri,
+                                    datacoreProperties.baseResourceUri(),
                                     registreType.cle,
                                     registreType.personne!!.cle,
                                     registreType.pieceId
                                 )
                             }
                             else -> registreType.toDcObject(
-                                datacoreProperties.baseUri,
+                                datacoreProperties.baseResourceUri(),
                                 (registreType as RegistreRetrait).cle
                             )
                         }
@@ -216,7 +216,7 @@ class MarcheSecuriseListingService(
     fun parseSoapResponseObjectToRegistre(type: String, responseObject: ResponseObject, uri: String): Mono<Registre> {
         return when (type) {
             MSUtils.REPONSE_TYPE -> RegistreReponse.fromSoapObject(
-                datacoreProperties.baseUri,
+                datacoreProperties.baseResourceUri(),
                 responseObject,
                 uri
             ).toMono()
@@ -228,7 +228,7 @@ class MarcheSecuriseListingService(
                     MSUtils.PIECE_TYPE
                 )
                     .flatMap { it ->
-                        RegistreRetrait.fromSoapObject(datacoreProperties.baseUri, responseObject, uri, it.dcId)
+                        RegistreRetrait.fromSoapObject(datacoreProperties.baseResourceUri(), responseObject, uri, it.dcId)
                             .toMono()
                     }
             }
@@ -266,14 +266,14 @@ class MarcheSecuriseListingService(
             if (e.statusCode == HttpStatus.NOT_FOUND) {
                 val dcOrg = when (type) {
                     MSUtils.REPONSE_TYPE -> (registreType as RegistreReponse).entreprise.toDcObject(
-                        datacoreProperties.baseUri,
+                        datacoreProperties.baseResourceUri(),
                         registreType.siret
                     )
                     MSUtils.RETRAIT_TYPE -> (registreType as RegistreRetrait).entreprise.toDcObject(
-                        datacoreProperties.baseUri,
+                        datacoreProperties.baseResourceUri(),
                         registreType.siret
                     )
-                    else -> registreType.entreprise.toDcObject(datacoreProperties.baseUri, registreType.siret)
+                    else -> registreType.entreprise.toDcObject(datacoreProperties.baseResourceUri(), registreType.siret)
                 }
                 datacoreService.saveResource(MP_PROJECT, modelOrg, dcOrg, null)
             } else {
@@ -283,7 +283,7 @@ class MarcheSecuriseListingService(
     }
 
     fun checkOrCreateOrUpdatePerson(registreType: RegistreRetrait) {
-        val dcPersonne = (registreType.personne!!).toDcObject(datacoreProperties.baseUri)
+        val dcPersonne = (registreType.personne!!).toDcObject(datacoreProperties.baseResourceUri())
         try {
             val currentResource =
                 datacoreService.getResourceFromIRI(MP_PROJECT, MSUtils.PERSONNE_TYPE, registreType.personne!!.cle, null)

@@ -123,7 +123,7 @@ class DatacoreHandler(
         return req.bodyToMono<DCResource>()
             .flatMap { resource: DCResource ->
                 val filteredResource = resource.getValues()
-                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
+                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
                 if (!filteredResource.isEmpty()) {
                     findOrCreateDCOrganization(project, bearer, filteredResource)
                     datacoreService.saveResource(project, type, resource, bearer)
@@ -157,7 +157,7 @@ class DatacoreHandler(
         return req.bodyToMono<DCResource>()
             .flatMap { resource: DCResource ->
                 val filteredResource = resource.getValues()
-                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseUri}/$modelOrg") }
+                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
                 if (!filteredResource.isEmpty()) {
                     findOrCreateDCOrganization(project, bearer, filteredResource)
                     datacoreService.updateResource(project, type, resource, bearer)
@@ -254,12 +254,12 @@ class DatacoreHandler(
         val organization = Organization(
             cp = cp,
             voie = "$numero $typeVoie $libelleVoie",
-            pays = "${datacoreProperties.baseUri}/geocofr:Pays_0/FR",
+            pays = "${datacoreProperties.baseResourceUri()}/geocofr:Pays_0/FR",
             denominationUniteLegale = finalDenomination,
             siret = siretEtablissement
         )
 
-        return organization.toDcObject(datacoreProperties.baseUri, siret)
+        return organization.toDcObject(datacoreProperties.baseResourceUri(), siret)
     }
 
     private fun extractProject(headers: ServerRequest.Headers): String {

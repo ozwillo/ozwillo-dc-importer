@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.service.rabbitMQ
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
+import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.slf4j.Logger
@@ -18,7 +19,7 @@ import java.time.format.DateTimeFormatter
 
 
 @Service
-class IoTReceiver(private val datacoreService: DatacoreService) {
+class IoTReceiver(private val datacoreService: DatacoreService, private val datacoreProperties: DatacoreProperties) {
 
     private val logger: Logger = LoggerFactory.getLogger(IoTReceiver::class.java)
 
@@ -27,9 +28,6 @@ class IoTReceiver(private val datacoreService: DatacoreService) {
 
     @Value("\${datacore.model.iotModel}")
     private val datacoreIotModel: String = "iot:device_0"
-
-    @Value("\${datacore.baseUri}")
-    private val datacoreBaseUri: String? = null
 
     @Value("\${amqp.config.iot.baseBindingKey}")
     private val baseBindingKey: String = ""
@@ -83,7 +81,7 @@ class IoTReceiver(private val datacoreService: DatacoreService) {
 
             parsedMeasures.forEach { measure ->
                 val finalIri = baseIri + "/" + measure.n
-                val dcBusinessResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
+                val dcBusinessResource = DCResource(datacoreBaseUri = datacoreProperties.baseResourceUri(),
                     type = datacoreIotModel, iri = finalIri)
 
                 dcBusinessResource.setStringValue("iotdevice:id", deviceId)

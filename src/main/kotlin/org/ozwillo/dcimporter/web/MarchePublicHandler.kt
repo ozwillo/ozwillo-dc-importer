@@ -135,7 +135,7 @@ class MarchePublicHandler(
                 }
                 //if resource already exist saveResource trigger an error 400 catched in onErrorResume
                 consultation.etat = Etat.CREATED
-                val dcConsultation = consultation.toDcObject(datacoreProperties.baseUri, siret)
+                val dcConsultation = consultation.toDcObject(datacoreProperties.baseResourceUri(), siret)
                 datacoreService.saveResource(
                     "marchepublic_0", "marchepublic:consultation_0",
                     dcConsultation, bearer
@@ -197,7 +197,7 @@ class MarchePublicHandler(
                 consultation.etat =
                         if (consultation.dateCloture.isBefore(LocalDateTime.now())) Etat.CLOSED else consultation.etat
                 val dcConsultation =
-                    consultation.toDcObject(datacoreProperties.baseUri, siret, req.pathVariable("reference"))
+                    consultation.toDcObject(datacoreProperties.baseResourceUri(), siret, req.pathVariable("reference"))
                 datacoreService.updateResource("marchepublic_0", "marchepublic:consultation_0", dcConsultation, bearer)
             }
             .flatMap { _ ->
@@ -305,7 +305,7 @@ class MarchePublicHandler(
 
         return req.bodyToMono<Lot>()
             .flatMap { lot ->
-                val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference)
+                val dcLot = lot.toDcObject(datacoreProperties.baseResourceUri(), siret, reference)
                 datacoreService.saveResource(MP_PROJECT, LOT_TYPE, dcLot, bearer)
             }
             .flatMap { result ->
@@ -363,7 +363,7 @@ class MarchePublicHandler(
 
         return req.bodyToMono<Lot>()
             .flatMap { lot ->
-                val dcLot = lot.toDcObject(datacoreProperties.baseUri, siret, reference, uuid)
+                val dcLot = lot.toDcObject(datacoreProperties.baseResourceUri(), siret, reference, uuid)
                 datacoreService.updateResource("marchepublic_0", "marchepublic:lot_0", dcLot, bearer)
             }
             .flatMap { _ ->
@@ -444,7 +444,7 @@ class MarchePublicHandler(
 
         return req.bodyToMono<Piece>()
             .flatMap { piece ->
-                val dcPiece = piece.toDcObject(datacoreProperties.baseUri, siret, reference)
+                val dcPiece = piece.toDcObject(datacoreProperties.baseResourceUri(), siret, reference)
                 datacoreService.saveResource(
                     "marchepublic_0", "marchepublic:piece_0",
                     dcPiece, bearer
@@ -504,7 +504,7 @@ class MarchePublicHandler(
 
         return req.bodyToMono<Piece>()
             .flatMap { piece ->
-                val dcPiece = piece.toDcObject(datacoreProperties.baseUri, siret, reference, uuid)
+                val dcPiece = piece.toDcObject(datacoreProperties.baseResourceUri(), siret, reference, uuid)
                 datacoreService.updateResource("marchepublic_0", "marchepublic:piece_0", dcPiece, bearer)
             }
             .flatMap { _ ->

@@ -94,7 +94,6 @@ datacore:
   systemAdminUser:  # Get it using Node.js lib / with DC importer clientId
     refreshToken: refreshToken
     nonce: changeit      #Set it when getting the refreshToken
-  baseUri: http://data.ozwillo.com/dc/type
   model:
     project: citizenreq_0
     modelEM: citizenreq:elecmeeting_0
