@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.apache.commons.lang3.RandomStringUtils
+import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.*
@@ -34,7 +35,8 @@ import java.util.*
 class PublikService(
     private val datacoreService: DatacoreService,
     private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
-    private val businessMappingRepository: BusinessMappingRepository
+    private val businessMappingRepository: BusinessMappingRepository,
+    private val datacoreProperties: DatacoreProperties
 ) {
 
     @Value("\${publik.formTypeEM}")
@@ -55,8 +57,6 @@ class PublikService(
     private val datacoreModelUser: String = "citizenreq:user_0"
     @Value("\${datacore.model.modelORG}")
     private val datacoreModelORG: String = "org:Organization_0"
-    @Value("\${datacore.baseUri}")
-    private val datacoreBaseUri: String? = null
 
     private fun getForm(url: String, secret: String): Mono<FormModel> {
 
@@ -149,7 +149,7 @@ class PublikService(
         return getOrCreateUser(form).map { userUri ->
             val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
 
-            val dcFormResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
+            val dcFormResource = DCResource(datacoreProperties.baseResourceUri(),
                 type = type!!, iri = dcOrganization.getIri() + "/" + form.display_id)
 
             dcFormResource.setStringValue("citizenreq:displayId", form.display_id)
@@ -249,7 +249,7 @@ class PublikService(
     }
 
     private fun createUser(user: User): Mono<String> {
-        val dcUserResource = DCResource(datacoreBaseUri = datacoreBaseUri!!,
+        val dcUserResource = DCResource(datacoreProperties.baseResourceUri(),
             type = datacoreModelUser, iri = user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:email", user.email)
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
