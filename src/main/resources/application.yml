@@ -10,7 +10,7 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
-    host: 10.28.9.8
+    host: localhost
     port: 5672
   mail:
     host: yourMailHost
