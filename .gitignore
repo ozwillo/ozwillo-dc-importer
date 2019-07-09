@@ -1,5 +1,6 @@
 .gradle
 /build/
+data/db
 !gradle/wrapper/gradle-wrapper.jar
 
 ### STS ###
@@ -23,3 +24,6 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+out/
+src/main/resources/application-dev\.yml
+

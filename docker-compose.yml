@@ -1,0 +1,18 @@
+version: '3'
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    volumes:
+      - ./data/db:/data/db
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "1883:1883"
+    volumes:
+      - ./conf/rabbitmq_enabled_plugins:/etc/rabbitmq/enabled_plugins

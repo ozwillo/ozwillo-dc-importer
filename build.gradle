@@ -1,41 +1,115 @@
-buildscript {
-	ext {
-		springBootVersion = '2.0.0.BUILD-SNAPSHOT'
-	}
-	repositories {
-		mavenCentral()
-		maven { url "https://repo.spring.io/snapshot" }
-		maven { url "https://repo.spring.io/milestone" }
-	}
-	dependencies {
-		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
-	}
+plugins {
+    id 'org.springframework.boot' version '2.1.5.RELEASE'
+    id 'org.jetbrains.kotlin.jvm' version '1.2.71'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.2.71'
+    id "com.moowork.node" version "1.2.0"
 }
-
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'io.spring.dependency-management'
-
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = 1.8
 
 repositories {
-	mavenCentral()
-	maven { url "https://repo.spring.io/snapshot" }
-	maven { url "https://repo.spring.io/milestone" }
+    mavenCentral()
 }
 
+apply plugin: 'idea'
+apply plugin: 'kotlin'
+apply plugin: 'io.spring.dependency-management'
+// run ./gradlew kaptKotlin to generate the metadata for the configuration properties
+apply plugin: 'kotlin-kapt'
+
+group = 'com.ozwillo'
+version = '0.2.0'
+sourceCompatibility = 1.8
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        freeCompilerArgs = ["-Xjsr305=strict"]
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        freeCompilerArgs = ["-Xjsr305=strict"]
+    }
+}
+
+repositories {
+    mavenCentral()
+}
 
 dependencies {
-	compile('org.springframework.boot:spring-boot-starter-actuator')
-	compile('org.springframework.boot:spring-boot-starter-data-mongodb')
-	compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
-	compile('org.springframework.boot:spring-boot-starter-mail')
-	compile('org.springframework.boot:spring-boot-starter-security')
-	compile('org.springframework.session:spring-session')
-	compile('org.springframework.boot:spring-boot-starter-web')
-	compile('org.springframework.boot:spring-boot-starter-webflux')
-	runtime('org.springframework.boot:spring-boot-devtools')
-	testCompile('org.springframework.boot:spring-boot-starter-test')
+    kapt("org.springframework.boot:spring-boot-configuration-processor")
+    
+    compile('org.springframework.boot:spring-boot-starter-actuator')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb-reactive')
+    compile('org.springframework.boot:spring-boot-starter-webflux')
+    compile('org.springframework.boot:spring-boot-starter-security')
+    compile('org.springframework.boot:spring-boot-configuration-processor')
+    compile('org.springframework.boot:spring-boot-starter-amqp')
+    compile('org.springframework.boot:spring-boot-starter-mail')
+    compile("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    compile("org.jetbrains.kotlin:kotlin-reflect")
+    compile('com.fasterxml.jackson.module:jackson-module-kotlin')
+    compile('org.apache.commons:commons-lang3:3.7')
+    compile('com.google.guava:guava:24.1.1-jre')
+    compile('org.codehaus.groovy:groovy')
+    compile('org.codehaus.groovy:groovy-templates')
+
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        exclude module: "junit"
+        exclude module: 'mockito-core'
+    }
+    testCompile('com.github.tomakehurst:wiremock-standalone:2.17.0')
+    testCompile("io.projectreactor:reactor-test")
+    testCompile('org.springframework.amqp:spring-rabbit-test')
+    testCompile('de.flapdoodle.embed:de.flapdoodle.embed.mongo'){
+        exclude group: 'org.apache.commons', module: 'commons-compress'
+    }
+
+    testImplementation('io.mockk:mockk:1.9.1')
+    testImplementation('com.ninja-squad:springmockk:1.1.1')
+    testImplementation('org.junit.jupiter:junit-jupiter-api')
+    testImplementation('org.apache.commons:commons-compress:1.18')
+
+    testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine')
 }
+
+bootRun {
+    environment SPRING_PROFILES_ACTIVE: environment.SPRING_PROFILES_ACTIVE ?: "dev"
+}
+
+test {
+    useJUnitPlatform()
+    environment 'spring.profiles.active', 'test'
+}
+
+bootJar {
+    launchScript {
+        properties 'initInfoProvides': 'ozwillo-dc-importer'
+    }
+}
+
+node {
+    version = '8.11.3'
+    download = false
+}
+
+configure(tasks.processResources) {
+    // we don't want the JS sources in the jar, we only need their transpiled, bundled version in build/
+    exclude "public/src", "public/node_modules/", "public/babel.config.json", "public/.*"
+}
+
+def frontendDir = "./src/main/resources/public"
+
+task yarnInstall(type: YarnTask) {
+    args = ['--cwd', frontendDir, 'install']
+}
+
+task frontBundle(type: YarnTask) {
+    args = ['--cwd', frontendDir, 'run', 'build']
+}
+
+assemble.dependsOn(frontBundle)
+frontBundle.dependsOn(yarnInstall)
+jar.dependsOn(frontBundle)

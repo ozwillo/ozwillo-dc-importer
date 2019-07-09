@@ -1,0 +1,112 @@
+spring:
+  output.ansi.enabled: DETECT
+  session.store-type: none
+  data:
+    mongodb:
+      database: dcimporter
+  rabbitmq:
+    username: guest
+    password: guest
+    listener:
+      simple:
+        acknowledge-mode: manual
+    host: localhost
+    port: 5672
+  mail:
+    host: yourMailHost
+    port: 587
+
+server:
+  compression.enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: httptrace, health, info
+info: #Informations displayed on actuator/info endpoint TODO: Complete if needed with other useful information
+  application:
+    name: DC Importer
+    version: 0.0.5
+    description: See README.md for further information
+
+security:
+  basicAuth:
+    connexion:
+      user: user
+      password: changeme
+      role: DEV
+
+application:
+  url: http://localhost:3000
+  security:
+    fetchUserInfo: true
+  syncDelay: 10000
+
+publik:
+  formTypeEM: demande-de-rendez-vous
+  formTypeSVE: saisine-par-voie-electronique-new
+  algo: sha256
+  orig: ozwillo-dcimporter
+
+marchesecurise:
+  url:
+    createConsultation: /webserv/?module=dce|serveur_crea_dce
+    updateConsultation: /webserv/?module=dce|serveur_modif_dce
+    deleteConsultation: /webserv/?module=dce|serveur_suppr_dce
+    publishConsultation: /webserv/?module=dce|serveur_publication_dce
+    lot: /webserv/?module=dce|serveur_lot_dce
+    piece: /webserv/?module=dce|serveur_fichier_dce
+    registre: /webserv/?module=registres|serveur_registres
+
+amqp:
+  config:
+    exchangerName: dcimporter
+    marchesecurise:
+      queueName: marchesecurise
+      deadLetterQueue: ms.deadletter
+      bindingKey: marchepublic_0.#
+    maarch:
+      queueName: maarch
+      bindingKey: citizenreq_0.#
+    publik:
+      queueName: publik
+      bindingKey: citizenreq_0.#
+    processingStat:
+      queueName: stat
+      bindingKey: '#'
+    iot:
+      queueName: iot
+      bindingKey: egm-lora.#
+      baseBindingKey: egm-lora
+
+kernel:
+  baseUri: https://kernel.ozwillo-preprod.eu
+  tokenEndpoint: ${kernel.baseUri}/a/token
+  clientId: dcimporter
+  clientSecret: secret
+
+datacore:
+  containerUrl: http://data.ozwillo.com
+  typePrefix: /dc/type
+  url: https://data.ozwillo-preprod.eu
+  systemAdminUser:  # Get it using Node.js lib / with DC importer clientId
+    refreshToken: refreshToken
+    nonce: changeit      #Set it when getting the refreshToken
+  model:
+    project: citizenreq_0
+    modelEM: citizenreq:elecmeeting_0
+    modelSVE: citizenreq:sve_0
+    modelORG: orgfr:Organisation_0
+    modelUser: citizenreq:user_0
+    iotProject: iot_0
+    iotModel: iot:device_0
+
+insee:
+  api:
+    sirene:
+      baseUri: https://api.insee.fr
+      tokenPath: /token
+      siretPath: /entreprises/sirene/V3/siret
+      siretParameters: ?champs=codePostalEtablissement,numeroVoieEtablissement,typeVoieEtablissement,libelleVoieEtablissement,nomUniteLegale,denominationUniteLegale,siret
+      secretClient: secret  #insee account Base64(cryptLogin:cryptPassword) : see https://api.insee.fr - get key section
