@@ -15,16 +15,18 @@ import org.ozwillo.dcimporter.util.DCUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
-import org.springframework.boot.test.web.client.postForEntity
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.ClientHttpRequestInterceptor
+import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(RabbitMockConfig::class)
+@ActiveProfiles("test")
 class DatacoreHandlerTest(
     @Autowired val restTemplate: TestRestTemplate,
     @Autowired val datacoreProperties: DatacoreProperties
@@ -152,10 +154,14 @@ class DatacoreHandlerTest(
         resourceLight.setStringValue("grantassociation:objet", objet)
         resourceLight.setIntegerValue("grantassociation:pourcentageSubvention", 1)
 
-        val entity = restTemplate.postForEntity<String>("/dc/type/grant:association_0", resourceLight)
-        Assertions.assertThat(entity.statusCode).isEqualTo(HttpStatus.CREATED)
-        Assertions.assertThat(entity.body).contains(siret)
-        Assertions.assertThat(entity.body).contains(objet)
+        val headers = HttpHeaders()
+        headers.set("X-Datacore-Project", "grant_0")
+        val entity = HttpEntity(resourceLight, headers)
+
+        val result = restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.POST, entity, String::class.java)
+        Assertions.assertThat(result.statusCode).isEqualTo(HttpStatus.CREATED)
+        Assertions.assertThat(result.body).contains(siret)
+        Assertions.assertThat(result.body).contains(objet)
     }
 
     @Test
@@ -214,10 +220,15 @@ class DatacoreHandlerTest(
         resourceLight.setStringValue("grantassociation:objet", objet)
         resourceLight.setIntegerValue("grantassociation:pourcentageSubvention", 1)
 
-        val entity = restTemplate.postForEntity<String>("/dc/type/grant:association_0", resourceLight)
-        Assertions.assertThat(entity.statusCode).isEqualTo(HttpStatus.CREATED)
-        Assertions.assertThat(entity.body).contains(siret)
-        Assertions.assertThat(entity.body).contains(objet)
+        val headers = HttpHeaders()
+        headers.set("X-Datacore-Project", "grant_0")
+        val entity = HttpEntity(resourceLight, headers)
+
+        val result = restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.POST, entity, String::class.java)
+
+        Assertions.assertThat(result.statusCode).isEqualTo(HttpStatus.CREATED)
+        Assertions.assertThat(result.body).contains(siret)
+        Assertions.assertThat(result.body).contains(objet)
     }
 
     @Test
@@ -277,14 +288,15 @@ class DatacoreHandlerTest(
         resourceLight.setStringValue("grantassociation:objet", objet)
         resourceLight.setIntegerValue("grantassociation:pourcentageSubvention", 1)
 
-        restTemplate.postForEntity<String>("/dc/type/grant:association_0", resourceLight)
+        val headers = HttpHeaders()
+        headers.set("X-Datacore-Project", "grant_0")
+        val entity = HttpEntity(resourceLight, headers)
+
+        restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.POST, entity, String::class.java)
 
         resourceLight.setStringValue("grantassociation:objet", "$objet-1")
-        val httpEntity = HttpEntity(resourceLight)
-        val updatedEntity = restTemplate.exchange(
-            "/dc/type/grant:association_0",
-            HttpMethod.PUT, httpEntity, String::class.java
-        )
+        val httpEntity = HttpEntity(resourceLight, headers)
+        val updatedEntity = restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.PUT, httpEntity, String::class.java)
         Assertions.assertThat(updatedEntity.statusCode).isEqualTo(HttpStatus.OK)
     }
 
@@ -377,15 +389,15 @@ class DatacoreHandlerTest(
         resourceLight.setStringValue("grantassociation:objet", objet)
         resourceLight.setIntegerValue("grantassociation:pourcentageSubvention", 1)
 
-        restTemplate.postForEntity<String>("/dc/type/grant:association_0", resourceLight)
+        val headers = HttpHeaders()
+        headers.set("X-Datacore-Project", "grant_0")
+        val entity = HttpEntity(resourceLight, headers)
+
+        restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.POST, entity, String::class.java)
 
         resourceLight.setStringValue("grantassociation:objet", "$objet-1")
-        val httpEntity = HttpEntity(resourceLight)
-        val updatedEntity = restTemplate.exchange(
-            "/dc/type/grant:association_0",
-            HttpMethod.PUT, httpEntity, String::class.java
-        )
+        val httpEntity = HttpEntity(resourceLight, headers)
+        val updatedEntity = restTemplate.exchange("/dc/type/grant:association_0", HttpMethod.PUT, httpEntity, String::class.java)
         Assertions.assertThat(updatedEntity.statusCode).isEqualTo(HttpStatus.OK)
     }
-
 }

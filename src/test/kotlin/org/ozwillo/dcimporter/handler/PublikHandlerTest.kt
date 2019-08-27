@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.handler
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.junit5.MockKExtension
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -11,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.ozwillo.dcimporter.AbstractIntegrationTests
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.datacore.DCResultSingle
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.model.publik.Submission
 import org.ozwillo.dcimporter.model.publik.User
@@ -21,11 +21,14 @@ import org.ozwillo.dcimporter.service.PublikService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import reactor.core.publisher.Mono
 import reactor.test.test
 import java.util.*
 
+// TODO : make it better
 @ExtendWith(MockKExtension::class)
+@ActiveProfiles("test")
 class PublikHandlerTest : AbstractIntegrationTests() {
 
     @Autowired
@@ -61,18 +64,12 @@ class PublikHandlerTest : AbstractIntegrationTests() {
 
     @Test
     fun `Verify notification of a Publik form`() {
+        val typeSlot = slot<String>()
+        val iriSlot = slot<String>()
         every {
-            datacoreService.getResourceFromIRI("citizenreq_0", "orgfr:Organisation_0", "FR/250601879", null)
+            datacoreService.getResourceFromIRI(any(), capture(typeSlot), capture(iriSlot), null)
         } answers {
-            DCResource(
-                "http://data.ozwillo.com/dc/type/citizenreq:user_0/5c977a7f1d444fa1ab0f777325fdda93")
-        }
-        every {
-            datacoreService.getResourceFromIRI(
-                "citizenreq_0", "citizenreq:user_0", "5c977a7f1d444fa1ab0f777325fdda93", null)
-        } answers {
-            DCResource(
-                "http://data.ozwillo.com/dc/type/citizenreq:user_0/5c977a7f1d444fa1ab0f777325fdda93")
+            Mono.just(DCResource("http://data.ozwillo.com/dc/type/$typeSlot/$iriSlot"))
         }
         every {
             datacoreService.saveResource(
@@ -80,10 +77,8 @@ class PublikHandlerTest : AbstractIntegrationTests() {
                 resource = any(), bearer = any())
         } answers {
             Mono.just(
-                DCResultSingle(
-                    HttpStatus.OK,
                     DCResource("http://data.ozwillo.com/dc/type/citizenreq:elecmeeting_0/FR/250601879/17-4")
-                ))
+            )
         }
 
         val formModel = FormModel(

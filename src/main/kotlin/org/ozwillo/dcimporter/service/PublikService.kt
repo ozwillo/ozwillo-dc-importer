@@ -84,7 +84,7 @@ class PublikService(
         businessAppConfiguration: BusinessAppConfiguration,
         dcOrganization: DCResource,
         formType: String
-    ): Mono<DCResult> {
+    ): Mono<HttpStatus> {
 
         val signedQuery = signQuery("email=admin@ozwillo-dev.eu&", businessAppConfiguration.secretOrToken!!)
 
@@ -114,7 +114,7 @@ class PublikService(
             .flatMap { formModel -> convertToDCResource(dcOrganization, formModel) }
             .map { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
             .count()
-            .map { DCResult(HttpStatus.OK) }
+            .map { HttpStatus.OK }
     }
 
     data class PublikResponse(
@@ -127,24 +127,20 @@ class PublikService(
 
         LOGGER.debug("Got form from Publik : $form")
 
-        val orgResource =
-            datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
-        return convertToDCResource(orgResource, form).map { result ->
+        return datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
+            .flatMap { convertToDCResource(it, form) }
+            .map { result ->
+                val businessMapping = BusinessMapping(
+                    applicationName = name, businessId = form.url,
+                    dcId = result.second.getUri(), type = result.first
+                )
+                businessMappingRepository.save(businessMapping).subscribe()
 
-            val businessMapping = BusinessMapping(
-                applicationName = name, businessId = form.url,
-                dcId = result.second.getUri(), type = result.first
-            )
-            businessMappingRepository.save(businessMapping).subscribe()
-
-            result
+                result
         }
     }
 
-    private fun convertToDCResource(
-        dcOrganization: DCResource,
-        form: FormModel
-    ): Mono<Pair<DCModelType, DCResource>> {
+    private fun convertToDCResource(dcOrganization: DCResource, form: FormModel): Mono<Pair<DCModelType, DCResource>> {
 
         return getOrCreateUser(form).map { userUri ->
             val type = if (isEMrequest(form)) datacoreModelEM else datacoreModelSVE
@@ -235,17 +231,14 @@ class PublikService(
         return dcResource
     }
 
-    private fun getOrCreateUser(form: FormModel): Mono<String> {
+    fun getOrCreateUser(form: FormModel): Mono<String> {
 
         // for now, let's say agent_sictiam is the universal fallback user
         val nameId = if (form.user == null) "5c977a7f1d444fa1ab0f777325fdda93" else form.user.nameID[0]
 
-        return try {
-            val userResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelUser, nameId, null)
-            Mono.just(userResource.getUri())
-        } catch (t: Throwable) {
-            createUser(form.user!!)
-        }
+        return datacoreService.getResourceFromIRI(datacoreProject, datacoreModelUser, nameId, null)
+            .map { it.getUri() }
+            .switchIfEmpty(Mono.just(1).flatMap { createUser(form.user!!) })
     }
 
     private fun createUser(user: User): Mono<String> {
@@ -256,9 +249,7 @@ class PublikService(
         dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())
         dcUserResource.setStringValue("citizenrequser:name", user.name)
         return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, null)
-            .map { saveResult ->
-                (saveResult as DCResultSingle).resource.getUri()
-            }
+            .map { it.getUri() }
     }
 
     data class PublikStatusResponse(val url: String?, val err: Int?)

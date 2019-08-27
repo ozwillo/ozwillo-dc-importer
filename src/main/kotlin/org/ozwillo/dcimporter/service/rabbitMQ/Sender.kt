@@ -24,15 +24,7 @@ class Sender(private val template: RabbitTemplate) {
     @Throws(InterruptedException::class, AmqpException::class)
     fun send(resource: DCResource, project: String, type: String, action: BindingKeyAction) {
 
-        val uri = resource.getUri()
-        val splittedUri = uri.split("/")
-        // TODO : temp solution to compose the message key
-        // we don't always have a SIRET in the URI and we can't assume it will be at the 8th position when there is one
-        // for now, if we don't find it where expected, take the last part of the URI
-        val siret =
-            if (splittedUri.size >= 8) splittedUri[7]
-            else uri.substringAfterLast("/")
-        val key = getKey(project, type, siret, action)
+        val key = getKey(project, type, action)
         val message = JsonConverter.objectToJson(resource)
 
         logger.debug("About to send $message with key $key")
@@ -48,7 +40,7 @@ class Sender(private val template: RabbitTemplate) {
         )
     }
 
-    fun getKey(project: String, type: String, siret: String, action: BindingKeyAction): String {
-        return "$project.$siret.$type.${action.value}"
+    fun getKey(project: String, type: String, action: BindingKeyAction): String {
+        return "$project.$type.${action.value}"
     }
 }

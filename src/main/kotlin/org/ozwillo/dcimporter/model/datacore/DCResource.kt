@@ -8,6 +8,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 typealias I18nOrgDenomination = HashMap<String, String>
+typealias DCResourceURI = String
 
 @JsonIgnoreProperties("@type")
 class DCResource(

@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.service
 
 import com.google.common.io.BaseEncoding
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
@@ -37,7 +36,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
     }
 
-    fun saveResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<DCResultSingle> {
+    fun saveResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<DCResource> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
@@ -48,31 +47,20 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         LOGGER.debug("Saving resource at URI $uri")
 
         val accessToken = bearer ?: getSyncAccessToken()
-        val restTemplate = RestTemplate()
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("X-Datacore-Project", project)
-        headers.set("Authorization", "Bearer $accessToken")
-        val request = RequestEntity<Any>(resource, headers, HttpMethod.POST, URI(uri))
 
-        try {
-            val response = restTemplate.exchange(request, DCResource::class.java)
-            val result: DCResource = response.body!!
-
-            sender.send(resource, project, type, BindingKeyAction.CREATE)
-            return Mono.just(DCResultSingle(HttpStatus.OK, result))
-        } catch (e: HttpClientErrorException) {
-            LOGGER.error("Got error ${e.message}, (${e.responseBodyAsString})")
-            throw e
-        }
+        return WebClient.create().post()
+            .uri(uri)
+            .header("X-Datacore-Project", project)
+            .header("Authorization", "Bearer $accessToken")
+            .syncBody(resource)
+            .retrieve()
+            .bodyToMono(DCResource::class.java)
+            .doOnSuccess {
+                sender.send(resource, project, type, BindingKeyAction.CREATE)
+            }
     }
 
-    fun updateResource(
-        project: String,
-        type: String,
-        resource: DCResource,
-        bearer: String?
-    ): Mono<HttpStatus> {
+    fun updateResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<HttpStatus> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
@@ -83,61 +71,49 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
 
         LOGGER.debug("Updating resource at URI $uri")
 
-        val dcCurrentResource = getResourceFromIRI(project, type, resource.getIri(), bearer)
-        resource.setStringValue(
-            "o:version",
-            dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() })
-
-        val accessToken = bearer ?: getSyncAccessToken()
-        val restTemplate = RestTemplate()
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("X-Datacore-Project", project)
-        headers.set("Authorization", "Bearer $accessToken")
-        val request = RequestEntity<Any>(resource, headers, HttpMethod.PUT, URI(uri))
-
-        try {
-            restTemplate.put(uri, request)
-            sender.send(resource, project, type, BindingKeyAction.UPDATE)
-            return Mono.just(HttpStatus.OK)
-        } catch (e: HttpClientErrorException) {
-            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            throw e
-        }
+        return getResourceFromIRI(project, type, resource.getIri(), bearer)
+            .map {
+                resource.setStringValue(
+                    "o:version",
+                    it.getValues().getOrElse("o:version") { "0" }.toString())
+                resource
+            }.flatMap {
+                val accessToken = bearer ?: getSyncAccessToken()
+                WebClient.create().put()
+                    .uri(uri)
+                    .header("X-Datacore-Project", project)
+                    .header("Authorization", "Bearer $accessToken")
+                    .syncBody(it)
+                    .retrieve()
+                    .bodyToMono(DCResource::class.java)
+            }.map {
+                sender.send(resource, project, type, BindingKeyAction.CREATE)
+                HttpStatus.OK
+            }
     }
 
-    fun deleteResource(project: String, type: String, iri: String, bearer: String?): Mono<HttpStatus> {
-
-        val uri = "${datacoreProperties.url}/${datacoreProperties.typePrefix}/$type/$iri"
-        LOGGER.debug("Deleting resource at URI $uri")
-
-        val dcCurrentResource = getResourceFromIRI(project, type, iri, bearer)
-        val version = dcCurrentResource.let { dcCurrentResource.getValues()["o:version"]!!.toString() }
-
-        val accessToken = bearer ?: getSyncAccessToken()
-        val restTemplate = RestTemplate()
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val headers = HttpHeaders()
-        headers.set("X-Datacore-Project", project)
-        headers.set("If-Match", version)
-        headers.set("Authorization", "Bearer $accessToken")
-
-        try {
-            val response = restTemplate.exchange(
-                uri,
-                HttpMethod.DELETE,
-                HttpEntity<HttpHeaders>(headers),
-                DCResource::class.java
+    fun exists(project: String, type: String, iri: String, bearer: String?): Mono<Boolean> {
+        val resourceUri = checkEncoding(
+            dcResourceUri(
+                type,
+                iri
             )
-            sender.send(dcCurrentResource, project, type, BindingKeyAction.DELETE)
-            return Mono.just(response.statusCode)
-        } catch (e: HttpClientErrorException) {
-            LOGGER.error("Got error ${e.message} (${e.responseBodyAsString})")
-            throw e
-        }
+        )   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
+        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
+
+        LOGGER.debug("Checking existence of resource $encodedUri")
+
+        val accessToken = bearer ?: getSyncAccessToken()
+        return WebClient.create().get()
+            .uri(encodedUri)
+            .header("X-Datacore-Project", project)
+            .header("Authorization", "Bearer $accessToken")
+            .exchange()
+            .flatMap { Mono.just(true) }
+            .onErrorResume { Mono.just(false) }
     }
 
-    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): DCResource {
+    fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String?): Mono<DCResource> {
         val resourceUri = checkEncoding(
             dcResourceUri(
                 type,
@@ -149,16 +125,13 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         LOGGER.debug("Fetching resource from URI $encodedUri")
 
         val accessToken = bearer ?: getSyncAccessToken()
-        val restTemplate = RestTemplate()
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("X-Datacore-Project", project)
-        headers.set("Authorization", "Bearer $accessToken")
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
-
-        val response = restTemplate.exchange(request, DCResource::class.java)
-        LOGGER.debug("Got response : ${response.body}")
-        return response.body!!
+        return WebClient.create().get()
+            .uri(encodedUri)
+            .header("X-Datacore-Project", project)
+            .header("Authorization", "Bearer $accessToken")
+            .retrieve()
+            .bodyToMono(DCResource::class.java)
+            .onErrorResume { Mono.empty() }
     }
 
     private fun checkEncoding(iri: String): String {
@@ -212,7 +185,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         return Mono.just(results)
     }
 
-    fun findModels(limit: Int, name: String): Flux<DCModel>{
+    fun findModels(limit: Int, name: String): Flux<DCModel> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/dcmo:model_0")
@@ -239,7 +212,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         }
     }
 
-    fun findModel(type: String): Mono<DCModel>{
+    fun findModel(type: String): Mono<DCModel> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/dcmo:model_0/{type}")

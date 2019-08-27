@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyToMono
+import reactor.core.publisher.Mono
 
 @Component
 class MaarchHandler(private val datacoreService: DatacoreService) {
@@ -22,16 +23,17 @@ class MaarchHandler(private val datacoreService: DatacoreService) {
     data class MaarchStatusRequest(@JsonProperty("publikId") val dcId: String)
     data class MaarchResponse(val returnCode: Int)
 
-    fun status(req: ServerRequest) =
+    fun status(req: ServerRequest): Mono<ServerResponse> =
         req.bodyToMono<MaarchStatusRequest>()
             .flatMap { maarchRequest ->
                 val iri = maarchRequest.dcId.substringAfter(datacoreModelEM)
-                val dcResource = datacoreService.getResourceFromIRI(datacoreProject, datacoreModelEM, iri, null)
+                datacoreService.getResourceFromIRI(datacoreProject, datacoreModelEM, iri, null)
+            }.flatMap {
                 // TODO : not sure we really neeed to do that
-                val values = dcResource.getValues().filter { entry ->
+                val values = it.getValues().filter { entry ->
                     entry.key.startsWith("citizenreq")
                 }
-                val updatedResource = DCResource(maarchRequest.dcId, values)
+                val updatedResource = DCResource(it.getUri(), values)
                 updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
                 datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
             }.flatMap {

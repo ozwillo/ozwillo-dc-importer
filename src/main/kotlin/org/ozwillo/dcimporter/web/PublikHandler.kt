@@ -49,7 +49,7 @@ class PublikHandler(
                             PublikDataResponse(
                                 PublikDataEntryResponse(
                                     HttpStatus.OK.value(),
-                                    mapOf(Pair("Identifiant Ozwillo", result.resource.getUri()))
+                                    mapOf(Pair("Identifiant Ozwillo", result.getUri()))
                                 )
                             )
                         )
