@@ -14,13 +14,13 @@ import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class ProcessingStatHandlerTest (@Autowired private val restTemplate: TestRestTemplate){
+class ProcessingStatHandlerTest(@Autowired private val restTemplate: TestRestTemplate) {
 
     @Autowired
     private lateinit var processingStatRepository: ProcessingStatRepository
 
     @BeforeAll
-    fun beforeAll(){
+    fun beforeAll() {
         processingStatRepository.save(ProcessingStat(
             id = "Test-id-01",
             model = "model",
@@ -30,14 +30,14 @@ class ProcessingStatHandlerTest (@Autowired private val restTemplate: TestRestTe
     }
 
     @Test
-    fun getAll(){
+    fun getAll() {
         val entity = restTemplate.getForEntity("/api/stat-view/processing", String::class.java)
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(entity.body).contains("Test-id-01")
     }
 
     @Test
-    fun getGeneralResume(){
+    fun getGeneralResume() {
         val entity = restTemplate.getForEntity("/api/stat-view/processing-resume", ProcessingResumeFields::class.java)
         val responseBody = entity.body
         assertThat(entity.statusCode).isEqualTo(HttpStatus.OK)
@@ -68,7 +68,5 @@ class ProcessingStatHandlerTest (@Autowired private val restTemplate: TestRestTe
         assertThat(responseBody.resumeByOrganization[0].modelResume[0].nbreDeleted).isEqualTo(0)
         assertThat(responseBody.resumeByOrganization[0].modelResume[0].nbreActive).isEqualTo(1)
         assertThat(responseBody.resumeByOrganization[0].modelResume[0].nbreOrganization).isEqualTo(1)
-
-
     }
 }

@@ -24,5 +24,4 @@ class InseeSireneTest {
             }
             .verifyComplete()
     }
-
 }

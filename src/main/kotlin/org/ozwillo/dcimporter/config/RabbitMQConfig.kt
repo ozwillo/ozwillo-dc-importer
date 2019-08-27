@@ -14,7 +14,6 @@ class RabbitMQConfig {
     @Value("\${amqp.config.exchangerName}")
     private val EXCHANGER_NAME = ""
 
-
     @Bean
     fun topic(): TopicExchange {
         return TopicExchange(EXCHANGER_NAME)

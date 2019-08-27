@@ -98,7 +98,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
                 type,
                 iri
             )
-        )   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
+        ) // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         LOGGER.debug("Checking existence of resource $encodedUri")
@@ -119,7 +119,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
                 type,
                 iri
             )
-        )   //If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
+        ) // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         LOGGER.debug("Fetching resource from URI $encodedUri")
@@ -170,7 +170,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
 
         LOGGER.debug("Fetching limited resources from URI $requestUri")
 
-        //val client: WebClient = WebClient.create(requestUri)
+        // val client: WebClient = WebClient.create(requestUri)
 
         val accessToken = getSyncAccessToken()
         val restTemplate = RestTemplate()
@@ -207,7 +207,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
                     .retrieve()
                     .bodyToFlux(DCModel::class.java)
             }
-        }catch (e: HttpClientErrorException) {
+        } catch (e: HttpClientErrorException) {
             Flux.empty() // this.getDCResultFromHttpErrorException(e)
         }
     }
@@ -232,7 +232,6 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(DCModel::class.java)
-
         } catch (e: HttpClientErrorException) {
             Mono.empty()
         }
@@ -327,7 +326,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
         val response = restTemplate.postForEntity(kernelProperties.tokenEndpoint, request, TokenResponse::class.java)
 
-        return response.body!!.accessToken!! //Mono.just(DCResultSingle(HttpStatus.OK, result))
+        return response.body!!.accessToken!! // Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
     private fun dcResourceUri(type: DCModelType, iri: String): String {

@@ -30,7 +30,7 @@ class Routes(
 
             "/data-access".nest {
                 POST("", dataAccessRequestHandler::create)
-                PUT("/{id}/{action}", dataAccessRequestHandler::update)     //action = valid (push "Valider" button, update state to VALIDATED) or reject (push "Annuler" button, update state to REFUSED) or send (in case of pre-filled form sent to validation) or save (in case or updating pre-filled form)
+                PUT("/{id}/{action}", dataAccessRequestHandler::update) // action = valid (push "Valider" button, update state to VALIDATED) or reject (push "Annuler" button, update state to REFUSED) or send (in case of pre-filled form sent to validation) or save (in case or updating pre-filled form)
                 GET("", dataAccessRequestHandler::get)
                 GET("/{id}", dataAccessRequestHandler::dataAccess)
             }

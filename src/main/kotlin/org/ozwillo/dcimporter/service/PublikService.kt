@@ -173,7 +173,6 @@ class PublikService(
 
             Pair(type, dcFormResource)
         }
-
     }
 
     private fun convertToDCResourceEM(dcResource: DCResource, form: FormModel): DCResource {
@@ -329,5 +328,4 @@ class PublikService(
         private val LOGGER = LoggerFactory.getLogger(PublikService::class.java)
         const val name: String = "publik"
     }
-
 }

@@ -7,10 +7,9 @@ import reactor.core.publisher.Flux
 import java.time.LocalDateTime
 
 @Repository
-interface ProcessingStatRepository: ReactiveMongoRepository<ProcessingStat, String>{
+interface ProcessingStatRepository : ReactiveMongoRepository<ProcessingStat, String> {
 
     fun findByCreationDateAfter(
         date: LocalDateTime
     ): Flux<ProcessingStat>
-
 }

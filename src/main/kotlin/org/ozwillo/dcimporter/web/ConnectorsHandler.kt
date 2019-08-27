@@ -40,7 +40,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
                         }
                 ok().contentType(MediaType.APPLICATION_JSON)
                     .body(businessAppConfiguration, BusinessAppConfiguration::class.java)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
                 this.throwableToResponse(e)
         }
     }
@@ -53,7 +53,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
                     connectorsService.getById(id)
             ok().contentType(MediaType.APPLICATION_JSON)
                 .body(businessAppConfiguration, BusinessAppConfiguration::class.java)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             this.throwableToResponse(e)
         }
     }
@@ -82,7 +82,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             .flatMap {
                 status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
             }
-            .onErrorResume{ e ->
+            .onErrorResume { e ->
                 when (e) {
                     is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromObject(e.message))
                     else -> this.throwableToResponse(e)
@@ -132,7 +132,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
                 status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
             }
             .onErrorResume { e ->
-                when(e){
+                when (e) {
                     is EmptyException -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message))
                     else -> this.throwableToResponse(e)
                 }
@@ -163,7 +163,6 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
                 badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
             }
         }
-
     }
 }
 

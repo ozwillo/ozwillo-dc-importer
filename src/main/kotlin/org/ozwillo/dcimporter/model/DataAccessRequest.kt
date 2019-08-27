@@ -18,7 +18,7 @@ data class DataAccessRequest(
 
 data class DataAccessRequestField(val name: String, val requested: Boolean)
 
-enum class AccessRequestState{
+enum class AccessRequestState {
     SAVED,
     SENT,
     VALIDATED,

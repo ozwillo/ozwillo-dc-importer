@@ -10,11 +10,11 @@ import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 
 @Service
-class ProcessingStatReceiver (private val processingStatService: ProcessingStatService){
+class ProcessingStatReceiver(private val processingStatService: ProcessingStatService) {
 
     @RabbitListener(queues = ["stat"])
     @Throws(InterruptedException::class)
-    fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long){
+    fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long) {
         val routingKey: String = incoming.messageProperties.headers["original-routing-key"].toString()
         val messageId = incoming.messageProperties.headers["message-id"].toString()
 

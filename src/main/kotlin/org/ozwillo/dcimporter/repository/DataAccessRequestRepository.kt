@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
 
 @Repository
-interface DataAccessRequestRepository: ReactiveMongoRepository<DataAccessRequest, String>{
+interface DataAccessRequestRepository : ReactiveMongoRepository<DataAccessRequest, String> {
 
     fun findByState(state: String): Flux<DataAccessRequest>
 }

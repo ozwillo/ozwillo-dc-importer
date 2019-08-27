@@ -7,8 +7,6 @@ import javax.crypto.spec.SecretKeySpec
 import java.time.ZoneOffset
 import java.time.Instant
 
-
-
 fun String.hmac(algorithm: String, salt: String): String {
     val secretKeySpec = SecretKeySpec(salt.toByteArray(), algorithm)
     val mac = Mac.getInstance(algorithm)

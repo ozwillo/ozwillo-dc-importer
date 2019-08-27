@@ -61,7 +61,7 @@ class DatacoreHandler(
         return try {
             val dcModels = datacoreService.findModels(10, name)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModels, DCModel::class.java)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
@@ -72,15 +72,15 @@ class DatacoreHandler(
         return try {
             val dcModel = datacoreService.findModel(type)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModel)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
 
-    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse>{
+    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse> {
 
-        val queryParameter:String
-        val queryObject:String
+        val queryParameter: String
+        val queryObject: String
         val queryOperator: DCOperator
 
         when {
@@ -110,8 +110,7 @@ class DatacoreHandler(
                     organization
                 }
             ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
-
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
@@ -286,6 +285,5 @@ class DatacoreHandler(
                 ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
             }
         }
-
     }
 }
