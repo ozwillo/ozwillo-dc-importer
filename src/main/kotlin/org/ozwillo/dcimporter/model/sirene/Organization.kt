@@ -3,7 +3,6 @@ package org.ozwillo.dcimporter.model.sirene
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.datacore.I18nOrgDenomination
 import org.ozwillo.dcimporter.util.DCUtils
-import org.ozwillo.dcimporter.util.soap.response.parsing.ResponseObject
 
 data class Organization(
     val uri: String = "",
@@ -33,33 +32,6 @@ data class Organization(
     }
 
     companion object {
-
-        fun fromSoapObject(baseUri: String, responseObject: ResponseObject): Organization {
-
-            val index =
-                responseObject.responseObject!!.indexOf(
-                    responseObject.responseObject.find { p -> p.type == "entreprise" })
-            val cp = responseObject.responseObject[index].properties!![3].value!!
-            val voie = responseObject.responseObject[index].properties!![1].value!! +
-                    if (!responseObject.responseObject[index].properties!![2].value!!.isEmpty())
-                        ", ${responseObject.responseObject[index].properties!![2].value!!}"
-                    else ""
-            val pays = responseObject.responseObject[index].properties!![5].value!!
-            val commune = responseObject.responseObject[index].properties!![4].value!!
-            val tel = responseObject.responseObject[index].properties!![6].value!!
-
-            return Organization(
-                cp = cp,
-                voie = voie,
-                pays = DCUtils.getUri(baseUri, "geocofr:Pays_0", pays),
-                commune = DCUtils.getUri(baseUri, "geocifr:Commune_0", "$pays/$pays-${cp.substring(0, 2)}/$commune"),
-                denominationUniteLegale = responseObject.responseObject[index].properties!![0].value!!,
-                siret = responseObject.responseObject[index].properties!![8].value!!,
-                tel = tel,
-                naf = responseObject.responseObject[index].properties!![10].value!!,
-                url = responseObject.responseObject[index].properties!![11].value!!
-            )
-        }
 
         fun fromDcObject(dcOrg: DCResource): Organization =
             Organization(
