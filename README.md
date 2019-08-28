@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ozwillo/ozwillo-dc-importer.svg?branch=develop)](https://travis-ci.org/ozwillo/ozwillo-dc-importer)
+
 # DC Importer
 
 DC Importer is a data synchronizer allowing external application to communicate with the [Ozwillo Datacore](https://github.com/ozwillo/ozwillo-datacore)
