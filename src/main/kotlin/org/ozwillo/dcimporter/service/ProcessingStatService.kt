@@ -117,7 +117,7 @@ data class ProcessingResumeByModelFields(
 )
 
 data class ProcessingResumeByOrganizationFields(
-    val orgSiret: String,
+    val orgSiret: String?,
     val nbreProcessing: Int,
     val nbreDistinctModel: Int,
     val nbreOfCreation: Int,

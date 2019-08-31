@@ -23,7 +23,7 @@ class SenderTest {
         val bindingKeyPattern =
             Pattern.compile("^\\w+\\.[a-z0-9_:]+\\.(?:create|update|delete)+$", Pattern.CASE_INSENSITIVE)
         val bindingKey =
-            sender.getKey("marchepublic_0", "marchepublic_0:consultation", BindingKeyAction.CREATE)
+            sender.composeKey("marchepublic_0", "marchepublic_0:consultation", BindingKeyAction.CREATE)
         val matcher = bindingKeyPattern.matcher(bindingKey)
         assertTrue(matcher.matches())
     }

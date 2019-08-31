@@ -24,7 +24,7 @@ class Sender(private val template: RabbitTemplate) {
     @Throws(InterruptedException::class, AmqpException::class)
     fun send(resource: DCResource, project: String, type: String, action: BindingKeyAction) {
 
-        val key = getKey(project, type, action)
+        val key = composeKey(project, type, action)
         val message = JsonConverter.objectToJson(resource)
 
         logger.debug("About to send $message with key $key")
@@ -40,7 +40,7 @@ class Sender(private val template: RabbitTemplate) {
         )
     }
 
-    fun getKey(project: String, type: String, action: BindingKeyAction): String {
+    fun composeKey(project: String, type: String, action: BindingKeyAction): String {
         return "$project.$type.${action.value}"
     }
 }

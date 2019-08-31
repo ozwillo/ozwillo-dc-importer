@@ -20,7 +20,11 @@ class IoTService(
     @Value("\${datacore.model.iotDevice}")
     private val datacoreIotDevice: String = "iot:device_0"
 
-    fun getOrCreateDevice(deviceId: String): Mono<DCResourceURI> {
+    fun getOrCreateDevice(fullDeviceId: String): Mono<DCResourceURI> {
+
+        val splittedFullDeviceId = fullDeviceId.split(":")
+        val deviceId = splittedFullDeviceId[0]
+        val deviceName = if (splittedFullDeviceId.size == 2) splittedFullDeviceId[1] else fullDeviceId
 
         return datacoreService.getResourceFromIRI(
             project = datacoreIotProject,
@@ -35,6 +39,8 @@ class IoTService(
                 type = datacoreIotDevice,
                 iri = deviceId
             )
+            dcDeviceResource.setStringValue("iotdevice:id", deviceId)
+            dcDeviceResource.setStringValue("iotdevice:name", deviceName)
             datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, null)
                 .map { it.getUri() }
         }

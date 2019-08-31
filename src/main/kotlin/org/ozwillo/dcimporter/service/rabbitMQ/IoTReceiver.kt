@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.config.DatacoreProperties
@@ -64,12 +65,23 @@ class IoTReceiver(
         // (this is how data is received)
         val mapper = jacksonObjectMapper()
         mapper.findAndRegisterModules()
-        val parsedMeasures: List<DeviceMeasure> = mapper.readValue(
-            message,
-            mapper.typeFactory.constructCollectionType(
-                List::class.java, DeviceMeasure::class.java
+        val parsedMeasures: List<DeviceMeasure> = try {
+            mapper.readValue(
+                message,
+                mapper.typeFactory.constructCollectionType(
+                    List::class.java, DeviceMeasure::class.java
+                )
             )
-        )
+        } catch (e: JsonMappingException) {
+            logger.warn("Unable to parse a received measure, ignoring it", e)
+            emptyList()
+        }
+
+        if (parsedMeasures.isEmpty()) {
+            channel.basicAck(tag, false)
+            return
+        }
+
         logger.debug("Parsed measures : $parsedMeasures")
 
         val deviceId = parsedMeasures.find { it.bn.isNotEmpty() }?.bn ?: routingKey.substringAfterLast(".")
@@ -87,7 +99,7 @@ class IoTReceiver(
             .flatMapIterable {
                 it.t1.map { measure -> Pair(measure, it.t2) }
             }.map {
-                val finalIri = "$deviceId/${it.first.n}/$measureTimeAsString"
+                val finalIri = "${it.second}/${it.first.n}/$measureTimeAsString"
                 val dcBusinessResource = DCResource(
                     datacoreBaseUri = datacoreProperties.baseResourceUri(),
                     type = datacoreIotMeasure, iri = finalIri
@@ -98,8 +110,8 @@ class IoTReceiver(
                 dcBusinessResource.setStringValue("iotmeasure:unit", it.first.u)
                 dcBusinessResource.setStringValue("iotmeasure:type", it.first.n)
                 dcBusinessResource.setDateTimeValue("iotmeasure:time", measureTime.toLocalDateTime())
-                measureLatitude?.let { dcBusinessResource.setFloatValue("iotmeasure:latitude", it) }
-                measureLongitude?.let { dcBusinessResource.setFloatValue("iotmeasure:longitude", it) }
+                measureLatitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
+                measureLongitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
 
                 dcBusinessResource
             }.flatMap { dcBusinessResource ->
