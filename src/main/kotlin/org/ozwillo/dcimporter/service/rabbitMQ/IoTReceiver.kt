@@ -87,11 +87,11 @@ class IoTReceiver(
         val deviceId = parsedMeasures.find { it.bn.isNotEmpty() }?.bn ?: routingKey.substringAfterLast(".")
         val measureTime = parsedMeasures.find { it.bt.isNotEmpty() }?.bt?.substringBefore(".")?.toZonedDateTime() ?: ZonedDateTime.now()
         val measureTimeAsString = measureTime.format(DateTimeFormatter.ISO_INSTANT)
-        val measureLatitude = parsedMeasures.find { it.n.isNotEmpty() && it.n == "latitude" }?.v
-        val measureLongitude = parsedMeasures.find { it.n.isNotEmpty() && it.n == "longitude" }?.v
+        val measureLatitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lat" }?.v
+        val measureLongitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lon" }?.v
 
         val recordableMeasures = parsedMeasures.filter {
-            it.n.isNotEmpty() && it.n != "latitude" && it.n != "longitude"
+            it.u.isNotEmpty() && it.u != "lat" && it.u != "lon"
         }
 
         recordableMeasures.toMono()
