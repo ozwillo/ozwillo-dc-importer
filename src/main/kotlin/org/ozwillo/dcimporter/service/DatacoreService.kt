@@ -44,7 +44,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .expand(type)
             .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
             .toUriString()
-        LOGGER.debug("Saving resource at URI $uri")
+        LOGGER.debug("Saving resource $resource at URI $uri")
 
         val accessToken = bearer ?: getSyncAccessToken()
 
@@ -54,6 +54,15 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .header("Authorization", "Bearer $accessToken")
             .syncBody(resource)
             .retrieve()
+            .onStatus(
+                HttpStatus::is4xxClientError
+            ) { clientResponse ->
+                clientResponse.bodyToMono(String::class.java)
+                    .flatMap {
+                        LOGGER.error("Got error while saving resource : $it")
+                        Mono.just(HttpClientErrorException(HttpStatus.BAD_REQUEST))
+                    }
+            }
             .bodyToMono(DCResource::class.java)
             .doOnSuccess {
                 sender.send(resource, project, type, BindingKeyAction.CREATE)
