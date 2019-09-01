@@ -14,26 +14,32 @@ import org.springframework.stereotype.Service
 @Service
 class ProcessingStatReceiver(private val processingStatService: ProcessingStatService) {
 
-    private val logger: Logger = LoggerFactory.getLogger(Sender::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(ProcessingStatReceiver::class.java)
 
     @RabbitListener(queues = ["stat"])
     @Throws(InterruptedException::class)
     fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long) {
-        val routingKey: String = incoming.messageProperties.headers["original-routing-key"].toString()
-        val messageId = incoming.messageProperties.headers["message-id"].toString()
-
-        logger.debug("Received message with routing key : $routingKey")
 
         // TODO find why we can do with this organization thing (it's not an universal concept shared by all
         //      the data that goes throw the application
-        processingStatService.create(
-            ProcessingStat(
-                id = messageId,
-                model = routingKey.split(".")[1],
-                organization = null,
-                action = routingKey.split(".")[2]
+        if (incoming.messageProperties.headers.containsKey("original-routing-key")) {
+            val routingKey: String = incoming.messageProperties.headers["original-routing-key"].toString()
+            val messageId = incoming.messageProperties.headers["message-id"].toString()
+
+            logger.debug("Received message with routing key : $routingKey")
+
+            processingStatService.create(
+                ProcessingStat(
+                    id = messageId,
+                    model = routingKey.split(".")[1],
+                    organization = null,
+                    action = routingKey.split(".")[2]
+                )
             )
-        )
+        } else {
+            logger.info("Ignoring message with no routing key")
+        }
+
         channel.basicAck(tag, false)
     }
 }
