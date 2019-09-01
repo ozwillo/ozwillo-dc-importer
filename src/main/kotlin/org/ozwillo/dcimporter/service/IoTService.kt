@@ -22,8 +22,11 @@ class IoTService(
 
     fun getOrCreateDevice(fullDeviceId: String): Mono<DCResourceURI> {
 
+        // fullDeviceId can be either (for the moment) :
+        //   - a MAC address, eg 84:F3:EB:0C:8A:71
+        //   - a composite name, eg 8cf9574000000237:SalleServeur
         val splittedFullDeviceId = fullDeviceId.split(":")
-        val deviceId = splittedFullDeviceId[0]
+        val deviceId = if (splittedFullDeviceId.size > 2) fullDeviceId else splittedFullDeviceId[0]
         val deviceName = if (splittedFullDeviceId.size == 2) splittedFullDeviceId[1] else fullDeviceId
 
         return datacoreService.getResourceFromIRI(
