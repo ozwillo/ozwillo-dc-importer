@@ -8,6 +8,7 @@ import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.IoTService
+import org.ozwillo.dcimporter.util.extractDeviceId
 import org.ozwillo.dcimporter.util.toZonedDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -82,8 +83,6 @@ class IoTReceiver(
             return
         }
 
-        logger.debug("Parsed measures : $parsedMeasures")
-
         val deviceId = parsedMeasures.find { it.bn.isNotEmpty() }?.bn ?: routingKey.substringAfterLast(".")
         val measureTime = parsedMeasures.find { it.bt.isNotEmpty() }?.bt?.substringBefore(".")?.toZonedDateTime() ?: ZonedDateTime.now()
         val measureTimeAsString = measureTime.format(DateTimeFormatter.ISO_INSTANT)
@@ -99,7 +98,7 @@ class IoTReceiver(
             .flatMapIterable {
                 it.t1.map { measure -> Pair(measure, it.t2) }
             }.map {
-                val finalIri = "${it.second}/${it.first.n}/$measureTimeAsString"
+                val finalIri = "${deviceId.extractDeviceId()}/${it.first.n}/$measureTimeAsString"
                 val dcBusinessResource = DCResource(
                     datacoreBaseUri = datacoreProperties.baseResourceUri(),
                     type = datacoreIotMeasure, iri = finalIri
@@ -120,6 +119,8 @@ class IoTReceiver(
                 channel.basicAck(tag, false)
             }.doOnError {
                 logger.error("Measure recording failed with error $it")
+                // Do not bother with failed recordings ...
+                channel.basicAck(tag, false)
             }.subscribe()
     }
 
