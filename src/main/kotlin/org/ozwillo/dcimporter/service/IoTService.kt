@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.service
 
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.datacore.DCResourceURI
 import org.ozwillo.dcimporter.util.parseDevice
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
