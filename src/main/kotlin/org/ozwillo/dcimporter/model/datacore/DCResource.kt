@@ -79,6 +79,8 @@ class DCResource(
 
     fun getIntValue(s: String): Int = values[s] as Int
 
+    fun getFloatValue(s: String): Float? = values[s] as? Float
+
     fun getBooleanValue(s: String): Boolean = values[s] as Boolean
 
     fun getDateValue(s: String): LocalDateTime = LocalDateTime.parse(values[s] as String, df)

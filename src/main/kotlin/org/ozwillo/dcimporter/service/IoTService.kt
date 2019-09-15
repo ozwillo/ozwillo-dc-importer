@@ -21,7 +21,7 @@ class IoTService(
     @Value("\${datacore.model.iotDevice}")
     private val datacoreIotDevice: String = "iot:device_0"
 
-    fun getOrCreateDevice(fullDeviceId: String): Mono<DCResourceURI> {
+    fun getOrCreateDevice(fullDeviceId: String, latitude: Float?, longitude: Float?): Mono<DCResource> {
 
         val deviceIdAndName = fullDeviceId.parseDevice()
 
@@ -30,9 +30,7 @@ class IoTService(
             iri = deviceIdAndName.first,
             type = datacoreIotDevice,
             bearer = null
-        ).map {
-            it.getUri()
-        }.switchIfEmpty {
+        ).switchIfEmpty {
             val dcDeviceResource = DCResource(
                 datacoreBaseUri = datacoreProperties.baseResourceUri(),
                 type = datacoreIotDevice,
@@ -40,8 +38,9 @@ class IoTService(
             )
             dcDeviceResource.setStringValue("iotdevice:id", deviceIdAndName.first)
             dcDeviceResource.setStringValue("iotdevice:name", deviceIdAndName.second)
+            latitude?.let { dcDeviceResource.setFloatValue("iotdevice:lat", it) }
+            longitude?.let { dcDeviceResource.setFloatValue("iotdevice:lon", it) }
             datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, null)
-                .map { it.getUri() }
         }
     }
 }

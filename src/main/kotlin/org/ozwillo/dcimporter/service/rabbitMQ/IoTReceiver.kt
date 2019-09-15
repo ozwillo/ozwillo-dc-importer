@@ -94,7 +94,7 @@ class IoTReceiver(
         }
 
         recordableMeasures.toMono()
-            .zipWith(ioTService.getOrCreateDevice(deviceId))
+            .zipWith(ioTService.getOrCreateDevice(deviceId, measureLatitude, measureLongitude))
             .flatMapIterable {
                 it.t1.map { measure -> Pair(measure, it.t2) }
             }.map {
@@ -104,13 +104,16 @@ class IoTReceiver(
                     type = datacoreIotMeasure, iri = finalIri
                 )
 
-                dcBusinessResource.setStringValue("iotmeasure:deviceId", it.second)
+                dcBusinessResource.setStringValue("iotmeasure:deviceId", it.second.getUri())
                 dcBusinessResource.setFloatValue("iotmeasure:value", it.first.v)
                 dcBusinessResource.setStringValue("iotmeasure:unit", it.first.u)
                 dcBusinessResource.setStringValue("iotmeasure:type", it.first.n)
                 dcBusinessResource.setDateTimeValue("iotmeasure:time", measureTime.toLocalDateTime())
-                measureLatitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
-                measureLongitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
+
+                val latitude = measureLatitude ?: it.second.getFloatValue("iotdevice:lat")
+                val longitude = measureLongitude ?: it.second.getFloatValue("iotdevice:lon")
+                latitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
+                longitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
 
                 dcBusinessResource
             }.flatMap { dcBusinessResource ->
