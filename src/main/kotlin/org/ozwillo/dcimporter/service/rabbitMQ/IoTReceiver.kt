@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.support.AmqpHeaders
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
@@ -36,6 +37,9 @@ class IoTReceiver(
 
     @Value("\${datacore.model.iotMeasure}")
     private val datacoreIotMeasure: String = "iot:measure_0"
+
+    @Autowired
+    private lateinit var ioTSender: IoTSender
 
     /*
      * sample data received :
@@ -117,6 +121,7 @@ class IoTReceiver(
 
                 dcBusinessResource
             }.flatMap { dcBusinessResource ->
+                ioTSender.send(dcBusinessResource)
                 datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, dcBusinessResource, null)
             }.doOnComplete {
                 channel.basicAck(tag, false)
