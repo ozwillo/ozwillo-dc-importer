@@ -8,6 +8,7 @@ import org.springframework.amqp.AmqpException
 import org.springframework.amqp.core.MessageBuilder
 import org.springframework.amqp.core.MessageProperties
 import org.springframework.amqp.rabbit.core.RabbitTemplate
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -16,7 +17,8 @@ class IoTSender(private val template: RabbitTemplate) {
 
     private val logger: Logger = LoggerFactory.getLogger(IoTSender::class.java)
 
-    private val exchangerName = "amq.topic"
+    @Value("\${amqp.config.defaultExchangerName}")
+    private val exchangerName = ""
 
     @Throws(InterruptedException::class, AmqpException::class)
     fun send(resource: DCResource) {
