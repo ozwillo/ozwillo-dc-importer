@@ -51,6 +51,7 @@ publik:
 
 amqp:
   config:
+    defaultExchangerName: amq.topic
     exchangerName: dcimporter
     maarch:
       queueName: maarch

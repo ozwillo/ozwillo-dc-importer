@@ -26,7 +26,8 @@ import java.time.format.DateTimeFormatter
 class IoTReceiver(
     private val datacoreService: DatacoreService,
     private val datacoreProperties: DatacoreProperties,
-    private val ioTService: IoTService
+    private val ioTService: IoTService,
+    private val ioTSender: IoTSender
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(IoTReceiver::class.java)
@@ -115,6 +116,9 @@ class IoTReceiver(
                 latitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
                 longitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
 
+                dcBusinessResource
+            }.map { dcBusinessResource ->
+                ioTSender.send(dcBusinessResource)
                 dcBusinessResource
             }.flatMap { dcBusinessResource ->
                 datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, dcBusinessResource, null)
