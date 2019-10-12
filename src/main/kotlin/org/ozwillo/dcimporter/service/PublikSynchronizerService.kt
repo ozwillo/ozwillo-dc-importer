@@ -52,7 +52,8 @@ class PublikSynchronizerService(
                             publikService.syncPublikForms(publikConfiguration, it, formTypeEM)
                                 .subscribe { LOGGER.debug("Synchro finished with $it") }
                         else if (type == datacoreModelSVE)
-                            publikService.syncPublikForms(publikConfiguration, it, formTypeSVE).block()
+                            publikService.syncPublikForms(publikConfiguration, it, formTypeSVE)
+                                .subscribe { LOGGER.debug("Synchro finished with $it") }
                     }
                 }
             }
