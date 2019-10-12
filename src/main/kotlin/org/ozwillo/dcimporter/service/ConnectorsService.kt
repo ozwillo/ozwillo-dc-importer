@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @Service
-class ConnectorsService(private val businessAppConfigurationRepository: BusinessAppConfigurationRepository){
+class ConnectorsService(private val businessAppConfigurationRepository: BusinessAppConfigurationRepository) {
 
     fun searchConnectors(siret: String, appName: String): Flux<BusinessAppConfiguration> {
         return when {
@@ -36,7 +36,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
         return businessAppConfigurationRepository.findByOrganizationSiret(siret)
     }
 
-    fun getAllContainingDisplayName(appName: String): Flux<BusinessAppConfiguration>{
+    fun getAllContainingDisplayName(appName: String): Flux<BusinessAppConfiguration> {
         return businessAppConfigurationRepository.findByDisplayNameIgnoreCaseContaining(appName)
     }
 
@@ -72,13 +72,13 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                             secretOrToken = businessAppConfiguration.secretOrToken
                         )
                     )
-                }else{
+                } else {
                     fallback
                 }
             }
     }
 
-    fun clone(businessAppConfiguration: BusinessAppConfiguration): Mono<BusinessAppConfiguration>{
+    fun clone(businessAppConfiguration: BusinessAppConfiguration): Mono<BusinessAppConfiguration> {
         val fallback: Mono<BusinessAppConfiguration> =
                 Mono.error(EmptyException("No connector found with id ${businessAppConfiguration.id!!}"))
 
@@ -100,7 +100,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             }
     }
 
-    fun update(siret: String, appName: String, monoBusinessAppConfiguration: Mono<BusinessAppConfiguration>):Mono<BusinessAppConfiguration>{
+    fun update(siret: String, appName: String, monoBusinessAppConfiguration: Mono<BusinessAppConfiguration>): Mono<BusinessAppConfiguration> {
 
         val fallback: Mono<BusinessAppConfiguration> =
             Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
@@ -129,7 +129,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             }
     }
 
-    fun delete(id: String): Mono<BusinessAppConfiguration>{
+    fun delete(id: String): Mono<BusinessAppConfiguration> {
         val fallback: Mono<BusinessAppConfiguration> =
                 Mono.error(EmptyException("Connector not found for id: \"$id\""))
 
@@ -142,7 +142,7 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
             }
     }
 
-    fun deleteBySiretAndAppName(siret: String, appName: String):Mono<BusinessAppConfiguration>{
+    fun deleteBySiretAndAppName(siret: String, appName: String): Mono<BusinessAppConfiguration> {
         val fallback: Mono<BusinessAppConfiguration> =
             Mono.error(EmptyException("Connector not found for application \"$appName\" and siret $siret"))
 
@@ -154,5 +154,4 @@ class ConnectorsService(private val businessAppConfigurationRepository: Business
                 Mono.empty<BusinessAppConfiguration>()
             }
     }
-
 }

@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.model
 
 import org.springframework.data.annotation.Id
 
-
 data class BusinessMapping(
     @Id val id: String? = null,
     val dcId: String,

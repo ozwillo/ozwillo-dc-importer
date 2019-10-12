@@ -10,9 +10,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ProcessingStatService (private val processingStatRepository: ProcessingStatRepository){
+class ProcessingStatService(private val processingStatRepository: ProcessingStatRepository) {
 
-    fun create(processingStat: ProcessingStat){
+    fun create(processingStat: ProcessingStat) {
         processingStatRepository.save(processingStat).subscribe()
     }
 
@@ -24,7 +24,7 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
         return processingStatRepository.findByCreationDateAfter(date)
     }
 
-    fun getGeneralStat(date: String): Mono<ProcessingResumeFields>{
+    fun getGeneralStat(date: String): Mono<ProcessingResumeFields> {
 
         val resumeByModel = mutableListOf<ProcessingResumeByModelFields>()
         val resumeByOrganization = mutableListOf<ProcessingResumeByOrganizationFields>()
@@ -57,8 +57,8 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
                                 nbreProcessing = processingListByOrganization.count(),
                                 nbreDistinctModel = processingListByOrganization.distinctBy { p -> p.model }.count(),
                                 nbreOfCreation = totalCreated,
-                                nbreOfUpdate = processingListByOrganization.filter { p -> (p.action == BindingKeyAction.UPDATE.value
-                                        || p.action == BindingKeyAction.PUBLISH.value) }.count(),
+                                nbreOfUpdate = processingListByOrganization.filter { p -> (p.action == BindingKeyAction.UPDATE.value ||
+                                        p.action == BindingKeyAction.PUBLISH.value) }.count(),
                                 nbreOfDeletion = totalDeleted,
                                 nbreActiveModel = totalCreated - totalDeleted,
                                 modelResume = modelResumeListForOrg
@@ -84,19 +84,18 @@ class ProcessingStatService (private val processingStatRepository: ProcessingSta
                     modelName = model,
                     nbreProcessing = processingList.count(),
                     nbreCreated = created,
-                    nbreOfUpdate = processingList.filter { p -> (p.action == BindingKeyAction.UPDATE.value
-                            || p.action == BindingKeyAction.PUBLISH.value) }.count(),
+                    nbreOfUpdate = processingList.filter { p -> (p.action == BindingKeyAction.UPDATE.value ||
+                            p.action == BindingKeyAction.PUBLISH.value) }.count(),
                     nbreDeleted = deleted,
                     nbreActive = created - deleted,
-                    nbreOrganization = processingList.distinctBy {p -> p.organization }.count()
+                    nbreOrganization = processingList.distinctBy { p -> p.organization }.count()
                 )
     }
 
-    private fun stringToLocalDateTime(date: String): LocalDateTime{
+    private fun stringToLocalDateTime(date: String): LocalDateTime {
         val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
         return LocalDateTime.parse(date, df)
     }
-
 }
 
 data class ProcessingResumeFields(
@@ -118,7 +117,7 @@ data class ProcessingResumeByModelFields(
 )
 
 data class ProcessingResumeByOrganizationFields(
-    val orgSiret: String,
+    val orgSiret: String?,
     val nbreProcessing: Int,
     val nbreDistinctModel: Int,
     val nbreOfCreation: Int,

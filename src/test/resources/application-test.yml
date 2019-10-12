@@ -4,16 +4,6 @@ kernel:
 datacore:
   url: http://localhost:8089
 
-marchesecurise:
-  url:
-    createConsultation: /webserv/?module=dce%7Cserveur_crea_dce
-    updateConsultation: /webserv/?module=dce%7Cserveur_modif_dce
-    deleteConsultation: /webserv/?module=dce%7Cserveur_suppr_dce
-    publishConsultation: /webserv/?module=dce%7Cserveur_publication_dce
-    lot: /webserv/?module=dce%7Cserveur_lot_dce
-    piece: /webserv/?module=dce%7Cserveur_fichier_dce
-    registre: /webserv/?module=registres%7Cserveur_registres
-
 insee:
   api:
     sirene:

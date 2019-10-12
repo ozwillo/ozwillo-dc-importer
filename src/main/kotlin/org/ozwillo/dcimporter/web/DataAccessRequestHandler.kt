@@ -27,17 +27,16 @@ class DataAccessRequestHandler(
         private val LOGGER = LoggerFactory.getLogger(DataAccessRequestHandler::class.java)
     }
 
-    fun get(req: ServerRequest): Mono<ServerResponse>{
+    fun get(req: ServerRequest): Mono<ServerResponse> {
 
         val state = if (req.queryParam("state").isPresent) req.queryParam("state").get().toUpperCase() else ""
 
         return try {
             val dataAccessRequest = dataAccessRequestRepository.findByState(state)
             ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
-        }catch (e: Exception){
+        } catch (e: Exception) {
             this.throwableToResponse(e)
         }
-
     }
 
     fun create(req: ServerRequest): Mono<ServerResponse> {
@@ -53,13 +52,13 @@ class DataAccessRequestHandler(
             .onErrorResume(this::throwableToResponse)
     }
 
-    fun update(req: ServerRequest): Mono<ServerResponse>{
+    fun update(req: ServerRequest): Mono<ServerResponse> {
         val id = req.pathVariable("id")
         val state =
-            when(req.pathVariable("action")) {
+            when (req.pathVariable("action")) {
                 "valid" -> AccessRequestState.VALIDATED
                 "reject" -> AccessRequestState.REFUSED
-                //"save" -> AccessRequestState.SAVED
+                // "save" -> AccessRequestState.SAVED
                 else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize requested action. Waiting for \"valid\" or \"reject\""))
             }
 
@@ -83,7 +82,7 @@ class DataAccessRequestHandler(
                             )
                         ).subscribe()
 
-                        try { //TODO: #5350 decoupling of the e-mail sending feature
+                        try { // TODO: #5350 decoupling of the e-mail sending feature
                             emailService.sendSimpleMessage(
                                 currentDataAccessRequest.email,
                                 "[DC-Importer] Your data access request ${state.name.toLowerCase()}",
@@ -103,17 +102,17 @@ class DataAccessRequestHandler(
             }
     }
 
-    fun dataAccess(req: ServerRequest): Mono<ServerResponse>{
+    fun dataAccess(req: ServerRequest): Mono<ServerResponse> {
         val id = req.pathVariable("id")
         return try {
             val dataAccessRequest = dataAccessRequestRepository.findById(id)
             ok().contentType(MediaType.APPLICATION_JSON).body(dataAccessRequest, DataAccessRequest::class.java)
-        }catch (e: Exception){
+        } catch (e: Exception) {
             this.throwableToResponse(e)
         }
     }
 
-    //Utils
+    // Utils
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
         DataAccessRequestHandler.LOGGER.error("Operation failed with error $throwable")
@@ -123,7 +122,5 @@ class DataAccessRequestHandler(
                 ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
             }
         }
-
     }
-
 }

@@ -8,6 +8,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
 typealias I18nOrgDenomination = HashMap<String, String>
+typealias DCResourceURI = String
 
 @JsonIgnoreProperties("@type")
 class DCResource(
@@ -24,7 +25,7 @@ class DCResource(
     @JsonIgnore
     val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
 
-    constructor(datacoreBaseUri: String, type: DCModelType, iri: String): this("$datacoreBaseUri/${type.encodeUriPathSegment()}/$iri")
+    constructor(datacoreBaseUri: String, type: DCModelType, iri: String) : this("$datacoreBaseUri/${type.encodeUriPathSegment()}/$iri")
 
     @JsonProperty("@id")
     fun getUri(): String {
@@ -78,6 +79,8 @@ class DCResource(
 
     fun getIntValue(s: String): Int = values[s] as Int
 
+    fun getFloatValue(s: String): Float? = values[s] as? Float
+
     fun getBooleanValue(s: String): Boolean = values[s] as Boolean
 
     fun getDateValue(s: String): LocalDateTime = LocalDateTime.parse(values[s] as String, df)
@@ -113,7 +116,7 @@ class DCResource(
 
             value.values.toTypedArray()[langIndex] == correctedLang
         }
-        if (!errorMessage.isEmpty() && result != null){
+        if (!errorMessage.isEmpty() && result != null) {
             LOGGER.debug("${result.values.toTypedArray()[nameIndex]} : $errorMessage")
         }
         return if (result != null) result.values.toTypedArray()[nameIndex] else ""

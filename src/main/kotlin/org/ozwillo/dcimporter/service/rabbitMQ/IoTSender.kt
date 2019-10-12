@@ -1,8 +1,7 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.util.BindingKeyAction
-import org.ozwillo.dcimporter.util.JsonConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.AmqpException
@@ -14,20 +13,21 @@ import org.springframework.stereotype.Service
 import java.util.*
 
 @Service
-class Sender(private val template: RabbitTemplate) {
+class IoTSender(private val template: RabbitTemplate) {
 
-    private val logger: Logger = LoggerFactory.getLogger(Sender::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(IoTSender::class.java)
 
-    @Value("\${amqp.config.exchangerName}")
+    @Value("\${amqp.config.defaultExchangerName}")
     private val exchangerName = ""
 
     @Throws(InterruptedException::class, AmqpException::class)
-    fun send(resource: DCResource, project: String, type: String, action: BindingKeyAction) {
+    fun send(resource: DCResource) {
+        val mapper = jacksonObjectMapper()
+        val message = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(resource)
 
-        val key = composeKey(project, type, action)
-        val message = JsonConverter.objectToJson(resource)
+        val key = resource.getStringValue("iotmeasure:type")
 
-        logger.debug("About to send $message with key $key")
+        logger.debug("About to send $message with key $key in topic $exchangerName")
 
         val properties = MessageProperties()
         properties.setHeader("original-routing-key", key)
@@ -38,9 +38,5 @@ class Sender(private val template: RabbitTemplate) {
             key,
             MessageBuilder.withBody(message.toByteArray()).andProperties(properties).build()
         )
-    }
-
-    fun composeKey(project: String, type: String, action: BindingKeyAction): String {
-        return "$project.$type.${action.value}"
     }
 }

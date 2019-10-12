@@ -1,11 +1,15 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.IoTService
+import org.ozwillo.dcimporter.util.extractDeviceId
+import org.ozwillo.dcimporter.util.toZonedDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.amqp.core.Message
@@ -14,33 +18,39 @@ import org.springframework.amqp.support.AmqpHeaders
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
+import reactor.core.publisher.toMono
 import java.time.*
 import java.time.format.DateTimeFormatter
 
-
 @Service
-class IoTReceiver(private val datacoreService: DatacoreService, private val datacoreProperties: DatacoreProperties) {
+class IoTReceiver(
+    private val datacoreService: DatacoreService,
+    private val datacoreProperties: DatacoreProperties,
+    private val ioTService: IoTService,
+    private val ioTSender: IoTSender
+) {
 
     private val logger: Logger = LoggerFactory.getLogger(IoTReceiver::class.java)
 
     @Value("\${datacore.model.iotProject}")
     private val datacoreIotProject: String = "iot_0"
 
-    @Value("\${datacore.model.iotModel}")
-    private val datacoreIotModel: String = "iot:device_0"
-
-    @Value("\${amqp.config.iot.baseBindingKey}")
-    private val baseBindingKey: String = ""
+    @Value("\${datacore.model.iotMeasure}")
+    private val datacoreIotMeasure: String = "iot:measure_0"
 
     /*
      * sample data received :
-     *   [{"bt": 1548582039.971496, "bn": "8cf9574000000217:FrancK2", "v": 6.786213378906247, "u": "Cel", "n": "temperature"},
-     *    {"v": 66.265625, "u": "%RH", "n": "humidity"},
-     *    {"v": 3.3000000000000003, "u": "%EL", "n": "batteryLevel"},
-     *    {"v": 57.25, "u": "dB", "n": "SNR"},
-     *    {"v": -63, "u": "dBm", "n": "RSSI"},
-     *    {"v": 60, "u": "s", "n": "Period"}]
+     *   [{"bt": 1555970675.349918, "bn": "8cf9574000000217:FrancK2", "v": 16.54605224609375, "u": "Cel", "n": "temperature"},
+     *    {"v": 53.5703125, "u": "%RH", "n": "humidity"},
+     *    {"v": 3.42, "u": "%EL", "n": "batteryLevel"},
+     *    {"v": 55.0, "u": "dB", "n": "SNR"},
+     *    {"v": -68, "u": "dBm", "n": "RSSI"},
+     *    {"v": 60, "u": "s", "n": "Period"},
+     *    {"v": 43.636197, "u": "lat", "n": "latitude"},
+     *    {"v": 6.913232, "u": "lon", "n": "longitude"}]
      *
+     *   [{"bn":"84:F3:EB:0C:80:7E","n":"temperature","u":"Cel","v":30.3},
+     *    {"n":"humidity","u":"%RH","v":60.5}]
      */
     @RabbitListener(queues = ["iot"])
     @Throws(InterruptedException::class)
@@ -57,59 +67,73 @@ class IoTReceiver(private val datacoreService: DatacoreService, private val data
         // (this is how data is received)
         val mapper = jacksonObjectMapper()
         mapper.findAndRegisterModules()
-        // Making sure that the routing key respects the Queue bindingKey format
-        if (routingKey.startsWith(baseBindingKey)) {
-            val parsedMeasures: List<DeviceMeasure> = mapper.readValue(
+        val parsedMeasures: List<DeviceMeasure> = try {
+            mapper.readValue(
                 message,
                 mapper.typeFactory.constructCollectionType(
                     List::class.java, DeviceMeasure::class.java
                 )
             )
-            logger.debug("Parsed measures : $parsedMeasures")
-
-            // Generate the base IRI for all the measures
-            // We'll add the final part on each mesure
-            // TODO : there is some copypasta going on here
-            val now = LocalDateTime.now()
-            val df = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSVV")
-            val zonedDateTime = ZonedDateTime.of(now, ZoneOffset.UTC)
-            val formattedDate = (zonedDateTime.format(df))
-
-            val deviceId = routingKey.substringAfterLast(".")
-            val baseIri = "$deviceId/$formattedDate"
-            logger.debug("Generated base resource IRI : $baseIri")
-
-            parsedMeasures.forEach { measure ->
-                val finalIri = baseIri + "/" + measure.n
-                val dcBusinessResource = DCResource(datacoreBaseUri = datacoreProperties.baseResourceUri(),
-                    type = datacoreIotModel, iri = finalIri)
-
-                dcBusinessResource.setStringValue("iotdevice:id", deviceId)
-                dcBusinessResource.setDateTimeValue("iotdevice:time", now)
-                dcBusinessResource.setStringValue("iotdevice:name", measure.n)
-                dcBusinessResource.setFloatValue("iotdevice:value", measure.v)
-                dcBusinessResource.setStringValue("iotdevice:unit", measure.u)
-                dcBusinessResource.setStringValue("iotdevice:baseName", measure.bn)
-                if (measure.bt > 0) {
-                    val baseTime = Instant.ofEpochSecond(measure.bt).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    dcBusinessResource.setDateTimeValue("iotdevice:baseTime", baseTime)
-                }
-                dcBusinessResource.setStringValue("iotdevice:stringValue", measure.vs)
-                logger.debug("Created DC business resource : $dcBusinessResource")
-
-                datacoreService.saveResource(datacoreIotProject, datacoreIotModel, dcBusinessResource, null)
-                    .subscribe { result ->
-                        logger.debug("Saved resource in DC with result $result")
-                    }
-            }
+        } catch (e: JsonMappingException) {
+            logger.warn("Unable to parse a received measure, ignoring it", e)
+            emptyList()
         }
 
-        channel.basicAck(tag, false)
+        if (parsedMeasures.isEmpty()) {
+            channel.basicAck(tag, false)
+            return
+        }
+
+        val deviceId = parsedMeasures.find { it.bn.isNotEmpty() }?.bn ?: routingKey.substringAfterLast(".")
+        val measureTime = parsedMeasures.find { it.bt.isNotEmpty() }?.bt?.substringBefore(".")?.toZonedDateTime() ?: ZonedDateTime.now()
+        val measureTimeAsString = measureTime.format(DateTimeFormatter.ISO_INSTANT)
+        val measureLatitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lat" }?.v
+        val measureLongitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lon" }?.v
+
+        val recordableMeasures = parsedMeasures.filter {
+            it.u.isNotEmpty() && it.u != "lat" && it.u != "lon"
+        }
+
+        recordableMeasures.toMono()
+            .zipWith(ioTService.getOrCreateDevice(deviceId, measureLatitude, measureLongitude))
+            .flatMapIterable {
+                it.t1.map { measure -> Pair(measure, it.t2) }
+            }.map {
+                val finalIri = "${deviceId.extractDeviceId()}/${it.first.n}/$measureTimeAsString"
+                val dcBusinessResource = DCResource(
+                    datacoreBaseUri = datacoreProperties.baseResourceUri(),
+                    type = datacoreIotMeasure, iri = finalIri
+                )
+
+                dcBusinessResource.setStringValue("iotmeasure:deviceId", it.second.getUri())
+                dcBusinessResource.setFloatValue("iotmeasure:value", it.first.v)
+                dcBusinessResource.setStringValue("iotmeasure:unit", it.first.u)
+                dcBusinessResource.setStringValue("iotmeasure:type", it.first.n)
+                dcBusinessResource.setDateTimeValue("iotmeasure:time", measureTime.toLocalDateTime())
+
+                val latitude = measureLatitude ?: it.second.getFloatValue("iotdevice:lat")
+                val longitude = measureLongitude ?: it.second.getFloatValue("iotdevice:lon")
+                latitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
+                longitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
+
+                dcBusinessResource
+            }.map { dcBusinessResource ->
+                ioTSender.send(dcBusinessResource)
+                dcBusinessResource
+            }.flatMap { dcBusinessResource ->
+                datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, dcBusinessResource, null)
+            }.doOnComplete {
+                channel.basicAck(tag, false)
+            }.doOnError {
+                logger.error("Measure recording failed with error $it")
+                // Do not bother with failed recordings ...
+                channel.basicAck(tag, false)
+            }.subscribe()
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private data class DeviceMeasure(
-        val bt: Long = Long.MIN_VALUE,
+        val bt: String = "",
         val bn: String = "",
         val vs: String = "",
         val v: Float = Float.MIN_VALUE,

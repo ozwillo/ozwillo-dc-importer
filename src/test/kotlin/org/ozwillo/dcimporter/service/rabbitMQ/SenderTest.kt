@@ -21,9 +21,9 @@ class SenderTest {
     @Test
     fun `Assert true regular expression of get binding key`() {
         val bindingKeyPattern =
-            Pattern.compile("^\\w+\\.[0-9]+\\.[a-z0-9_:]+\\.(?:create|update|delete)+$", Pattern.CASE_INSENSITIVE)
+            Pattern.compile("^\\w+\\.[a-z0-9_:]+\\.(?:create|update|delete)+$", Pattern.CASE_INSENSITIVE)
         val bindingKey =
-            sender.getKey("marchepublic_0", "marchepublic_0:consultation", "123456789", BindingKeyAction.CREATE)
+            sender.composeKey("marchepublic_0", "marchepublic_0:consultation", BindingKeyAction.CREATE)
         val matcher = bindingKeyPattern.matcher(bindingKey)
         assertTrue(matcher.matches())
     }

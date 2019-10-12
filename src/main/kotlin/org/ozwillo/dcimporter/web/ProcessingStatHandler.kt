@@ -23,7 +23,7 @@ class ProcessingStatHandler(
         return try {
             val processingStats = processingStatService.getAll()
             ok().contentType(MediaType.APPLICATION_JSON).body(processingStats, ProcessingStat::class.java)
-        }catch (e: IllegalArgumentException){
+        } catch (e: IllegalArgumentException) {
             badRequest().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message!!))
         }
     }
@@ -45,5 +45,4 @@ class ProcessingStatHandler(
                 badRequest().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message!!))
             }
     }
-
 }

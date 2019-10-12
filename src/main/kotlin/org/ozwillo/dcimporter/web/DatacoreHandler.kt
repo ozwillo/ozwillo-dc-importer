@@ -28,6 +28,7 @@ import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
+import reactor.core.publisher.toFlux
 import java.net.URI
 
 @Component
@@ -53,14 +54,14 @@ class DatacoreHandler(
     @Value("\${datacore.model.modelORG}")
     private val modelOrg = ""
 
-    fun getModels(req: ServerRequest): Mono<ServerResponse>{
+    fun getModels(req: ServerRequest): Mono<ServerResponse> {
 
         val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
 
         return try {
             val dcModels = datacoreService.findModels(10, name)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModels, DCModel::class.java)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
@@ -71,15 +72,15 @@ class DatacoreHandler(
         return try {
             val dcModel = datacoreService.findModel(type)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModel)
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
 
-    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse>{
+    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse> {
 
-        val queryParameter:String
-        val queryObject:String
+        val queryParameter: String
+        val queryObject: String
         val queryOperator: DCOperator
 
         when {
@@ -109,8 +110,7 @@ class DatacoreHandler(
                     organization
                 }
             ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
-
-        }catch (e: HttpClientErrorException){
+        } catch (e: HttpClientErrorException) {
             status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
         }
     }
@@ -124,14 +124,55 @@ class DatacoreHandler(
             .flatMap { resource: DCResource ->
                 val filteredResource = resource.getValues()
                     .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
-                if (!filteredResource.isEmpty()) {
-                    findOrCreateDCOrganization(project, bearer, filteredResource)
-                    datacoreService.saveResource(project, type, resource, bearer)
-                        .flatMap { result ->
-                            val savedResult =
-                                datacoreService.getResourceFromIRI(project, type, result.resource.getIri(), bearer)
+                if (filteredResource.isNotEmpty()) {
+                    filteredResource.values.toFlux()
+                        .map { organizationUri ->
+                            findOrCreateDCOrganization(project, bearer, organizationUri as String)
+                        }
+                        .collectList()
+                        .flatMap {
+                            datacoreService.saveResource(project, type, resource, bearer)
+                        }
+                        .flatMap { dcResource ->
+                            datacoreService.getResourceFromIRI(project, type, dcResource.getIri(), bearer)
+                        }.flatMap {
                             status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON)
-                                .body(BodyInserters.fromObject(savedResult))
+                                .body(BodyInserters.fromObject(it))
+                        }
+                } else {
+                    badRequest().body(
+                        BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
+                }
+            }
+            .onErrorResume { error ->
+                when {
+                    error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED ->
+                        status(error.statusCode)
+                            .body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
+                    else -> this.throwableToResponse(error)
+                }
+            }
+    }
+
+    fun updateResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
+        val type = req.pathVariable("type")
+        val project = extractProject(req.headers())
+        val bearer = extractBearer(req.headers())
+
+        return req.bodyToMono<DCResource>()
+            .flatMap { resource: DCResource ->
+                val filteredResource = resource.getValues()
+                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
+                if (filteredResource.isNotEmpty()) {
+                    filteredResource.values.toFlux()
+                        .map { organizationUri ->
+                            findOrCreateDCOrganization(project, bearer, organizationUri as String)
+                        }
+                        .collectList()
+                        .flatMap {
+                            datacoreService.updateResource(project, type, resource, bearer)
+                        }.flatMap {
+                            ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
                         }
                 } else {
                     badRequest().body(
@@ -149,57 +190,14 @@ class DatacoreHandler(
             }
     }
 
-    fun updateResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
-        val type = req.pathVariable("type")
-        val project = extractProject(req.headers())
-        val bearer = extractBearer(req.headers())
+    private fun findOrCreateDCOrganization(project: String, bearer: String, organizationUri: String): Mono<DCResource> {
 
-        return req.bodyToMono<DCResource>()
-            .flatMap { resource: DCResource ->
-                val filteredResource = resource.getValues()
-                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
-                if (!filteredResource.isEmpty()) {
-                    findOrCreateDCOrganization(project, bearer, filteredResource)
-                    datacoreService.updateResource(project, type, resource, bearer)
-                    ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
-                } else {
-                    badRequest().body(
-                        BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
-                }
-            }
-            .onErrorResume { error ->
-                when {
-                    error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED -> status(
-                        error.statusCode).body(
-                        BodyInserters.fromObject("Token unauthorized, maybe it is expired ?")
-                    )
-                    else -> this.throwableToResponse(error)
-                }
-            }
-    }
+        val siret = organizationUri.substringAfterLast("/")
 
-    private fun findOrCreateDCOrganization(project: String, bearer: String, filteredMap: Map<String, Any>) {
-
-        var dcOrg: DCResource
-
-        filteredMap.forEach { _, value ->
-
-            val siret = value.toString().substringAfterLast("/")
-
-            try {
-                dcOrg = datacoreService.getResourceFromIRI(project, modelOrg, "FR/$siret", bearer)
-                logger.debug("Find organization $dcOrg")
-            } catch (e: HttpClientErrorException) {
-                if (e.statusCode == HttpStatus.NOT_FOUND) {
-                    logger.debug("No organization dcObject found in datacore for siret $siret")
-                    dcOrg = getOrgFromSireneAPI(siret)
-                    logger.debug("Found organization $dcOrg on Insee database")
-                    datacoreService.saveResource(project, modelOrg, dcOrg, bearer)
-                } else {
-                    throw e
-                }
-            }
-        }
+        return datacoreService.exists(project, modelOrg, "FR/$siret", bearer)
+            .filter { it == false }
+            .map { getOrgFromSireneAPI(siret) }
+            .flatMap { datacoreService.saveResource(project, modelOrg, it, bearer) }
     }
 
     private fun getSireneToken(): String {
@@ -287,6 +285,5 @@ class DatacoreHandler(
                 ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
             }
         }
-
     }
 }

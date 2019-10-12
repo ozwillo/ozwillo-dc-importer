@@ -8,7 +8,7 @@ import java.time.LocalDateTime
 data class ProcessingStat(
     @Id val id: String? = null,
     val model: String,
-    val organization: String,
+    val organization: String?,
     val creationDate: LocalDateTime = LocalDateTime.now(),
     val action: String
 )

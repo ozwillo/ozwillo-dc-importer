@@ -22,7 +22,7 @@ class DCQueryParameters(
             if ("".equals(objectAsString)) {
                 // nothing
             } else {
-                builder.append(objectAsString);
+                builder.append(objectAsString)
             }
 
             if (ordering != null) {
@@ -54,8 +54,6 @@ class DCQueryParameters(
             result = 31 * result + objectAsString.hashCode()
             return result
         }
-
-
     }
 
     private var params: MutableList<DCQueryParam> = ArrayList()
@@ -79,7 +77,6 @@ class DCQueryParameters(
     override fun hashCode(): Int {
         return params.hashCode()
     }
-
 
     init {
         params.add(DCQueryParam(subject, operator, ordering, target))

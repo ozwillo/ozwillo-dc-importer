@@ -35,25 +35,26 @@ class PublikSynchronizerService(
 
         businessAppConfigurationRepository.findByApplicationName(PublikService.name).subscribe { publikConfiguration ->
 
-            val dcResource = datacoreService.getResourceFromIRI(
+            datacoreService.getResourceFromIRI(
                 datacoreProject,
                 datacoreModelORG,
                 "FR/${publikConfiguration.organizationSiret}",
                 null
-            )
-            val queryParameters = DCQueryParameters(
-                "citizenreq:organization", DCOperator.EQ,
-                DCOrdering.DESCENDING, dcResource.getUri()
-            )
-
-            listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
-                val result = datacoreService.findResource(datacoreProject, type!!, queryParameters).blockOptional()
-                if (result.isPresent && result.get().isEmpty()) {
-                    if (type == datacoreModelEM)
-                        publikService.syncPublikForms(publikConfiguration, dcResource, formTypeEM)
-                            .subscribe { LOGGER.debug("Synchro finished with $it") }
-                    else if (type == datacoreModelSVE)
-                        publikService.syncPublikForms(publikConfiguration, dcResource, formTypeSVE).block()
+            ).subscribe {
+                val queryParameters = DCQueryParameters(
+                    "citizenreq:organization", DCOperator.EQ,
+                    DCOrdering.DESCENDING, it.getUri()
+                )
+                listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
+                    val result = datacoreService.findResource(datacoreProject, type!!, queryParameters).blockOptional()
+                    if (result.isPresent && result.get().isEmpty()) {
+                        if (type == datacoreModelEM)
+                            publikService.syncPublikForms(publikConfiguration, it, formTypeEM)
+                                .subscribe { LOGGER.debug("Synchro finished with $it") }
+                        else if (type == datacoreModelSVE)
+                            publikService.syncPublikForms(publikConfiguration, it, formTypeSVE)
+                                .subscribe { LOGGER.debug("Synchro finished with $it") }
+                    }
                 }
             }
         }
