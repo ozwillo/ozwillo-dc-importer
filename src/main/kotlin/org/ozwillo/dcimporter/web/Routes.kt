@@ -9,7 +9,6 @@ import java.net.URI
 
 @Configuration
 class Routes(
-    private val statusHandler: StatusHandler,
     private val publikHandler: PublikHandler,
     private val maarchHandler: MaarchHandler,
     private val connectorsHandler: ConnectorsHandler,
@@ -24,9 +23,7 @@ class Routes(
             GET("/") { ServerResponse.permanentRedirect(URI("/index.html")).build() }
         }
 
-        (accept(MediaType.APPLICATION_JSON) and
-
-                "/api").nest {
+        (accept(MediaType.APPLICATION_JSON) and "/api").nest {
 
             "/data-access".nest {
                 POST("", dataAccessRequestHandler::create)
@@ -45,9 +42,6 @@ class Routes(
             }
             "/maarch".nest {
                 PUT("/status", maarchHandler::status)
-            }
-            "/status".nest {
-                GET("/", statusHandler::status)
             }
         }
 
