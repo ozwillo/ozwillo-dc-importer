@@ -27,3 +27,5 @@ nbdist/
 out/
 src/main/resources/application-dev\.yml
 
+### VS Code ###
+bin/
