@@ -33,7 +33,7 @@ repositories {
 dependencies {
 
     kapt("org.springframework.boot:spring-boot-configuration-processor")
-    
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
