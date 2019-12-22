@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
-import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
@@ -39,61 +38,59 @@ class DatacoreHandler(
 
         val name = req.queryParam("name").orElse("")
 
-        return try {
-            val dcModels = datacoreService.findModels(10, name)
-            ok().contentType(MediaType.APPLICATION_JSON).body(dcModels, DCModel::class.java)
-        } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
-        }
+        return datacoreService.findModels(10, name)
+            .reduce(listOf<DCModel>(), { acc, dcModel -> acc.plus(dcModel) })
+            .flatMap {
+                ok().bodyValue(it)
+            }
+            .onErrorResume {
+                when (it) {
+                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
+                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+            }
     }
 
     fun getModel(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
 
-        return try {
-            val dcModel = datacoreService.findModel(type)
-            ok().contentType(MediaType.APPLICATION_JSON).body(dcModel)
-        } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
-        }
+        return datacoreService.findModel(type)
+            .flatMap {
+                ok().bodyValue(it)
+            }
+            .onErrorResume {
+                when (it) {
+                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
+                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
+                }
+            }
     }
 
-    fun getAllOrganization(req: ServerRequest): Mono<ServerResponse> {
+    fun getOrganization(req: ServerRequest): Mono<ServerResponse> {
 
-        val queryParameter: String
-        val queryObject: String
-        val queryOperator: DCOperator
+        if (req.queryParam("name").isEmpty && req.queryParam("siret").isEmpty)
+            return badRequest().bodyValue("Missing query parameter \"name\" or \"siret\"")
+        else if (req.queryParam("name").isPresent && req.queryParam("siret").isPresent)
+            return badRequest().bodyValue("Please provided one of \"name\" or \"siret\" parameters, not both")
 
-        when {
-            req.queryParam("name").isPresent -> {
-                queryParameter = req.queryParam("name").get()
-                queryObject = "org:legalName"
-                queryOperator = DCOperator.REGEX
+        val dcQueryParameters =
+            if (req.queryParam("name").isPresent)
+                DCQueryParameters("org:legalName", DCOperator.REGEX, DCOrdering.DESCENDING, req.queryParam("name").get())
+            else
+                DCQueryParameters("org:regNumber", DCOperator.EQ, DCOrdering.DESCENDING, req.queryParam("siret").get())
+
+        return datacoreService.findResources("oasis.main", modelOrg, dcQueryParameters, 0, 100)
+            .map { Organization.fromDcObject(it) }
+            .reduce(listOf<Organization>(), { acc, org -> acc.plus(org) })
+            .flatMap {
+                ok().bodyValue(it)
             }
-            req.queryParam("siret").isPresent -> {
-                queryParameter = req.queryParam("siret").get()
-                queryObject = "org:regNumber"
-                queryOperator = DCOperator.EQ
-            }
-            else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromValue("Missing query parameter \"name\" or \"siret\""))
-        }
-
-        return try {
-            val organizations = datacoreService.findResources(
-                "oasis.main",
-                modelOrg,
-                DCQueryParameters(queryObject, queryOperator, DCOrdering.DESCENDING, queryParameter),
-                0,
-                100
-            )
-                .map { dcOrganization ->
-                    val organization = Organization.fromDcObject(dcOrganization)
-                    organization
+            .onErrorResume {
+                when (it) {
+                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
+                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
                 }
-            ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
-        } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
-        }
+            }
     }
 
     fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
