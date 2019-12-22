@@ -15,11 +15,11 @@ DC Importer is a data synchronizer allowing external application to communicate 
 
 Activated actuator endpoints : 
 
-* Info : `http --json GET http://{host}/actuator/info Authorization:"Basic Base64(login:password)"`
+* Info : `http http://{host}/actuator/info -a user:password`
   * Provide basic information about the application
-* Health : `http --json GET http://{host}/actuator/health Authorization:"Basic Base64(login:password)"`
+* Health : `http http://{host}/actuator/health -a user:password`
   * Display application health status
-* Httptrace : `http --json GET http://{host}/actuator/httptrace Authorization:"Basic Base64(login:password)"`
+* Httptrace : `http http://{host}/actuator/httptrace -a user:password`
   * Display last 100 HTTP requests
 
 ## Dependencies
