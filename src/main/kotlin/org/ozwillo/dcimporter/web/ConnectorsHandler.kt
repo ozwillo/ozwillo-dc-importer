@@ -84,7 +84,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             }
             .onErrorResume { e ->
                 when (e) {
-                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromObject(e.message))
+                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -100,7 +100,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             }
             .onErrorResume { e ->
                 when (e) {
-                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromObject(e.message))
+                    is ConflictException -> status(HttpStatus.CONFLICT).body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -118,7 +118,7 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             }
             .onErrorResume { e ->
                 when (e) {
-                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject(e.message))
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -133,7 +133,8 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
             }
             .onErrorResume { e ->
                 when (e) {
-                    is EmptyException -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON).body(BodyInserters.fromObject(e.message))
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).contentType(MediaType.APPLICATION_JSON)
+                        .body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -145,11 +146,11 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
 
         return connectorsService.deleteBySiretAndAppName(siret, appName)
             .flatMap {
-                ServerResponse.status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
+                status(HttpStatus.NO_CONTENT).body(BodyInserters.empty<String>())
             }
             .onErrorResume { e ->
                 when (e) {
-                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject(e.message))
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -158,9 +159,9 @@ class ConnectorsHandler(private val connectorsService: ConnectorsService) {
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
         LOGGER.error("Operation failed with error $throwable")
         return when (throwable) {
-            is HttpClientErrorException -> badRequest().body(BodyInserters.fromObject(throwable.responseBodyAsString))
+            is HttpClientErrorException -> badRequest().body(BodyInserters.fromValue(throwable.responseBodyAsString))
             else -> {
-                badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
+                badRequest().body(BodyInserters.fromValue(throwable.message.orEmpty()))
             }
         }
     }

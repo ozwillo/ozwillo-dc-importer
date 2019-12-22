@@ -1,11 +1,17 @@
 package org.ozwillo.dcimporter.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import org.apache.commons.lang3.RandomStringUtils
+import java.net.MalformedURLException
+import java.net.URI
+import java.net.URL
+import java.nio.charset.Charset
+import java.text.SimpleDateFormat
+import java.util.*
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.*
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.model.publik.ListFormsModel
 import org.ozwillo.dcimporter.model.publik.User
@@ -24,11 +30,6 @@ import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.DefaultUriBuilderFactory
 import reactor.core.publisher.Mono
-import java.net.MalformedURLException
-import java.net.URI
-import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.*
 
 // TODO : needs a lot of cleanup and refactoring !!!!
 @Service
@@ -296,7 +297,7 @@ class PublikService(
         val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").apply { timeZone = tz }
         val thisMoment = df.format(Date())
 
-        val nonce = RandomStringUtils.random(64, true, true)
+        val nonce = generateNonce()
 
         val fullQuery = query + "algo=" + this.algo +
                 "&timestamp=" + thisMoment +
@@ -321,6 +322,12 @@ class PublikService(
 
     private fun isSVErequest(form: FormModel): Boolean {
         return form.id.contains(this.formTypeSVE!!)
+    }
+
+    private fun generateNonce(): String {
+        val array = ByteArray(64)
+        Random().nextBytes(array)
+        return String(array, Charset.forName("UTF-8"))
     }
 
     companion object {

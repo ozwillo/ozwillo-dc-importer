@@ -1,11 +1,11 @@
 package org.ozwillo.dcimporter.util
 
+import java.time.Instant
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.util.*
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
-import java.time.ZoneOffset
-import java.time.Instant
 
 fun String.hmac(algorithm: String, salt: String): String {
     val secretKeySpec = SecretKeySpec(salt.toByteArray(), algorithm)

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="logfile" source="logging.file" defaultValue="./build/logs/ozwillo-dc-importer.log"/>
+    <springProperty scope="context" name="maxFileSize" source="logging.filesize.max" defaultValue="100MB"/>
+    <springProperty scope="context" name="maxArchiveSize" source="logging.archivesize.max" defaultValue="2GB"/>
+    <springProperty scope="context" name="maxHistory" source="logging.history.max" defaultValue="60"/>
+
+    <appender name="consoleOut" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+            by default -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="rolling" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${logfile}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${logfile}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${maxFileSize}</maxFileSize>
+            <maxHistory>${maxHistory}</maxHistory>
+            <totalSizeCap>${maxArchiveSize}</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{dd-MMM-yy HH:mm:ss.SSS} %-5level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.ozwillo.dcimporter" level="DEBUG"/>
+    <logger name="org.springframework.web.client" level="WARN"/>
+    <logger name="reactor.ipc.netty" level="INFO"/>
+    <logger name="io.netty.handler" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="rolling" />
+        <appender-ref ref="consoleOut" />
+    </root>
+
+</configuration>

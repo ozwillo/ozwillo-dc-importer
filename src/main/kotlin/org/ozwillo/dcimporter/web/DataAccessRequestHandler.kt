@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.web
 
+import javax.mail.SendFailedException
 import org.ozwillo.dcimporter.model.AccessRequestState
 import org.ozwillo.dcimporter.model.DataAccessRequest
 import org.ozwillo.dcimporter.repository.DataAccessRequestRepository
@@ -15,7 +16,6 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
-import javax.mail.SendFailedException
 
 @Component
 class DataAccessRequestHandler(
@@ -59,7 +59,7 @@ class DataAccessRequestHandler(
                 "valid" -> AccessRequestState.VALIDATED
                 "reject" -> AccessRequestState.REFUSED
                 // "save" -> AccessRequestState.SAVED
-                else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Unable to recognize requested action. Waiting for \"valid\" or \"reject\""))
+                else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromValue("Unable to recognize requested action. Waiting for \"valid\" or \"reject\""))
             }
 
         val fallback: Mono<DataAccessRequest> = Mono.error(EmptyException("No data access request found with id $id"))
@@ -96,7 +96,7 @@ class DataAccessRequestHandler(
             }
             .onErrorResume { e ->
                 when (e) {
-                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromObject(e.message))
+                    is EmptyException -> status(HttpStatus.NOT_FOUND).body(BodyInserters.fromValue(e.message))
                     else -> this.throwableToResponse(e)
                 }
             }
@@ -115,12 +115,10 @@ class DataAccessRequestHandler(
     // Utils
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
-        DataAccessRequestHandler.LOGGER.error("Operation failed with error $throwable")
+        LOGGER.error("Operation failed with error $throwable")
         return when (throwable) {
-            is HttpClientErrorException -> ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.responseBodyAsString))
-            else -> {
-                ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
-            }
+            is HttpClientErrorException -> badRequest().body(BodyInserters.fromValue(throwable.responseBodyAsString))
+            else -> badRequest().body(BodyInserters.fromValue(throwable.message.orEmpty()))
         }
     }
 }

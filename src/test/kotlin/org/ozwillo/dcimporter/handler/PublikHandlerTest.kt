@@ -4,6 +4,7 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
 import io.mockk.junit5.MockKExtension
 import io.mockk.slot
+import java.util.*
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -23,8 +24,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import reactor.core.publisher.Mono
-import reactor.test.test
-import java.util.*
+import reactor.kotlin.test.test
 
 // TODO : make it better
 @ExtendWith(MockKExtension::class)
@@ -96,7 +96,7 @@ class PublikHandlerTest : AbstractIntegrationTests() {
 
         client.post().uri("/api/publik/250601879/form")
             .contentType(MediaType.APPLICATION_JSON)
-            .syncBody(formModel)
+            .bodyValue(formModel)
             .exchange()
             .test()
             .consumeNextWith {

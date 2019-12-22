@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service
 
+import java.math.BigInteger
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.DCResource
@@ -14,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
-import java.math.BigInteger
 
 @Service
 class MaarchService(
@@ -40,7 +40,7 @@ class MaarchService(
 
         val businessAppConfiguration = businessAppConfigurationRepository.findByOrganizationSiretAndApplicationName(
             siret,
-            MaarchService.name
+            name
         ).block()!!
         val maarchFileMetadataList = listOf(
             MaarchArrayData(column = "subject", value = dcResource.getValues()["citizenreq:displayName"]!!.toString()),
@@ -59,7 +59,7 @@ class MaarchService(
         )
 
         val restTemplate: RestTemplate =
-            RestTemplateBuilder().basicAuthorization(businessAppConfiguration.login, businessAppConfiguration.password)
+            RestTemplateBuilder().basicAuthentication(businessAppConfiguration.login, businessAppConfiguration.password)
                 .build()
         restTemplate.interceptors.add(FullLoggingInterceptor())
 

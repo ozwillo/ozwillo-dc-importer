@@ -37,6 +37,6 @@ class MaarchHandler(private val datacoreService: DatacoreService) {
                 updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
                 datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, null)
             }.flatMap {
-                ServerResponse.status(it).body(BodyInserters.fromObject(MaarchResponse(it.value())))
+                ServerResponse.status(it).body(BodyInserters.fromValue(MaarchResponse(it.value())))
             }
 }

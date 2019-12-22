@@ -2,13 +2,14 @@ package org.ozwillo.dcimporter.web
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.net.URI
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
-import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCModel
+import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
+import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
@@ -28,8 +29,7 @@ import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toFlux
-import java.net.URI
+import reactor.kotlin.core.publisher.toFlux
 
 @Component
 class DatacoreHandler(
@@ -62,7 +62,7 @@ class DatacoreHandler(
             val dcModels = datacoreService.findModels(10, name)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModels, DCModel::class.java)
         } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
         }
     }
 
@@ -73,7 +73,7 @@ class DatacoreHandler(
             val dcModel = datacoreService.findModel(type)
             ok().contentType(MediaType.APPLICATION_JSON).body(dcModel)
         } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
         }
     }
 
@@ -94,7 +94,7 @@ class DatacoreHandler(
                 queryObject = "org:regNumber"
                 queryOperator = DCOperator.EQ
             }
-            else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromObject("Missing query parameter \"name\" or \"siret\""))
+            else -> return status(HttpStatus.BAD_REQUEST).body(BodyInserters.fromValue("Missing query parameter \"name\" or \"siret\""))
         }
 
         return try {
@@ -111,7 +111,7 @@ class DatacoreHandler(
                 }
             ok().contentType(MediaType.APPLICATION_JSON).body(organizations, Organization::class.java)
         } catch (e: HttpClientErrorException) {
-            status(e.statusCode).body(BodyInserters.fromObject(e.message!!))
+            status(e.statusCode).body(BodyInserters.fromValue(e.message!!))
         }
     }
 
@@ -137,18 +137,18 @@ class DatacoreHandler(
                             datacoreService.getResourceFromIRI(project, type, dcResource.getIri(), bearer)
                         }.flatMap {
                             status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON)
-                                .body(BodyInserters.fromObject(it))
+                                .body(BodyInserters.fromValue(it))
                         }
                 } else {
                     badRequest().body(
-                        BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
+                        BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
                 }
             }
             .onErrorResume { error ->
                 when {
                     error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED ->
                         status(error.statusCode)
-                            .body(BodyInserters.fromObject("Token unauthorized, maybe it is expired ?"))
+                            .body(BodyInserters.fromValue("Token unauthorized, maybe it is expired ?"))
                     else -> this.throwableToResponse(error)
                 }
             }
@@ -176,14 +176,14 @@ class DatacoreHandler(
                         }
                 } else {
                     badRequest().body(
-                        BodyInserters.fromObject("No organization found in request ${resource.getValues()}"))
+                        BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
                 }
             }
             .onErrorResume { error ->
                 when {
                     error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED -> status(
                         error.statusCode).body(
-                        BodyInserters.fromObject("Token unauthorized, maybe it is expired ?")
+                        BodyInserters.fromValue("Token unauthorized, maybe it is expired ?")
                     )
                     else -> this.throwableToResponse(error)
                 }
@@ -279,10 +279,9 @@ class DatacoreHandler(
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
         logger.error("Operation failed with error $throwable")
         return when (throwable) {
-            is HttpClientErrorException -> ServerResponse.badRequest().body(
-                BodyInserters.fromObject(throwable.responseBodyAsString))
+            is HttpClientErrorException -> badRequest().body(BodyInserters.fromValue(throwable.responseBodyAsString))
             else -> {
-                ServerResponse.badRequest().body(BodyInserters.fromObject(throwable.message.orEmpty()))
+                badRequest().body(BodyInserters.fromValue(throwable.message.orEmpty()))
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.model.publik
 
+import java.io.IOException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -11,7 +12,6 @@ import org.springframework.core.io.Resource
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.util.FileCopyUtils
-import java.io.IOException
 
 @ExtendWith(SpringExtension::class)
 @JsonTest

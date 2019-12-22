@@ -1,6 +1,9 @@
 package org.ozwillo.dcimporter.service
 
-import com.google.common.io.BaseEncoding
+import java.net.URI
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.util.*
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
@@ -12,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
 import org.springframework.stereotype.Service
+import org.springframework.util.Base64Utils
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
@@ -21,10 +25,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.net.URI
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.util.*
 
 @Service
 class DatacoreService(private val kernelProperties: KernelProperties, private val datacoreProperties: DatacoreProperties) {
@@ -52,7 +52,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .uri(uri)
             .header("X-Datacore-Project", project)
             .header("Authorization", "Bearer $accessToken")
-            .syncBody(resource)
+            .bodyValue(resource)
             .retrieve()
             .onStatus(
                 HttpStatus::is4xxClientError
@@ -92,7 +92,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
                     .uri(uri)
                     .header("X-Datacore-Project", project)
                     .header("Authorization", "Bearer $accessToken")
-                    .syncBody(it)
+                    .bodyValue(it)
                     .retrieve()
                     .bodyToMono(DCResource::class.java)
             }.map {
@@ -301,7 +301,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
 
     private fun getAccessToken(): Mono<String> {
         val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
-        val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
+        val authorizationHeaderValue: String = "Basic " + Base64Utils.encodeToString(
             String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(
                 StandardCharsets.UTF_8
             )
@@ -320,7 +320,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
 
         val restTemplate = RestTemplate()
 
-        val authorizationHeaderValue: String = "Basic " + BaseEncoding.base64().encode(
+        val authorizationHeaderValue: String = "Basic " + Base64Utils.encodeToString(
             String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(
                 StandardCharsets.UTF_8
             )

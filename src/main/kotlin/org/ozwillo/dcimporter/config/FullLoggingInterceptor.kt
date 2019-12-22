@@ -1,12 +1,12 @@
 package org.ozwillo.dcimporter.config
 
+import java.io.IOException
+import java.nio.charset.Charset
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpRequest
 import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.http.client.ClientHttpResponse
-import java.io.IOException
-import java.nio.charset.Charset
 
 class FullLoggingInterceptor : ClientHttpRequestInterceptor {
 

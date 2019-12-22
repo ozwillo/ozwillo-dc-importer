@@ -2,7 +2,6 @@ package org.ozwillo.dcimporter.model.datacore
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-
 import java.net.URI
 import java.util.Objects
 

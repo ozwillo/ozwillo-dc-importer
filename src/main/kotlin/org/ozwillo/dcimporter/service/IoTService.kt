@@ -6,7 +6,7 @@ import org.ozwillo.dcimporter.util.parseDevice
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import reactor.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class IoTService(

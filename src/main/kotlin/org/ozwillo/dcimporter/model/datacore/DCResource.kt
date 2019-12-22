@@ -1,11 +1,11 @@
 package org.ozwillo.dcimporter.model.datacore
 
 import com.fasterxml.jackson.annotation.*
-import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import org.slf4j.LoggerFactory
 
 typealias I18nOrgDenomination = HashMap<String, String>
 typealias DCResourceURI = String

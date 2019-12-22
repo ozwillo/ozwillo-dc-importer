@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
+import java.util.regex.Pattern
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -8,7 +9,6 @@ import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import java.util.regex.Pattern
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest

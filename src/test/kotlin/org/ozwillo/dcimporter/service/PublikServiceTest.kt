@@ -4,6 +4,8 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
+import java.util.ArrayList
+import java.util.HashMap
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.ozwillo.dcimporter.model.datacore.DCResource
@@ -13,8 +15,6 @@ import org.ozwillo.dcimporter.model.publik.User
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import reactor.core.publisher.Mono
-import java.util.ArrayList
-import java.util.HashMap
 
 @SpringBootTest
 class PublikServiceTest {

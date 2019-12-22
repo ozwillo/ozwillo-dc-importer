@@ -1,5 +1,6 @@
 package org.ozwillo.dcimporter.service.rabbitMQ
 
+import java.util.*
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.ozwillo.dcimporter.util.JsonConverter
@@ -11,7 +12,6 @@ import org.springframework.amqp.core.MessageProperties
 import org.springframework.amqp.rabbit.core.RabbitTemplate
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.util.*
 
 @Service
 class Sender(private val template: RabbitTemplate) {
