@@ -2,6 +2,7 @@ package org.ozwillo.dcimporter
 
 import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
+import org.ozwillo.dcimporter.config.InseeSireneProperties
 import org.ozwillo.dcimporter.config.KernelProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -10,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling
 
 @SpringBootApplication
 @EnableScheduling
-@EnableConfigurationProperties(ApplicationProperties::class, DatacoreProperties::class, KernelProperties::class)
+@EnableConfigurationProperties(ApplicationProperties::class, DatacoreProperties::class, KernelProperties::class, InseeSireneProperties::class)
 class OzwilloDcImporterApplication
 
 fun main(args: Array<String>) {

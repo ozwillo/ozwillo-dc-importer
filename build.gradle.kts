@@ -9,6 +9,7 @@ plugins {
     kotlin("plugin.spring") version "1.3.61"
     id("org.jlleitschuh.gradle.ktlint") version "9.1.1"
     id("com.moowork.node") version "1.3.1"
+    kotlin("kapt") version "1.3.61"
 }
 
 group = "com.ozwillo"
@@ -30,6 +31,9 @@ repositories {
 }
 
 dependencies {
+
+    kapt("org.springframework.boot:spring-boot-configuration-processor")
+    
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-amqp")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")

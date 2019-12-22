@@ -1,12 +1,12 @@
 package org.ozwillo.dcimporter.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConstructorBinding
 
-@Configuration
+@ConstructorBinding
 @ConfigurationProperties("kernel")
-class KernelProperties {
-    lateinit var clientId: String
-    lateinit var clientSecret: String
-    lateinit var tokenEndpoint: String
-}
+data class KernelProperties(
+    val clientId: String,
+    val clientSecret: String,
+    val tokenEndpoint: String
+)

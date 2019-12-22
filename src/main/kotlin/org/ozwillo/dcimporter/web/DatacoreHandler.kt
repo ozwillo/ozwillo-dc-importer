@@ -1,62 +1,43 @@
 package org.ozwillo.dcimporter.web
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-import java.net.URI
 import org.ozwillo.dcimporter.config.DatacoreProperties
-import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.model.datacore.DCModel
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.kernel.TokenResponse
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.InseeSireneService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Component
-import org.springframework.util.LinkedMultiValueMap
-import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
-import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 
 @Component
 class DatacoreHandler(
     private val datacoreService: DatacoreService,
-    private val datacoreProperties: DatacoreProperties
+    private val datacoreProperties: DatacoreProperties,
+    private val inseeSireneService: InseeSireneService
 ) {
 
-    companion object {
-        private val logger = LoggerFactory.getLogger(DatacoreHandler::class.java)
-    }
+    private val logger = LoggerFactory.getLogger(javaClass)
 
-    @Value("\${insee.api.sirene.baseUri}")
-    private val baseUri = ""
-    @Value("\${insee.api.sirene.tokenPath}")
-    private val tokenPath = ""
-    @Value("\${insee.api.sirene.siretPath}")
-    private val siretPath = ""
-    @Value("\${insee.api.sirene.siretParameters}")
-    private val siretParameters = ""
-    @Value("\${insee.api.sirene.secretClient}")
-    private val secretClient = ""
     @Value("\${datacore.model.modelORG}")
     private val modelOrg = ""
 
     fun getModels(req: ServerRequest): Mono<ServerResponse> {
 
-        val name = if (req.queryParam("name").isPresent) req.queryParam("name").get() else ""
+        val name = req.queryParam("name").orElse("")
 
         return try {
             val dcModels = datacoreService.findModels(10, name)
@@ -196,68 +177,8 @@ class DatacoreHandler(
 
         return datacoreService.exists(project, modelOrg, "FR/$siret", bearer)
             .filter { it == false }
-            .map { getOrgFromSireneAPI(siret) }
+            .map { inseeSireneService.getOrgFromSireneAPI(siret) }
             .flatMap { datacoreService.saveResource(project, modelOrg, it, bearer) }
-    }
-
-    private fun getSireneToken(): String {
-        val restTemplate = RestTemplate()
-
-        val headers = HttpHeaders()
-        headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
-        headers.set("Authorization", "Basic $secretClient")
-        val map = LinkedMultiValueMap<String, String>()
-        map.add("grant_type", "client_credentials")
-
-        val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
-
-        val response: ResponseEntity<TokenResponse> =
-            restTemplate.postForEntity("$baseUri$tokenPath", request, TokenResponse::class.java)
-        return response.body!!.accessToken!!
-    }
-
-    private fun getOrgFromSireneAPI(siret: String): DCResource {
-        val sireneToken = "Bearer ${getSireneToken()}"
-        val encodedUri =
-            UriComponentsBuilder.fromUriString("$baseUri$siretPath/$siret$siretParameters").build().encode()
-                .toUriString()
-        val restTemplate = RestTemplate()
-
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("Authorization", sireneToken)
-
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(encodedUri))
-        restTemplate.interceptors.add(FullLoggingInterceptor())
-        val response: ResponseEntity<String> = restTemplate.exchange(request, String::class.java)
-        logger.debug(response.body!!)
-
-        val mapper = ObjectMapper()
-        val responseObject: JsonNode = mapper.readTree(response.body)
-
-        val cp =
-            responseObject.get("etablissement").get("adresseEtablissement").get("codePostalEtablissement").textValue()
-        val numero =
-            responseObject.get("etablissement").get("adresseEtablissement").get("numeroVoieEtablissement").textValue()
-        val typeVoie =
-            responseObject.get("etablissement").get("adresseEtablissement").get("typeVoieEtablissement").textValue()
-        val libelleVoie =
-            responseObject.get("etablissement").get("adresseEtablissement").get("libelleVoieEtablissement").textValue()
-        val denominationUniteLegale =
-            responseObject.get("etablissement").get("uniteLegale").get("denominationUniteLegale")
-        val nomUniteLegale = responseObject.get("etablissement").get("uniteLegale").get("nomUniteLegale")
-        val finalDenomination =
-            if (!denominationUniteLegale.isNull) denominationUniteLegale.textValue() else nomUniteLegale.textValue()
-        val siretEtablissement = responseObject.get("etablissement").get("siret").textValue()
-
-        val organization = Organization(
-            cp = cp,
-            voie = "$numero $typeVoie $libelleVoie",
-            pays = "${datacoreProperties.baseResourceUri()}/geocofr:Pays_0/FR",
-            denominationUniteLegale = finalDenomination,
-            siret = siretEtablissement
-        )
-
-        return organization.toDcObject(datacoreProperties.baseResourceUri(), siret)
     }
 
     private fun extractProject(headers: ServerRequest.Headers): String {
