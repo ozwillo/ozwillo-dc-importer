@@ -43,12 +43,7 @@ class DatacoreHandler(
             .flatMap {
                 ok().bodyValue(it)
             }
-            .onErrorResume {
-                when (it) {
-                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
-                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-                }
-            }
+            .onErrorResume { throwableToResponse(it) }
     }
 
     fun getModel(req: ServerRequest): Mono<ServerResponse> {
@@ -58,12 +53,7 @@ class DatacoreHandler(
             .flatMap {
                 ok().bodyValue(it)
             }
-            .onErrorResume {
-                when (it) {
-                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
-                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-                }
-            }
+            .onErrorResume { throwableToResponse(it) }
     }
 
     fun getOrganization(req: ServerRequest): Mono<ServerResponse> {
@@ -85,12 +75,7 @@ class DatacoreHandler(
             .flatMap {
                 ok().bodyValue(it)
             }
-            .onErrorResume {
-                when (it) {
-                    is HttpClientErrorException -> status(it.statusCode).body(BodyInserters.fromValue(it.message!!))
-                    else -> status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-                }
-            }
+            .onErrorResume { throwableToResponse(it) }
     }
 
     fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
@@ -122,14 +107,7 @@ class DatacoreHandler(
                         BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
                 }
             }
-            .onErrorResume { error ->
-                when {
-                    error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED ->
-                        status(error.statusCode)
-                            .body(BodyInserters.fromValue("Token unauthorized, maybe it is expired ?"))
-                    else -> this.throwableToResponse(error)
-                }
-            }
+            .onErrorResume { throwableToResponse(it) }
     }
 
     fun updateResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
@@ -157,15 +135,7 @@ class DatacoreHandler(
                         BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
                 }
             }
-            .onErrorResume { error ->
-                when {
-                    error is HttpClientErrorException && error.statusCode == HttpStatus.UNAUTHORIZED -> status(
-                        error.statusCode).body(
-                        BodyInserters.fromValue("Token unauthorized, maybe it is expired ?")
-                    )
-                    else -> this.throwableToResponse(error)
-                }
-            }
+            .onErrorResume { throwableToResponse(it) }
     }
 
     private fun findOrCreateDCOrganization(project: String, bearer: String, organizationUri: String): Mono<DCResource> {
@@ -196,11 +166,13 @@ class DatacoreHandler(
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
         logger.error("Operation failed with error $throwable")
-        return when (throwable) {
-            is HttpClientErrorException -> badRequest().body(BodyInserters.fromValue(throwable.responseBodyAsString))
-            else -> {
-                badRequest().body(BodyInserters.fromValue(throwable.message.orEmpty()))
-            }
+        return when {
+            throwable is HttpClientErrorException && throwable.statusCode == HttpStatus.UNAUTHORIZED ->
+                status(HttpStatus.UNAUTHORIZED).bodyValue("Token unauthorized, maybe it is expired ?")
+            throwable is HttpClientErrorException ->
+                badRequest().bodyValue(throwable.responseBodyAsString)
+            else ->
+                badRequest().bodyValue(throwable.message.orEmpty())
         }
     }
 }
