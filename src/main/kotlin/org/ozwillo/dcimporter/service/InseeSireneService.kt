@@ -7,7 +7,7 @@ import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.FullLoggingInterceptor
 import org.ozwillo.dcimporter.config.InseeSireneProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.kernel.TokenResponse
+import org.ozwillo.dcimporter.model.oauth.TokenResponse
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.slf4j.LoggerFactory
 import org.springframework.http.*
@@ -38,7 +38,7 @@ class InseeSireneService(
 
         val response: ResponseEntity<TokenResponse> =
             restTemplate.postForEntity("${inseeSireneProperties.baseUri}${inseeSireneProperties.tokenPath}", request, TokenResponse::class.java)
-        return response.body!!.accessToken!!
+        return response.body!!.accessToken
     }
 
     fun getOrgFromSireneAPI(siret: String): DCResource {

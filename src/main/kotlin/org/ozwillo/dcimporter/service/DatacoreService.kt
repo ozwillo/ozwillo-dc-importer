@@ -7,7 +7,7 @@ import java.util.*
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.config.KernelProperties
 import org.ozwillo.dcimporter.model.datacore.*
-import org.ozwillo.dcimporter.model.kernel.TokenResponse
+import org.ozwillo.dcimporter.model.oauth.TokenResponse
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
@@ -380,7 +380,7 @@ class DatacoreService(
         val request = HttpEntity<MultiValueMap<String, String>>(map, headers)
         val response = restTemplate.postForEntity(kernelProperties.tokenEndpoint, request, TokenResponse::class.java)
 
-        return response.body!!.accessToken!! // Mono.just(DCResultSingle(HttpStatus.OK, result))
+        return response.body!!.accessToken // Mono.just(DCResultSingle(HttpStatus.OK, result))
     }
 
     private fun dcResourceUri(type: DCModelType, iri: String): String {
