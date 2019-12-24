@@ -12,6 +12,7 @@ import org.ozwillo.dcimporter.service.rabbitMQ.Sender
 import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.*
 import org.springframework.stereotype.Service
@@ -25,16 +26,22 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toFlux
 
 @Service
-class DatacoreService(private val kernelProperties: KernelProperties, private val datacoreProperties: DatacoreProperties) {
+class DatacoreService(
+    private val kernelProperties: KernelProperties,
+    private val datacoreProperties: DatacoreProperties,
+    private val inseeSireneService: InseeSireneService
+) {
 
     @Autowired
     private lateinit var sender: Sender
 
-    companion object {
-        private val LOGGER = LoggerFactory.getLogger(DatacoreService::class.java)
-    }
+    @Value("\${datacore.model.modelORG}")
+    private val modelOrg = ""
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     fun saveResource(project: String, type: String, resource: DCResource, bearer: String?): Mono<DCResource> {
 
@@ -44,7 +51,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .expand(type)
             .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
             .toUriString()
-        LOGGER.debug("Saving resource $resource at URI $uri")
+        logger.debug("Saving resource $resource at URI $uri")
 
         val accessToken = bearer ?: getSyncAccessToken()
 
@@ -59,7 +66,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             ) { clientResponse ->
                 clientResponse.bodyToMono(String::class.java)
                     .flatMap {
-                        LOGGER.error("Got error while saving resource : $it")
+                        logger.error("Got error while saving resource : $it")
                         Mono.just(HttpClientErrorException(HttpStatus.BAD_REQUEST))
                     }
             }
@@ -78,7 +85,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
             .toUriString()
 
-        LOGGER.debug("Updating resource at URI $uri")
+        logger.debug("Updating resource at URI $uri")
 
         return getResourceFromIRI(project, type, resource.getIri(), bearer)
             .map {
@@ -101,6 +108,25 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             }
     }
 
+    fun checkAndCreateLinkedResources(project: String, bearer: String, dcResource: DCResource): Mono<List<DCResource>> {
+        return dcResource.getValues()
+            .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
+            .map { it.value as String }
+            .toFlux()
+            .flatMap { findOrCreateDCOrganization(project, bearer, it) }
+            .collectList()
+    }
+
+    private fun findOrCreateDCOrganization(project: String, bearer: String, organizationUri: String): Mono<DCResource> {
+
+        val siret = organizationUri.substringAfterLast("/")
+
+        return exists(project, modelOrg, "FR/$siret", bearer)
+            .filter { it == false }
+            .map { inseeSireneService.getOrgFromSireneAPI(siret) }
+            .flatMap { saveResource(project, modelOrg, it, bearer) }
+    }
+
     fun exists(project: String, type: String, iri: String, bearer: String?): Mono<Boolean> {
         val resourceUri = checkEncoding(
             dcResourceUri(
@@ -110,7 +136,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         ) // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        LOGGER.debug("Checking existence of resource $encodedUri")
+        logger.debug("Checking existence of resource $encodedUri")
 
         val accessToken = bearer ?: getSyncAccessToken()
         return WebClient.create().get()
@@ -131,7 +157,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         ) // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        LOGGER.debug("Fetching resource from URI $encodedUri")
+        logger.debug("Fetching resource from URI $encodedUri")
 
         val accessToken = bearer ?: getSyncAccessToken()
         return WebClient.create().get()
@@ -177,7 +203,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         // (because new UriTemplate(uriString) assumes uriString is not yet encoded -_-)
         // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
 
-        LOGGER.debug("Fetching limited resources from URI $requestUri")
+        logger.debug("Fetching limited resources from URI $requestUri")
 
         // val client: WebClient = WebClient.create(requestUri)
 
@@ -230,7 +256,7 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
             .encode()
             .toUriString()
 
-        LOGGER.debug("Fetching model, URI String is {}", uri)
+        logger.debug("Fetching model, URI String is {}", uri)
 
         return try {
             val client: WebClient = WebClient.create(uri)
@@ -280,8 +306,8 @@ class DatacoreService(private val kernelProperties: KernelProperties, private va
         // (because new UriTemplate(uriString) assumes uriString is not yet encoded -_-)
         // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
 
-        if (LOGGER.isDebugEnabled) {
-            LOGGER.debug("Fetching limited Resources: URI String is $requestUri")
+        if (logger.isDebugEnabled) {
+            logger.debug("Fetching limited Resources: URI String is $requestUri")
         }
 
         return try {

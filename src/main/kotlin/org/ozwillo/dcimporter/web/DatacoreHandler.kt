@@ -1,6 +1,5 @@
 package org.ozwillo.dcimporter.web
 
-import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCModel
 import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
@@ -8,25 +7,20 @@ import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
-import org.ozwillo.dcimporter.service.InseeSireneService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.toFlux
 
 @Component
 class DatacoreHandler(
-    private val datacoreService: DatacoreService,
-    private val datacoreProperties: DatacoreProperties,
-    private val inseeSireneService: InseeSireneService
+    private val datacoreService: DatacoreService
 ) {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -78,74 +72,47 @@ class DatacoreHandler(
             .onErrorResume { throwableToResponse(it) }
     }
 
-    fun createResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
+    fun createResource(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
         val project = extractProject(req.headers())
         val bearer = extractBearer(req.headers())
 
         return req.bodyToMono<DCResource>()
-            .flatMap { resource: DCResource ->
-                val filteredResource = resource.getValues()
-                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
-                if (filteredResource.isNotEmpty()) {
-                    filteredResource.values.toFlux()
-                        .map { organizationUri ->
-                            findOrCreateDCOrganization(project, bearer, organizationUri as String)
-                        }
-                        .collectList()
-                        .flatMap {
-                            datacoreService.saveResource(project, type, resource, bearer)
-                        }
-                        .flatMap { dcResource ->
-                            datacoreService.getResourceFromIRI(project, type, dcResource.getIri(), bearer)
-                        }.flatMap {
-                            status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON)
-                                .body(BodyInserters.fromValue(it))
-                        }
-                } else {
-                    badRequest().body(
-                        BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
-                }
+            .zipWhen {
+                datacoreService.checkAndCreateLinkedResources(project, bearer, it)
             }
-            .onErrorResume { throwableToResponse(it) }
+            .flatMap {
+                datacoreService.saveResource(project, type, it.t1, bearer)
+            }
+            .flatMap {
+                datacoreService.getResourceFromIRI(project, type, it.getIri(), bearer)
+            }
+            .flatMap {
+                status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).bodyValue(it)
+            }
+            .onErrorResume {
+                throwableToResponse(it)
+            }
     }
 
-    fun updateResourceWithOrganization(req: ServerRequest): Mono<ServerResponse> {
+    fun updateResource(req: ServerRequest): Mono<ServerResponse> {
         val type = req.pathVariable("type")
         val project = extractProject(req.headers())
         val bearer = extractBearer(req.headers())
 
         return req.bodyToMono<DCResource>()
-            .flatMap { resource: DCResource ->
-                val filteredResource = resource.getValues()
-                    .filterValues { v -> v.toString().contains("${datacoreProperties.baseResourceUri()}/$modelOrg") }
-                if (filteredResource.isNotEmpty()) {
-                    filteredResource.values.toFlux()
-                        .map { organizationUri ->
-                            findOrCreateDCOrganization(project, bearer, organizationUri as String)
-                        }
-                        .collectList()
-                        .flatMap {
-                            datacoreService.updateResource(project, type, resource, bearer)
-                        }.flatMap {
-                            ok().contentType(MediaType.APPLICATION_JSON).body(BodyInserters.empty<String>())
-                        }
-                } else {
-                    badRequest().body(
-                        BodyInserters.fromValue("No organization found in request ${resource.getValues()}"))
-                }
+            .zipWhen {
+                datacoreService.checkAndCreateLinkedResources(project, bearer, it)
             }
-            .onErrorResume { throwableToResponse(it) }
-    }
-
-    private fun findOrCreateDCOrganization(project: String, bearer: String, organizationUri: String): Mono<DCResource> {
-
-        val siret = organizationUri.substringAfterLast("/")
-
-        return datacoreService.exists(project, modelOrg, "FR/$siret", bearer)
-            .filter { it == false }
-            .map { inseeSireneService.getOrgFromSireneAPI(siret) }
-            .flatMap { datacoreService.saveResource(project, modelOrg, it, bearer) }
+            .flatMap {
+                datacoreService.updateResource(project, type, it.t1, bearer)
+            }
+            .flatMap {
+                ok().build()
+            }
+            .onErrorResume {
+                throwableToResponse(it)
+            }
     }
 
     private fun extractProject(headers: ServerRequest.Headers): String {
