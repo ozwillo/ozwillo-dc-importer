@@ -4,6 +4,8 @@ import com.ninjasquad.springmockk.MockkBean
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
+import java.net.URLEncoder
+import java.nio.charset.Charset
 import org.junit.jupiter.api.Test
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
@@ -108,6 +110,63 @@ class DatacoreHandlerTest {
         verify { datacoreService.checkAndCreateLinkedResources(eq("grant_0"), eq("mybearer"),
             match { dcResource -> dcResource.getUri() == resourceUri }) }
         verify { datacoreService.updateResource(eq("grant_0"), eq("grant:association_0"), any(), eq("mybearer")) }
+
+        confirmVerified()
+    }
+
+    @Test
+    fun `it should return a 204 if resource has been deleted`() {
+
+        every { datacoreService.deleteResource(any(), any(), any(), any()) } answers { Mono.just(true) }
+
+        val encodedIri = URLEncoder.encode("FR/1234/4567", Charset.forName("UTF-8"))
+        webClient.delete()
+            .uri("/dc/type/grant:association_0/$encodedIri")
+            .header("X-Datacore-Project", "grant_0")
+            .header("Authorization", "Bearer mybearer")
+            .exchange()
+            .expectStatus().isNoContent
+
+        verify { datacoreService.deleteResource(eq("grant_0"), eq("grant:association_0"),
+            eq("FR%2F1234%2F4567"), eq("mybearer")) }
+
+        confirmVerified()
+    }
+
+    @Test
+    fun `it should return a 400 if resource could not be deleted`() {
+
+        every { datacoreService.deleteResource(any(), any(), any(), any()) } answers { Mono.just(false) }
+
+        val encodedIri = URLEncoder.encode("FR/1234/4567", Charset.forName("UTF-8"))
+        webClient.delete()
+            .uri("/dc/type/grant:association_0/$encodedIri")
+            .header("X-Datacore-Project", "grant_0")
+            .header("Authorization", "Bearer mybearer")
+            .exchange()
+            .expectStatus().isBadRequest
+
+        verify { datacoreService.deleteResource(eq("grant_0"), eq("grant:association_0"),
+            eq("FR%2F1234%2F4567"), eq("mybearer")) }
+
+        confirmVerified()
+    }
+
+    @Test
+    fun `it should return a 404 if resource to be deleted does not exist`() {
+
+        every { datacoreService.deleteResource(any(), any(), any(), any()) } throws HttpClientErrorException(HttpStatus.NOT_FOUND)
+
+        val encodedIri = URLEncoder.encode("FR/1234/4567", Charset.forName("UTF-8"))
+        webClient.delete()
+            .uri("/dc/type/grant:association_0/$encodedIri")
+            .header("X-Datacore-Project", "grant_0")
+            .header("Authorization", "Bearer mybearer")
+            .exchange()
+            .expectStatus().isNotFound
+
+        verify { datacoreService.deleteResource(eq("grant_0"), eq("grant:association_0"),
+            eq("FR%2F1234%2F4567"), eq("mybearer")) }
 
         confirmVerified()
     }

@@ -48,6 +48,7 @@ class Routes(
         "/dc".nest {
             POST("/type/{type}", datacoreHandler::createResource)
             PUT("/type/{type}", datacoreHandler::updateResource)
+            DELETE("/type/{type}/{iri}", datacoreHandler::deleteResource)
             GET("/organization", datacoreHandler::getOrganization)
             GET("/models", datacoreHandler::getModels)
             GET("/model/{type}", datacoreHandler::getModel)

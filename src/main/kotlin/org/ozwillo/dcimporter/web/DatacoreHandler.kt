@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.*
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 
 @Component
 class DatacoreHandler(
@@ -115,6 +116,27 @@ class DatacoreHandler(
             }
     }
 
+    fun deleteResource(req: ServerRequest): Mono<ServerResponse> {
+        val type = req.pathVariable("type")
+        val project = extractProject(req.headers())
+        val iri = req.pathVariable("iri")
+        val bearer = extractBearer(req.headers())
+
+        return Triple(project, type, iri).toMono()
+            .flatMap {
+                datacoreService.deleteResource(it.first, it.second, it.third, bearer)
+            }
+            .flatMap {
+                if (it)
+                    noContent().build()
+                else
+                    badRequest().build()
+            }
+            .onErrorResume {
+                throwableToResponse(it)
+            }
+    }
+
     private fun extractProject(headers: ServerRequest.Headers): String {
         val project = headers.header("X-Datacore-Project")
         if (project.isEmpty() || project.size > 1)
@@ -137,7 +159,7 @@ class DatacoreHandler(
             throwable is HttpClientErrorException && throwable.statusCode == HttpStatus.UNAUTHORIZED ->
                 status(HttpStatus.UNAUTHORIZED).bodyValue("Token unauthorized, maybe it is expired ?")
             throwable is HttpClientErrorException ->
-                badRequest().bodyValue(throwable.responseBodyAsString)
+                status(throwable.statusCode).bodyValue(throwable.responseBodyAsString)
             else ->
                 badRequest().bodyValue(throwable.message.orEmpty())
         }

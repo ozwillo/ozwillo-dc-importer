@@ -53,6 +53,7 @@ class RabbitMockConfig {
         container.setQueueNames(
             "grant_0.grant:association_0.create",
             "grant_0.grant:association_0.update",
+            "grant_0.grant:association_0.delete",
             "iot",
             "maarch",
             "publik"

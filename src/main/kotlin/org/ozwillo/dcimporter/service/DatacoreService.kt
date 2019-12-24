@@ -127,13 +127,32 @@ class DatacoreService(
             .flatMap { saveResource(project, modelOrg, it, bearer) }
     }
 
+    fun deleteResource(project: String, type: String, iri: String, bearer: String): Mono<Boolean> {
+        val resourceUri = checkEncoding(dcResourceUri(type, iri))
+        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
+        val accessToken = bearer ?: getSyncAccessToken()
+
+        return getResourceFromIRI(project, type, iri, bearer)
+            .flatMap {
+                WebClient.create().delete()
+                    .uri(encodedUri)
+                    .header("X-Datacore-Project", project)
+                    .header("Authorization", "Bearer $accessToken")
+                    .header("If-Match", it.getIntValue("o:version").toString())
+                    .exchange()
+            }
+            .map {
+                it.statusCode() == HttpStatus.NO_CONTENT
+            }
+            .doOnSuccess {
+                sender.send(DCResource(resourceUri), project, type, BindingKeyAction.DELETE)
+            }
+    }
+
     fun exists(project: String, type: String, iri: String, bearer: String?): Mono<Boolean> {
-        val resourceUri = checkEncoding(
-            dcResourceUri(
-                type,
-                iri
-            )
-        ) // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
+        // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25
+        // e.g. "some iri" -> "some%20iri" -> "some%2520iri"
+        val resourceUri = checkEncoding(dcResourceUri(type, iri))
         val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         logger.debug("Checking existence of resource $encodedUri")
@@ -326,12 +345,12 @@ class DatacoreService(
     }
 
     private fun getAccessToken(): Mono<String> {
-        val client: WebClient = WebClient.create(kernelProperties.tokenEndpoint)
-        val authorizationHeaderValue: String = "Basic " + Base64Utils.encodeToString(
-            String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret).toByteArray(
-                StandardCharsets.UTF_8
-            )
+        val client = WebClient.create(kernelProperties.tokenEndpoint)
+        val authorizationHeaderValue = "Basic " + Base64Utils.encodeToString(
+            String.format(Locale.ROOT, "%s:%s", kernelProperties.clientId, kernelProperties.clientSecret)
+                .toByteArray(StandardCharsets.UTF_8)
         )
+
         return client.post()
             .header("Authorization", authorizationHeaderValue)
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
