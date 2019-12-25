@@ -31,6 +31,22 @@ class DatacoreHandlerTest {
     private lateinit var datacoreService: DatacoreService
 
     @Test
+    fun `it should return a 401 if Authorization header is missing`() {
+
+        val expectedErrorMessage = """
+            {
+              "message": "Missing Authorization header in request"
+            }
+        """.trimIndent()
+
+        webClient.get()
+            .uri("/dc/models")
+            .exchange()
+            .expectStatus().isUnauthorized
+            .expectBody().json(expectedErrorMessage)
+    }
+
+    @Test
     fun `it should ask to create unknown organization then create the resource`() {
 
         val resourceUri = "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234/4567"

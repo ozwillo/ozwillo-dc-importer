@@ -10,6 +10,7 @@ import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.IoTService
+import org.ozwillo.dcimporter.service.KernelService
 import org.ozwillo.dcimporter.util.extractDeviceId
 import org.ozwillo.dcimporter.util.toZonedDateTime
 import org.slf4j.Logger
@@ -25,6 +26,7 @@ import reactor.kotlin.core.publisher.toMono
 @Service
 class IoTReceiver(
     private val datacoreService: DatacoreService,
+    private val kernelService: KernelService,
     private val datacoreProperties: DatacoreProperties,
     private val ioTService: IoTService,
     private val ioTSender: IoTSender
@@ -120,8 +122,10 @@ class IoTReceiver(
             }.map { dcBusinessResource ->
                 ioTSender.send(dcBusinessResource)
                 dcBusinessResource
-            }.flatMap { dcBusinessResource ->
-                datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, dcBusinessResource, null)
+            }.zipWith<String> {
+                kernelService.getAccessToken()
+            }.flatMap {
+                datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, it.t1, it.t2)
             }.doOnComplete {
                 channel.basicAck(tag, false)
             }.doOnError {

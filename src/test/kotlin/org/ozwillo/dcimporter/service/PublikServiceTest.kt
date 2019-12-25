@@ -14,9 +14,11 @@ import org.ozwillo.dcimporter.model.publik.Submission
 import org.ozwillo.dcimporter.model.publik.User
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import reactor.core.publisher.Mono
 
 @SpringBootTest
+@ActiveProfiles("test")
 class PublikServiceTest {
 
     @Autowired
@@ -25,15 +27,23 @@ class PublikServiceTest {
     @MockkBean
     private lateinit var datacoreService: DatacoreService
 
+    @MockkBean
+    private lateinit var kernelService: KernelService
+
     @Test
     fun `it should call the DC to create a new user`() {
         every {
-            datacoreService.getResourceFromIRI(any(), any(), any(), null)
+            kernelService.getAccessToken()
+        } answers {
+            Mono.just("mytoken")
+        }
+        every {
+            datacoreService.getResourceFromIRI(any(), any(), any(), any())
         } answers {
             Mono.empty()
         }
         every {
-            datacoreService.saveResource(any(), any(), any(), null)
+            datacoreService.saveResource(any(), any(), any(), any())
         } answers {
             Mono.just(DCResource("http://new.user/1234"))
         }
@@ -58,12 +68,15 @@ class PublikServiceTest {
             }
 
         verify {
+            kernelService.getAccessToken()
+        }
+        verify {
             datacoreService.getResourceFromIRI("citizenreq_0", "citizenreq:user_0",
-                match { iri -> iri == "idofmyuser" }, null)
+                match { iri -> iri == "idofmyuser" }, any())
         }
         verify {
             datacoreService.saveResource("citizenreq_0", "citizenreq:user_0",
-                match { dcResource -> dcResource.getUri().endsWith("idofmyuser") }, null)
+                match { dcResource -> dcResource.getUri().endsWith("idofmyuser") }, any())
         }
 
         confirmVerified(datacoreService)
@@ -72,7 +85,12 @@ class PublikServiceTest {
     @Test
     fun `it should not call the DC to create a new user`() {
         every {
-            datacoreService.getResourceFromIRI(any(), any(), any(), null)
+            kernelService.getAccessToken()
+        } answers {
+            Mono.just("mytoken")
+        }
+        every {
+            datacoreService.getResourceFromIRI(any(), any(), any(), any())
         } answers {
             Mono.just(DCResource("http://new.user/1234"))
         }
@@ -97,8 +115,11 @@ class PublikServiceTest {
             }
 
         verify {
+            kernelService.getAccessToken()
+        }
+        verify {
             datacoreService.getResourceFromIRI("citizenreq_0", "citizenreq:user_0",
-                match { iri -> iri == "idofmyuser" }, null)
+                match { iri -> iri == "idofmyuser" }, any())
         }
 
         confirmVerified(datacoreService)

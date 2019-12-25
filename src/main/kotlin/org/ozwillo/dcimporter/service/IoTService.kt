@@ -11,6 +11,7 @@ import reactor.kotlin.core.publisher.switchIfEmpty
 @Service
 class IoTService(
     private val datacoreService: DatacoreService,
+    private val kernelService: KernelService,
     private val datacoreProperties: DatacoreProperties
 ) {
 
@@ -24,22 +25,26 @@ class IoTService(
 
         val deviceIdAndName = fullDeviceId.parseDevice()
 
-        return datacoreService.getResourceFromIRI(
-            project = datacoreIotProject,
-            iri = deviceIdAndName.first,
-            type = datacoreIotDevice,
-            bearer = null
-        ).switchIfEmpty {
-            val dcDeviceResource = DCResource(
-                datacoreBaseUri = datacoreProperties.baseResourceUri(),
-                type = datacoreIotDevice,
-                iri = deviceIdAndName.first
-            )
-            dcDeviceResource.setStringValue("iotdevice:id", deviceIdAndName.first)
-            dcDeviceResource.setStringValue("iotdevice:name", deviceIdAndName.second)
-            latitude?.let { dcDeviceResource.setFloatValue("iotdevice:lat", it) }
-            longitude?.let { dcDeviceResource.setFloatValue("iotdevice:lon", it) }
-            datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, null)
-        }
+        return kernelService.getAccessToken()
+            .flatMap {
+                datacoreService.getResourceFromIRI(
+                    project = datacoreIotProject,
+                    iri = deviceIdAndName.first,
+                    type = datacoreIotDevice,
+                    bearer = it
+                )
+                .switchIfEmpty {
+                    val dcDeviceResource = DCResource(
+                        datacoreBaseUri = datacoreProperties.baseResourceUri(),
+                        type = datacoreIotDevice,
+                        iri = deviceIdAndName.first
+                    )
+                    dcDeviceResource.setStringValue("iotdevice:id", deviceIdAndName.first)
+                    dcDeviceResource.setStringValue("iotdevice:name", deviceIdAndName.second)
+                    latitude?.let { dcDeviceResource.setFloatValue("iotdevice:lat", it) }
+                    longitude?.let { dcDeviceResource.setFloatValue("iotdevice:lon", it) }
+                    datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, it)
+                }
+            }
     }
 }

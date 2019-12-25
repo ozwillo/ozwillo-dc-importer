@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component
 @Profile("!test")
 class PublikSynchronizerService(
     private val datacoreService: DatacoreService,
+    private val kernelService: KernelService,
     private val publikService: PublikService,
     private val businessAppConfigurationRepository: BusinessAppConfigurationRepository
 ) : CommandLineRunner {
@@ -31,37 +32,35 @@ class PublikSynchronizerService(
     @Value("\${publik.formTypeSVE}")
     private lateinit var formTypeSVE: String
 
+    private val LOGGER = LoggerFactory.getLogger(javaClass)
+
     override fun run(vararg args: String) {
 
-        businessAppConfigurationRepository.findByApplicationName(PublikService.name).subscribe { publikConfiguration ->
-
+        businessAppConfigurationRepository.findByApplicationName(PublikService.name).zipWith<String> {
+            kernelService.getAccessToken()
+        }.subscribe { appConfWithToken ->
             datacoreService.getResourceFromIRI(
                 datacoreProject,
                 datacoreModelORG,
-                "FR/${publikConfiguration.organizationSiret}",
-                null
+                "FR/${appConfWithToken.t1.organizationSiret}",
+                appConfWithToken.t2
             ).subscribe {
                 val queryParameters = DCQueryParameters(
                     "citizenreq:organization", DCOperator.EQ,
                     DCOrdering.DESCENDING, it.getUri()
                 )
                 listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
-                    val result = datacoreService.findResource(datacoreProject, type!!, queryParameters).blockOptional()
+                    val result = datacoreService.findResource(datacoreProject, type!!, queryParameters, appConfWithToken.t2).blockOptional()
                     if (result.isPresent && result.get().isEmpty()) {
                         if (type == datacoreModelEM)
-                            publikService.syncPublikForms(publikConfiguration, it, formTypeEM)
+                            publikService.syncPublikForms(appConfWithToken.t1, it, formTypeEM)
                                 .subscribe { LOGGER.debug("Synchro finished with $it") }
                         else if (type == datacoreModelSVE)
-                            publikService.syncPublikForms(publikConfiguration, it, formTypeSVE)
+                            publikService.syncPublikForms(appConfWithToken.t1, it, formTypeSVE)
                                 .subscribe { LOGGER.debug("Synchro finished with $it") }
                     }
                 }
             }
         }
-    }
-
-    companion object {
-
-        private val LOGGER = LoggerFactory.getLogger(PublikSynchronizerService::class.java)
     }
 }

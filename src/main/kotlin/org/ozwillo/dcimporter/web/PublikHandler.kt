@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.web
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.ozwillo.dcimporter.model.publik.FormModel
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.KernelService
 import org.ozwillo.dcimporter.service.PublikService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -17,6 +18,7 @@ import reactor.core.publisher.Mono
 @Component
 class PublikHandler(
     private val datacoreService: DatacoreService,
+    private val kernelService: KernelService,
     private val publikService: PublikService
 ) {
 
@@ -32,13 +34,18 @@ class PublikHandler(
 
     fun publish(req: ServerRequest): Mono<ServerResponse> =
         req.bodyToMono<FormModel>()
-            .flatMap { formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel) }
+            .flatMap {
+                    formModel -> publikService.formToDCResource(req.pathVariable("siret"), formModel)
+            }
+            .zipWhen {
+                kernelService.getAccessToken()
+            }
             .flatMap { dcResourceWithProject ->
                 datacoreService.saveResource(
                     datacoreProject,
-                    dcResourceWithProject.first,
-                    dcResourceWithProject.second,
-                    null
+                    dcResourceWithProject.t1.first,
+                    dcResourceWithProject.t1.second,
+                    dcResourceWithProject.t2
                 )
             }
             .flatMap { result ->

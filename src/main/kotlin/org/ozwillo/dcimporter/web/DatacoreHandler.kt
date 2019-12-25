@@ -7,6 +7,7 @@ import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.exceptions.BearerNotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
@@ -30,10 +31,10 @@ class DatacoreHandler(
     private val modelOrg = ""
 
     fun getModels(req: ServerRequest): Mono<ServerResponse> {
-
+        val bearer = extractBearer(req.headers())
         val name = req.queryParam("name").orElse("")
 
-        return datacoreService.findModels(10, name)
+        return datacoreService.findModels(10, name, bearer)
             .reduce(listOf<DCModel>(), { acc, dcModel -> acc.plus(dcModel) })
             .flatMap {
                 ok().bodyValue(it)
@@ -42,9 +43,10 @@ class DatacoreHandler(
     }
 
     fun getModel(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
         val type = req.pathVariable("type")
 
-        return datacoreService.findModel(type)
+        return datacoreService.findModel(type, bearer)
             .flatMap {
                 ok().bodyValue(it)
             }
@@ -52,6 +54,7 @@ class DatacoreHandler(
     }
 
     fun getOrganization(req: ServerRequest): Mono<ServerResponse> {
+        val bearer = extractBearer(req.headers())
 
         if (req.queryParam("name").isEmpty && req.queryParam("siret").isEmpty)
             return badRequest().bodyValue("Missing query parameter \"name\" or \"siret\"")
@@ -64,7 +67,7 @@ class DatacoreHandler(
             else
                 DCQueryParameters("org:regNumber", DCOperator.EQ, DCOrdering.DESCENDING, req.queryParam("siret").get())
 
-        return datacoreService.findResources("oasis.main", modelOrg, dcQueryParameters, 0, 100)
+        return datacoreService.findResources("oasis.main", modelOrg, dcQueryParameters, 0, 100, bearer)
             .map { Organization.fromDcObject(it) }
             .reduce(listOf<Organization>(), { acc, org -> acc.plus(org) })
             .flatMap {
@@ -148,7 +151,7 @@ class DatacoreHandler(
     private fun extractBearer(headers: ServerRequest.Headers): String {
         val authorizationHeader = headers.header("Authorization")
         if (authorizationHeader.isEmpty() || authorizationHeader.size > 1)
-            return ""
+            throw BearerNotFoundException()
 
         return authorizationHeader[0].split(" ")[1]
     }

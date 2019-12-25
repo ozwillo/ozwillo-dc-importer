@@ -35,6 +35,7 @@ import reactor.core.publisher.Mono
 @Service
 class PublikService(
     private val datacoreService: DatacoreService,
+    private val kernelService: KernelService,
     private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
     private val businessMappingRepository: BusinessMappingRepository,
     private val datacoreProperties: DatacoreProperties
@@ -113,7 +114,12 @@ class PublikService(
                 )
             }
             .flatMap { formModel -> convertToDCResource(dcOrganization, formModel) }
-            .map { datacoreService.saveResource(datacoreProject, it.first, it.second, null) }
+            .zipWith<String> {
+                kernelService.getAccessToken()
+            }
+            .map {
+                datacoreService.saveResource(datacoreProject, it.t1.first, it.t1.second, it.t2)
+            }
             .count()
             .map { HttpStatus.OK }
     }
@@ -128,7 +134,10 @@ class PublikService(
 
         LOGGER.debug("Got form from Publik : $form")
 
-        return datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", null)
+        return kernelService.getAccessToken()
+            .flatMap {
+                datacoreService.getResourceFromIRI(datacoreProject, datacoreModelORG, "FR/$organizationSiret", it)
+            }
             .flatMap { convertToDCResource(it, form) }
             .map { result ->
                 val businessMapping = BusinessMapping(
@@ -236,7 +245,10 @@ class PublikService(
         // for now, let's say agent_sictiam is the universal fallback user
         val nameId = if (form.user == null) "5c977a7f1d444fa1ab0f777325fdda93" else form.user.nameID[0]
 
-        return datacoreService.getResourceFromIRI(datacoreProject, datacoreModelUser, nameId, null)
+        return kernelService.getAccessToken()
+            .flatMap {
+                datacoreService.getResourceFromIRI(datacoreProject, datacoreModelUser, nameId, it)
+            }
             .map { it.getUri() }
             .switchIfEmpty(Mono.just(1).flatMap { createUser(form.user!!) })
     }
@@ -248,8 +260,13 @@ class PublikService(
         dcUserResource.setStringValue("citizenrequser:nameID", user.nameID[0])
         dcUserResource.setStringValue("citizenrequser:userId", user.id.toString())
         dcUserResource.setStringValue("citizenrequser:name", user.name)
-        return datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, null)
-            .map { it.getUri() }
+        return kernelService.getAccessToken()
+            .flatMap {
+                datacoreService.saveResource(datacoreProject, datacoreModelUser, dcUserResource, it)
+            }
+            .map {
+                it.getUri()
+            }
     }
 
     data class PublikStatusResponse(val url: String?, val err: Int?)

@@ -18,6 +18,7 @@ import org.ozwillo.dcimporter.model.publik.Submission
 import org.ozwillo.dcimporter.model.publik.User
 import org.ozwillo.dcimporter.repository.BusinessAppConfigurationRepository
 import org.ozwillo.dcimporter.service.DatacoreService
+import org.ozwillo.dcimporter.service.KernelService
 import org.ozwillo.dcimporter.service.PublikService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -36,6 +37,9 @@ class PublikHandlerTest : AbstractIntegrationTests() {
 
     @MockkBean
     private lateinit var datacoreService: DatacoreService
+
+    @MockkBean
+    private lateinit var kernelService: KernelService
 
     @BeforeAll
     fun declarePublikInstance() {
@@ -67,7 +71,12 @@ class PublikHandlerTest : AbstractIntegrationTests() {
         val typeSlot = slot<String>()
         val iriSlot = slot<String>()
         every {
-            datacoreService.getResourceFromIRI(any(), capture(typeSlot), capture(iriSlot), null)
+            kernelService.getAccessToken()
+        } answers {
+            Mono.just("mytoken")
+        }
+        every {
+            datacoreService.getResourceFromIRI(any(), capture(typeSlot), capture(iriSlot), any())
         } answers {
             Mono.just(DCResource("http://data.ozwillo.com/dc/type/$typeSlot/$iriSlot"))
         }
