@@ -10,11 +10,15 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.*
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestTemplate
+import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
@@ -51,22 +55,14 @@ class DatacoreService(
             .header("Authorization", "Bearer $bearer")
             .bodyValue(resource)
             .retrieve()
-            .onStatus(
-                HttpStatus::is4xxClientError
-            ) { clientResponse ->
-                clientResponse.bodyToMono(String::class.java)
-                    .flatMap {
-                        logger.error("Got error while saving resource : $it")
-                        Mono.just(HttpClientErrorException(HttpStatus.BAD_REQUEST))
-                    }
-            }
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
             .bodyToMono(DCResource::class.java)
             .doOnSuccess {
                 sender.send(resource, project, type, BindingKeyAction.CREATE)
             }
     }
 
-    fun updateResource(project: String, type: String, resource: DCResource, bearer: String): Mono<HttpStatus> {
+    fun updateResource(project: String, type: String, resource: DCResource, bearer: String): Mono<DCResource> {
 
         val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
@@ -90,10 +86,10 @@ class DatacoreService(
                     .header("Authorization", "Bearer $bearer")
                     .bodyValue(it)
                     .retrieve()
+                    .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
                     .bodyToMono(DCResource::class.java)
-            }.map {
+            }.doOnSuccess {
                 sender.send(resource, project, type, BindingKeyAction.CREATE)
-                HttpStatus.OK
             }
     }
 
@@ -166,8 +162,8 @@ class DatacoreService(
             .header("X-Datacore-Project", project)
             .header("Authorization", "Bearer $bearer")
             .retrieve()
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
             .bodyToMono(DCResource::class.java)
-            .onErrorResume { Mono.empty() }
     }
 
     private fun checkEncoding(iri: String): String {
@@ -231,16 +227,12 @@ class DatacoreService(
 
         val requestUri = uriComponents.toUriString()
 
-        return try {
-            val client: WebClient = WebClient.create(requestUri)
-            client.get()
-                .header("Authorization", "Bearer $bearer")
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToFlux(DCModel::class.java)
-        } catch (e: HttpClientErrorException) {
-            Flux.empty() // this.getDCResultFromHttpErrorException(e)
-        }
+        return WebClient.create(requestUri).get()
+            .header("Authorization", "Bearer $bearer")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
+            .bodyToFlux(DCModel::class.java)
     }
 
     fun findModel(type: String, bearer: String): Mono<DCModel> {
@@ -254,18 +246,13 @@ class DatacoreService(
 
         logger.debug("Fetching model, URI String is {}", uri)
 
-        return try {
-            val client: WebClient = WebClient.create(uri)
-
-            return client.get()
-                .header("Authorization", "Bearer $bearer}")
-                .header("X-Datacore-Project", "oasis.main")
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(DCModel::class.java)
-        } catch (e: HttpClientErrorException) {
-            Mono.empty()
-        }
+        return WebClient.create(uri).get()
+            .header("Authorization", "Bearer $bearer")
+            .header("X-Datacore-Project", "oasis.main")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
+            .bodyToMono(DCModel::class.java)
     }
 
     fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int, maxResult: Int, bearer: String): Flux<DCResource> {
@@ -300,17 +287,13 @@ class DatacoreService(
             logger.debug("Fetching limited Resources: URI String is $requestUri")
         }
 
-        return try {
-            val client: WebClient = WebClient.create(requestUri)
-            client.get()
-                .header("X-Datacore-Project", project)
-                .header("Authorization", "Bearer $bearer")
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToFlux(DCResource::class.java)
-        } catch (e: HttpClientErrorException) {
-            Flux.empty() // this.getDCResultFromHttpErrorException(e)
-        }
+        return WebClient.create(requestUri).get()
+            .header("X-Datacore-Project", project)
+            .header("Authorization", "Bearer $bearer")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
+            .bodyToFlux(DCResource::class.java)
     }
 
     private fun dcResourceUri(type: DCModelType, iri: String): String {
@@ -322,4 +305,12 @@ class DatacoreService(
             .append(iri) // already encoded
             .toString()
     }
+
+    fun unwrapDatacoreError(clientResponse: ClientResponse): Mono<Throwable> =
+        clientResponse.bodyToMono(String::class.java)
+            .flatMap {
+                logger.error("Got error response from Datacore: $it")
+                Mono.just(HttpClientErrorException(clientResponse.statusCode(), clientResponse.statusCode().reasonPhrase,
+                    it.toByteArray(), Charsets.UTF_8))
+            }
 }

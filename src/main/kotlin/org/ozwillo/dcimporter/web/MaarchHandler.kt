@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.ServerResponse.status
+import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 
@@ -45,6 +45,6 @@ class MaarchHandler(
                 updatedResource.setStringValue("citizenreq:workflowStatus", "Terminé")
                 datacoreService.updateResource(datacoreProject, datacoreModelEM, updatedResource, it.second)
             }.flatMap {
-                status(it).bodyValue(MaarchResponse(it.value()))
+                ok().bodyValue(MaarchResponse(200))
             }
 }

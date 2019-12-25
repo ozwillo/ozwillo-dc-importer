@@ -112,7 +112,7 @@ class DatacoreHandlerTest {
             }
         """.trimIndent()
         every { datacoreService.checkAndCreateLinkedResources(any(), any(), any()) } answers { Mono.just(emptyList()) }
-        every { datacoreService.updateResource(any(), any(), any(), any()) } answers { Mono.just(HttpStatus.OK) }
+        every { datacoreService.updateResource(any(), any(), any(), any()) } answers { Mono.just(DCResource(resourceUri)) }
 
         webClient.put()
             .uri("/dc/type/grant:association_0")

@@ -158,13 +158,9 @@ class DatacoreHandler(
 
     private fun throwableToResponse(throwable: Throwable): Mono<ServerResponse> {
         logger.error("Operation failed with error $throwable")
-        return when {
-            throwable is HttpClientErrorException && throwable.statusCode == HttpStatus.UNAUTHORIZED ->
-                status(HttpStatus.UNAUTHORIZED).bodyValue("Token unauthorized, maybe it is expired ?")
-            throwable is HttpClientErrorException ->
-                status(throwable.statusCode).bodyValue(throwable.responseBodyAsString)
-            else ->
-                badRequest().bodyValue(throwable.message.orEmpty())
+        return when (throwable) {
+            is HttpClientErrorException -> status(throwable.statusCode).bodyValue(throwable.responseBodyAsString)
+            else -> badRequest().bodyValue(throwable.message.orEmpty())
         }
     }
 }
