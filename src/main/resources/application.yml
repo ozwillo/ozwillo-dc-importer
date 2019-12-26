@@ -63,8 +63,7 @@ amqp:
       baseBindingKey: egm-lora
 
 kernel:
-  baseUri: https://kernel.ozwillo-preprod.eu
-  tokenEndpoint: ${kernel.baseUri}/a/token
+  tokenEndpoint: https://kernel.ozwillo-preprod.eu/a/token
   clientId: dcimporter
   clientSecret: secret
 
