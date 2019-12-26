@@ -1,7 +1,7 @@
 package org.ozwillo.dcimporter.service
 
-import java.net.URI
 import java.net.URLDecoder
+import java.nio.charset.Charset
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
@@ -9,15 +9,10 @@ import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.ParameterizedTypeReference
-import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.http.RequestEntity
 import org.springframework.stereotype.Service
-import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.HttpClientErrorException
-import org.springframework.web.client.RestTemplate
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.UriComponentsBuilder
@@ -41,12 +36,7 @@ class DatacoreService(
 
     fun saveResource(project: String, type: String, resource: DCResource, bearer: String): Mono<DCResource> {
 
-        val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
-            .path("/dc/type/{type}")
-            .build()
-            .expand(type)
-            .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
-            .toUriString()
+        val uri = encodedUrlToType(type)
         logger.debug("Saving resource $resource at URI $uri")
 
         return WebClient.create().post()
@@ -64,13 +54,7 @@ class DatacoreService(
 
     fun updateResource(project: String, type: String, resource: DCResource, bearer: String): Mono<DCResource> {
 
-        val uri = UriComponentsBuilder.fromUriString(datacoreProperties.url)
-            .path("/dc/type/{type}")
-            .build()
-            .expand(type)
-            .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
-            .toUriString()
-
+        val uri = encodedUrlToType(type)
         logger.debug("Updating resource at URI $uri")
 
         return getResourceFromIRI(project, type, resource.getIri(), bearer)
@@ -89,7 +73,7 @@ class DatacoreService(
                     .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
                     .bodyToMono(DCResource::class.java)
             }.doOnSuccess {
-                sender.send(resource, project, type, BindingKeyAction.CREATE)
+                sender.send(resource, project, type, BindingKeyAction.UPDATE)
             }
     }
 
@@ -175,12 +159,12 @@ class DatacoreService(
         }
     }
 
-    fun findResource(project: String, model: String, queryParameters: DCQueryParameters, bearer: String): Mono<List<DCResource>> {
+    fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int = 0, maxResult: Int = 100, bearer: String): Flux<DCResource> {
 
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
-            .queryParam("start", 0)
-            .queryParam("limit", 1)
+            .queryParam("start", start)
+            .queryParam("limit", maxResult)
 
         for (param in queryParameters) {
             uriComponentsBuilder.queryParam(param.subject, param.operator.value + param.getObject())
@@ -195,23 +179,25 @@ class DatacoreService(
         // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
         // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
 
-        val requestUri = uriComponents.toUriString()
+        // Okay so to avoid encoded parameters and as long I can't directly modify uriComponents.query alone : I decode uriComponents.query and replace everything following the "?" in the final String query by it
+        val decodedQuery = URLDecoder.decode(uriComponents.query, Charset.forName("UTF-8"))
+
+        val requestUri = uriComponents.toUriString().substringBefore("?") + "?" + decodedQuery
         // and NOT uriComponents.toString() else variable expansion encodes it once too many
         // (because new UriTemplate(uriString) assumes uriString is not yet encoded -_-)
         // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
 
-        logger.debug("Fetching limited resources from URI $requestUri")
+        if (logger.isDebugEnabled) {
+            logger.debug("Fetching limited Resources: URI String is $requestUri")
+        }
 
-        val restTemplate = RestTemplate()
-        val headers = LinkedMultiValueMap<String, String>()
-        headers.set("X-Datacore-Project", project)
-        headers.set("Authorization", "Bearer $bearer")
-        val request = RequestEntity<Any>(headers, HttpMethod.GET, URI(requestUri))
-        val respType = object : ParameterizedTypeReference<List<DCResource>>() {}
-
-        val response = restTemplate.exchange(request, respType)
-        val results: List<DCResource> = response.body!!
-        return Mono.just(results)
+        return WebClient.create(requestUri).get()
+            .header("X-Datacore-Project", project)
+            .header("Authorization", "Bearer $bearer")
+            .accept(MediaType.APPLICATION_JSON)
+            .retrieve()
+            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
+            .bodyToFlux(DCResource::class.java)
     }
 
     fun findModels(limit: Int, name: String, bearer: String): Flux<DCModel> {
@@ -255,56 +241,22 @@ class DatacoreService(
             .bodyToMono(DCModel::class.java)
     }
 
-    fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int, maxResult: Int, bearer: String): Flux<DCResource> {
-
-        val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
+    private fun encodedUrlToType(type: String): String =
+        UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
-            .queryParam("start", start)
-            .queryParam("limit", maxResult)
-
-        for (param in queryParameters) {
-            uriComponentsBuilder.queryParam(param.subject, param.operator.value + param.getObject())
-            // ex. {start=[0], limit=[11], geo:name.v=[$regex^Zamor], geo:country=[http://data.ozwillo.com/dc/type/geocoes:Pa%C3%ADs_0/ES]}
-        }
-
-        val uriComponents = uriComponentsBuilder
             .build()
-            .expand(model)
-            .encode()
-        // path ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
-        // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
-        // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
+            .expand(type)
+            .encode() // ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
+            .toUriString()
 
-        // Okay so to avoid encoded parameters and as long I can't directly modify uriComponents.query alone : I decode uriComponents.query and replace everything following the "?" in the final String query by it
-        val decodedQuery = URLDecoder.decode(uriComponents.query, "UTF-8")
-
-        val requestUri = uriComponents.toUriString().substringBefore("?") + "?" + decodedQuery
-        // and NOT uriComponents.toString() else variable expansion encodes it once too many
-        // (because new UriTemplate(uriString) assumes uriString is not yet encoded -_-)
-        // ex. https://plnm-dev-dc/dc/type/geoci:City_0?start=0&limit=11&geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
-
-        if (logger.isDebugEnabled) {
-            logger.debug("Fetching limited Resources: URI String is $requestUri")
-        }
-
-        return WebClient.create(requestUri).get()
-            .header("X-Datacore-Project", project)
-            .header("Authorization", "Bearer $bearer")
-            .accept(MediaType.APPLICATION_JSON)
-            .retrieve()
-            .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
-            .bodyToFlux(DCResource::class.java)
-    }
-
-    private fun dcResourceUri(type: DCModelType, iri: String): String {
-        return StringBuilder(datacoreProperties.url)
+    private fun dcResourceUri(type: DCModelType, iri: String): String =
+        StringBuilder(datacoreProperties.url)
             .append(datacoreProperties.typePrefix)
             .append('/')
             .append(type.encodeUriPathSegment())
             .append('/')
             .append(iri) // already encoded
             .toString()
-    }
 
     fun unwrapDatacoreError(clientResponse: ClientResponse): Mono<Throwable> =
         clientResponse.bodyToMono(String::class.java)

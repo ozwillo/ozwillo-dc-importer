@@ -50,8 +50,8 @@ class PublikSynchronizerService(
                     DCOrdering.DESCENDING, it.getUri()
                 )
                 listOf(datacoreModelEM /*, datacoreModelSVE*/).forEach { type ->
-                    val result = datacoreService.findResource(datacoreProject, type!!, queryParameters, appConfWithToken.t2).blockOptional()
-                    if (result.isPresent && result.get().isEmpty()) {
+                    val result = datacoreService.findResources(datacoreProject, type!!, queryParameters, 0, 1, appConfWithToken.t2).blockFirst()
+                    if (result != null) {
                         if (type == datacoreModelEM)
                             publikService.syncPublikForms(appConfWithToken.t1, it, formTypeEM)
                                 .subscribe { LOGGER.debug("Synchro finished with $it") }
