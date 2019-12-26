@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.util.LinkedMultiValueMap
+import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
@@ -159,21 +161,23 @@ class DatacoreService(
         }
     }
 
-    fun findResources(project: String, model: String, queryParameters: DCQueryParameters, start: Int = 0, maxResult: Int = 100, bearer: String): Flux<DCResource> {
+    fun findResources(project: String, type: String, queryParameters: MultiValueMap<String, String>, start: Int = 0, maxResult: Int = 100, bearer: String): Flux<DCResource> {
 
+        val startParam = queryParameters.getFirst("start") ?: start
+        val limitParam = queryParameters.getFirst("limit") ?: maxResult
         val uriComponentsBuilder = UriComponentsBuilder.fromUriString(datacoreProperties.url)
             .path("/dc/type/{type}")
-            .queryParam("start", start)
-            .queryParam("limit", maxResult)
+            .queryParam("start", startParam)
+            .queryParam("limit", limitParam)
 
-        for (param in queryParameters) {
-            uriComponentsBuilder.queryParam(param.subject, param.operator.value + param.getObject())
-            // ex. {start=[0], limit=[11], geo:name.v=[$regex^Zamor], geo:country=[http://data.ozwillo.com/dc/type/geocoes:Pa%C3%ADs_0/ES]}
+        queryParameters.forEach { (k, v) ->
+            if (k != "start" && k != "limit")
+                uriComponentsBuilder.queryParam(k, v)
         }
 
         val uriComponents = uriComponentsBuilder
             .build()
-            .expand(model)
+            .expand(type)
             .encode()
         // path ex. orgprfr:OrgPriv%C3%A9e_0 (WITH unencoded ':' and encoded accented chars etc.)
         // and query ex. geo:name.v=$regex%5EZamor&geo:country=http://data.ozwillo.com/dc/type/geocoes:Pa%25C3%25ADs_0/ES
@@ -198,6 +202,16 @@ class DatacoreService(
             .retrieve()
             .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
             .bodyToFlux(DCResource::class.java)
+    }
+
+    fun findResources(project: String, type: String, queryParameters: DCQueryParameters, start: Int = 0, maxResult: Int = 100, bearer: String): Flux<DCResource> {
+
+        val parametersMap = LinkedMultiValueMap<String, String>()
+        queryParameters.forEach {
+            parametersMap.add(it.subject, it.operator.value + it.getObject() + it.ordering.value)
+        }
+
+        return findResources(project, type, parametersMap, start, maxResult, bearer)
     }
 
     fun findModels(limit: Int, name: String, bearer: String): Flux<DCModel> {

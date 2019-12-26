@@ -140,6 +140,22 @@ class DatacoreHandler(
             }
     }
 
+    fun searchResources(req: ServerRequest): Mono<ServerResponse> {
+        val type = req.pathVariable("type")
+        val project = extractProject(req.headers())
+        val bearer = extractBearer(req.headers())
+
+        return Pair(project, type).toMono()
+            .flatMapMany {
+                datacoreService.findResources(it.first, it.second, req.queryParams(), bearer = bearer)
+            }
+            .reduce(listOf<DCResource>(), { acc, org -> acc.plus(org) })
+            .flatMap {
+                ok().bodyValue(it)
+            }
+            .onErrorResume { throwableToResponse(it) }
+    }
+
     private fun extractProject(headers: ServerRequest.Headers): String {
         val project = headers.header("X-Datacore-Project")
         if (project.isEmpty() || project.size > 1)

@@ -16,7 +16,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.util.MultiValueMap
 import org.springframework.web.client.HttpClientErrorException
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -183,6 +185,41 @@ class DatacoreHandlerTest {
 
         verify { datacoreService.deleteResource(eq("grant_0"), eq("grant:association_0"),
             eq("FR%2F1234%2F4567"), eq("mybearer")) }
+
+        confirmVerified()
+    }
+
+    @Test
+    fun `it should pass query params when searching for resources`() {
+
+        val searchResourcesResult = """
+            [
+                {
+                    "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234/4567"
+                }
+            ]
+        """.trimIndent()
+
+        every { datacoreService.findResources(any(), any(), any<MultiValueMap<String, String>>(), bearer = any()) } answers {
+            Flux.just(DCResource("http://data.ozwillo.com/dc/type/grant:association_0/FR/1234/4567"))
+        }
+
+        webClient.get()
+            .uri("/dc/type/grant:association_0?grant:afield=%24regexavalue&limit=5")
+            .header("X-Datacore-Project", "grant_0")
+            .header("Authorization", "Bearer mybearer")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().json(searchResourcesResult)
+
+        verify { datacoreService.findResources(eq("grant_0"), eq("grant:association_0"),
+            match<MultiValueMap<String, String>> {
+                it.containsKey("grant:afield") &&
+                        it["grant:afield"]?.size == 1 &&
+                        (it["grant:afield"] as List<String>)[0] == "%24regexavalue" &&
+                        it.containsKey("limit") &&
+                        it.getFirst("limit") == "5"
+            }, bearer = eq("mybearer")) }
 
         confirmVerified()
     }

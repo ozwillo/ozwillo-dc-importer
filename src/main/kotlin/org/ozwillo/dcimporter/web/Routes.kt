@@ -49,6 +49,7 @@ class Routes(
             POST("/type/{type}", datacoreHandler::createResource)
             PUT("/type/{type}", datacoreHandler::updateResource)
             DELETE("/type/{type}/{iri}", datacoreHandler::deleteResource)
+            GET("/type/{type}", datacoreHandler::searchResources)
             GET("/organization", datacoreHandler::getOrganization)
             GET("/models", datacoreHandler::getModels)
             GET("/model/{type}", datacoreHandler::getModel)
