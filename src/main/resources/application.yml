@@ -37,30 +37,21 @@ application:
   security:
     fetchUserInfo: true
   syncDelay: 10000
+  amqp:
+    defaultExchangerName: amq.topic
+    exchangerName: dcimporter
+  iot:
+    bindingKey: egm-lora.#
 
 publik:
   formTypeEM: demande-de-rendez-vous
   formTypeSVE: saisine-par-voie-electronique-new
   algo: sha256
   orig: ozwillo-dcimporter
+  bindingKey: citizenreq_0.#
 
-amqp:
-  config:
-    defaultExchangerName: amq.topic
-    exchangerName: dcimporter
-    maarch:
-      queueName: maarch
-      bindingKey: citizenreq_0.#
-    publik:
-      queueName: publik
-      bindingKey: citizenreq_0.#
-    processingStat:
-      queueName: stat
-      bindingKey: '#'
-    iot:
-      queueName: iot
-      bindingKey: egm-lora.#
-      baseBindingKey: egm-lora
+maarch:
+  bindingKey: citizenreq_0.#
 
 kernel:
   tokenEndpoint: https://kernel.ozwillo-preprod.eu/a/token

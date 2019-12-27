@@ -8,6 +8,7 @@ import java.nio.charset.Charset
 import java.text.SimpleDateFormat
 import java.util.*
 import org.ozwillo.dcimporter.config.DatacoreProperties
+import org.ozwillo.dcimporter.config.PublikProperties
 import org.ozwillo.dcimporter.model.BusinessAppConfiguration
 import org.ozwillo.dcimporter.model.BusinessMapping
 import org.ozwillo.dcimporter.model.datacore.*
@@ -38,17 +39,10 @@ class PublikService(
     private val kernelService: KernelService,
     private val businessAppConfigurationRepository: BusinessAppConfigurationRepository,
     private val businessMappingRepository: BusinessMappingRepository,
-    private val datacoreProperties: DatacoreProperties
+    private val datacoreProperties: DatacoreProperties,
+    private val publikProperties: PublikProperties
 ) {
 
-    @Value("\${publik.formTypeEM}")
-    private val formTypeEM: String? = null
-    @Value("\${publik.formTypeSVE}")
-    private val formTypeSVE: String? = null
-    @Value("\${publik.algo}")
-    private val algo: String? = null
-    @Value("\${publik.orig}")
-    private val orig: String = "ozwillo-dcimporter"
     @Value("\${datacore.model.project}")
     private val datacoreProject: String = "datacoreProject"
     @Value("\${datacore.model.modelEM}")
@@ -316,10 +310,10 @@ class PublikService(
 
         val nonce = generateNonce()
 
-        val fullQuery = query + "algo=" + this.algo +
+        val fullQuery = query + "algo=" + publikProperties.algo +
                 "&timestamp=" + thisMoment +
                 "&nonce=" + nonce +
-                "&orig=" + this.orig
+                "&orig=" + publikProperties.orig
         val signature = fullQuery.hmac("HmacSHA256", secret)
         return "$fullQuery&signature=$signature"
     }
@@ -334,11 +328,11 @@ class PublikService(
 
     private fun isEMrequest(form: FormModel): Boolean {
         LOGGER.debug("Guessing type from ${form.url}")
-        return form.url.contains(this.formTypeEM!!)
+        return form.url.contains(publikProperties.formTypeEM)
     }
 
     private fun isSVErequest(form: FormModel): Boolean {
-        return form.id.contains(this.formTypeSVE!!)
+        return form.id.contains(publikProperties.formTypeSVE)
     }
 
     private fun generateNonce(): String {

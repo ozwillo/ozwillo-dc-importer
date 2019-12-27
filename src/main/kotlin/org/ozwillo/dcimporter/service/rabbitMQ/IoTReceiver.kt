@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rabbitmq.client.Channel
 import java.time.*
 import java.time.format.DateTimeFormatter
+import org.ozwillo.dcimporter.config.ApplicationProperties
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.DCResource
 import org.ozwillo.dcimporter.service.DatacoreService
@@ -15,10 +16,12 @@ import org.ozwillo.dcimporter.util.extractDeviceId
 import org.ozwillo.dcimporter.util.toZonedDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.amqp.core.Message
+import org.springframework.amqp.core.*
 import org.springframework.amqp.rabbit.annotation.RabbitListener
 import org.springframework.amqp.support.AmqpHeaders
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.context.annotation.Bean
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
 import reactor.kotlin.core.publisher.toMono
@@ -28,17 +31,34 @@ class IoTReceiver(
     private val datacoreService: DatacoreService,
     private val kernelService: KernelService,
     private val datacoreProperties: DatacoreProperties,
+    private val applicationProperties: ApplicationProperties,
     private val ioTService: IoTService,
     private val ioTSender: IoTSender
 ) {
 
     private val logger: Logger = LoggerFactory.getLogger(IoTReceiver::class.java)
 
+    companion object {
+        const val QUEUE_NAME = "iot_queue"
+    }
+
     @Value("\${datacore.model.iotProject}")
     private val datacoreIotProject: String = "iot_0"
 
     @Value("\${datacore.model.iotMeasure}")
     private val datacoreIotMeasure: String = "iot:measure_0"
+
+    @Bean(name = [QUEUE_NAME])
+    fun iotQueue(): Queue {
+        return Queue(QUEUE_NAME)
+    }
+
+    @Bean
+    fun iotBinding(topic: TopicExchange, @Qualifier(QUEUE_NAME) queue: Queue): Binding {
+        return BindingBuilder.bind(queue)
+            .to(TopicExchange(applicationProperties.amqp.defaultExchangerName))
+            .with(applicationProperties.iot.bindingKey)
+    }
 
     /*
      * sample data received :
@@ -54,8 +74,7 @@ class IoTReceiver(
      *   [{"bn":"84:F3:EB:0C:80:7E","n":"temperature","u":"Cel","v":30.3},
      *    {"n":"humidity","u":"%RH","v":60.5}]
      */
-    @RabbitListener(queues = ["iot"])
-    @Throws(InterruptedException::class)
+    @RabbitListener(queues = [QUEUE_NAME])
     fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long) {
         val message = String(incoming.body)
         val routingKey = incoming.messageProperties.receivedRoutingKey
