@@ -41,7 +41,7 @@ application:
     defaultExchangerName: amq.topic
     exchangerName: dcimporter
   iot:
-    bindingKey: egm-lora.#
+    bindingKey: iot.#
 
 publik:
   formTypeEM: demande-de-rendez-vous
