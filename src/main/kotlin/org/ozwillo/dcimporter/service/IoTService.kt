@@ -6,7 +6,6 @@ import org.ozwillo.dcimporter.util.parseDevice
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class IoTService(
@@ -26,14 +25,14 @@ class IoTService(
         val deviceIdAndName = fullDeviceId.parseDevice()
 
         return kernelService.getAccessToken()
-            .flatMap {
+            .flatMap { bearer ->
                 datacoreService.getResourceFromIRI(
                     project = datacoreIotProject,
                     iri = deviceIdAndName.first,
                     type = datacoreIotDevice,
-                    bearer = it
+                    bearer = bearer
                 )
-                .switchIfEmpty {
+                .onErrorResume {
                     val dcDeviceResource = DCResource(
                         datacoreBaseUri = datacoreProperties.baseResourceUri(),
                         type = datacoreIotDevice,
@@ -43,7 +42,7 @@ class IoTService(
                     dcDeviceResource.setStringValue("iotdevice:name", deviceIdAndName.second)
                     latitude?.let { dcDeviceResource.setFloatValue("iotdevice:lat", it) }
                     longitude?.let { dcDeviceResource.setFloatValue("iotdevice:lon", it) }
-                    datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, it)
+                    datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, bearer)
                 }
             }
     }
