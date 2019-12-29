@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.util.*
 
 @Service
 class SubscriptionService(
@@ -33,17 +34,7 @@ class SubscriptionService(
     fun notifyForEventType(eventType: String): Flux<NotificationLog> {
         return findForEventType(eventType)
             .flatMap { subscription ->
-                WebClient.create(subscription.url)
-                    .post()
-                    .retrieve()
-                    .toBodilessEntity()
-                    .map {
-                        Triple<Subscription, Int, String?>(subscription, it.statusCodeValue, null)
-                    }
-                    .onErrorResume {
-                        val error = it as WebClientResponseException
-                        Mono.just(Triple(subscription, error.rawStatusCode, error.responseBodyAsString))
-                    }
+                callSubscriber(subscription, eventType)
             }
             .map {
                 NotificationLog(subscriptionId = it.first.uuid,
@@ -54,5 +45,21 @@ class SubscriptionService(
                 notificationLogRepository.save(it)
             }
             .log()
+    }
+
+    fun callSubscriber(subscription: Subscription, eventType: String): Mono<Triple<Subscription, Int, String?>> {
+        return WebClient.create(subscription.url)
+            .post()
+            .header("X-Ozwillo-Event", eventType)
+            .header("X-Ozwillo-Delivery", UUID.randomUUID().toString())
+            .retrieve()
+            .toBodilessEntity()
+            .map {
+                Triple<Subscription, Int, String?>(subscription, it.statusCodeValue, null)
+            }
+            .onErrorResume {
+                val error = it as WebClientResponseException
+                Mono.just(Triple(subscription, error.rawStatusCode, error.responseBodyAsString))
+            }
     }
 }

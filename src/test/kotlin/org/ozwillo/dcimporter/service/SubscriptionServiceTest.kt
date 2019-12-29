@@ -3,6 +3,7 @@ package org.ozwillo.dcimporter.service
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
+import com.github.tomakehurst.wiremock.matching.AnythingPattern
 import java.util.*
 import org.junit.jupiter.api.*
 import org.ozwillo.dcimporter.model.Subscription
@@ -126,7 +127,9 @@ class SubscriptionServiceTest {
             .expectComplete()
             .verify()
 
-        verify(postRequestedFor(urlPathEqualTo("/notify")))
+        verify(postRequestedFor(urlPathEqualTo("/notify"))
+            .withHeader("X-Ozwillo-Event", equalTo("grant_0.grant:assocation_0.create"))
+            .withHeader("X-Ozwillo-Delivery", AnythingPattern()))
     }
 
     @Test
