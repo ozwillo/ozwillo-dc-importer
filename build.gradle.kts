@@ -55,9 +55,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("com.github.tomakehurst:wiremock-standalone:2.25.1")
     testImplementation("com.ninja-squad:springmockk:2.0.0")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo") {
-        exclude("org.apache.commons:commons-compress")
-    }
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }
 
 defaultTasks("bootRun")
