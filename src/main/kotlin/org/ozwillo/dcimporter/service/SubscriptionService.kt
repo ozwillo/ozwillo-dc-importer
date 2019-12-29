@@ -1,6 +1,7 @@
 package org.ozwillo.dcimporter.service
 
 import java.time.LocalDateTime
+import java.util.*
 import org.ozwillo.dcimporter.model.NotificationLog
 import org.ozwillo.dcimporter.model.Subscription
 import org.ozwillo.dcimporter.repository.NotificationLogRepository
@@ -15,7 +16,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.util.*
 
 @Service
 class SubscriptionService(
