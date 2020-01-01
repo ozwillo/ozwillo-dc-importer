@@ -106,6 +106,11 @@ class SubscriptionServiceTest {
 
     @Test
     fun `it should call one notifier and log a successful notification`() {
+        val dcResourceJson = """
+            {
+              "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
+            }
+        """.trimIndent()
         val subscriptionId = UUID.randomUUID()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
@@ -115,7 +120,7 @@ class SubscriptionServiceTest {
                 .willReturn(ok().withStatus(200))
         )
 
-        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create")
+        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create", dcResourceJson)
 
         StepVerifier.create(result)
             .expectNextMatches {
@@ -129,11 +134,17 @@ class SubscriptionServiceTest {
 
         verify(postRequestedFor(urlPathEqualTo("/notify"))
             .withHeader("X-Ozwillo-Event", equalTo("grant_0.grant:assocation_0.create"))
-            .withHeader("X-Ozwillo-Delivery", AnythingPattern()))
+            .withHeader("X-Ozwillo-Delivery", AnythingPattern())
+            .withRequestBody(equalToJson(dcResourceJson)))
     }
 
     @Test
     fun `it should call one notifier and log an error notification on 4XX errors`() {
+        val dcResourceJson = """
+            {
+              "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
+            }
+        """.trimIndent()
         val subscriptionId = UUID.randomUUID()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
@@ -143,7 +154,7 @@ class SubscriptionServiceTest {
                 .willReturn(forbidden().withStatus(403).withBody("Forbidden"))
         )
 
-        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create")
+        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create", dcResourceJson)
 
         StepVerifier.create(result)
             .expectNextMatches {
@@ -160,6 +171,11 @@ class SubscriptionServiceTest {
 
     @Test
     fun `it should call one notifier and log an error notification on 5XX errors`() {
+        val dcResourceJson = """
+            {
+              "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
+            }
+        """.trimIndent()
         val subscriptionId = UUID.randomUUID()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
@@ -169,7 +185,7 @@ class SubscriptionServiceTest {
                 .willReturn(aResponse().withStatus(500).withBody("Internal Server Error"))
         )
 
-        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create")
+        val result = subscriptionService.notifyForEventType("grant_0.grant:assocation_0.create", dcResourceJson)
 
         StepVerifier.create(result)
             .expectNextMatches {

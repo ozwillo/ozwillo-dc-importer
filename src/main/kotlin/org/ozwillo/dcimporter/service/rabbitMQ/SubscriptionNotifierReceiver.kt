@@ -36,6 +36,6 @@ class SubscriptionNotifierReceiver(
     @RabbitListener(queues = [ProcessingStatReceiver.QUEUE_NAME])
     fun receive(incoming: Message, channel: Channel, @Header(AmqpHeaders.DELIVERY_TAG) tag: Long) {
         val routingKey = incoming.messageProperties.receivedRoutingKey
-        subscriptionService.notifyForEventType(routingKey)
+        subscriptionService.notifyForEventType(routingKey, String(incoming.body))
     }
 }

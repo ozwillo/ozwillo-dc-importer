@@ -31,10 +31,10 @@ class SubscriptionService(
             Query(Subscription::events elemMatch Criteria().`in`(eventType))
         )
 
-    fun notifyForEventType(eventType: String): Flux<NotificationLog> {
+    fun notifyForEventType(eventType: String, dcResourceJson: String): Flux<NotificationLog> {
         return findForEventType(eventType)
             .flatMap { subscription ->
-                callSubscriber(subscription, eventType)
+                callSubscriber(subscription, eventType, dcResourceJson)
             }
             .map {
                 NotificationLog(subscriptionId = it.first.uuid,
@@ -47,9 +47,10 @@ class SubscriptionService(
             .log()
     }
 
-    fun callSubscriber(subscription: Subscription, eventType: String): Mono<Triple<Subscription, Int, String?>> {
+    fun callSubscriber(subscription: Subscription, eventType: String, dcResourceJson: String): Mono<Triple<Subscription, Int, String?>> {
         return WebClient.create(subscription.url)
             .post()
+            .bodyValue(dcResourceJson)
             .header("X-Ozwillo-Event", eventType)
             .header("X-Ozwillo-Delivery", UUID.randomUUID().toString())
             .retrieve()
