@@ -111,7 +111,7 @@ class SubscriptionServiceTest {
               "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
             }
         """.trimIndent()
-        val subscriptionId = UUID.randomUUID()
+        val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
 
@@ -145,7 +145,7 @@ class SubscriptionServiceTest {
               "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
             }
         """.trimIndent()
-        val subscriptionId = UUID.randomUUID()
+        val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
 
@@ -176,7 +176,7 @@ class SubscriptionServiceTest {
               "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
             }
         """.trimIndent()
-        val subscriptionId = UUID.randomUUID()
+        val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
             applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
 

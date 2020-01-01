@@ -18,9 +18,7 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class RabbitMockConfig {
 
-    companion object {
-        private val LOGGER = LoggerFactory.getLogger(RabbitMockConfig::class.java)
-    }
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     @Bean
     fun template(): TestRabbitTemplate {
@@ -56,11 +54,12 @@ class RabbitMockConfig {
             "grant_0.grant:association_0.delete",
             "iot",
             "maarch",
-            "publik"
+            "publik",
+            "subscription_queue"
         )
         container.setMessageListener(MessageListenerAdapter(object {
             fun handleMessage(message: Any) {
-                LOGGER.debug("Got message $message")
+                logger.debug("Got message $message")
             }
         }))
         return container

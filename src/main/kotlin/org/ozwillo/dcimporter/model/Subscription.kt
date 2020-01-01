@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 @Document
 data class Subscription(
-    @Id val uuid: UUID = UUID.randomUUID(),
+    @Id val uuid: String = UUID.randomUUID().toString(),
     val applicationName: String,
     val url: String,
     val events: List<String>

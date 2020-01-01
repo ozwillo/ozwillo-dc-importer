@@ -7,8 +7,8 @@ import org.springframework.data.mongodb.core.mapping.Document
 
 @Document
 data class NotificationLog(
-    @Id val id: UUID = UUID.randomUUID(),
-    val subscriptionId: UUID,
+    @Id val id: String = UUID.randomUUID().toString(),
+    val subscriptionId: String,
     val eventType: String,
     val notificationDate: LocalDateTime,
     val result: Int,
