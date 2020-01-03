@@ -54,9 +54,11 @@ class SubscriptionServiceTest {
     fun `it should return one matching subscription`() {
 
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete"),
+            secret = "secretOfApp1"))
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.update")))
+            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.update"),
+            secret = "secretOfApp2"))
 
         val result = subscriptionService.findForEventType("grant_0.grant:assocation_0.create")
 
@@ -72,9 +74,11 @@ class SubscriptionServiceTest {
     fun `it should not return any subscription`() {
 
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete"),
+            secret = "secretOfApp1"))
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.create")))
+            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.create"),
+            secret = "secretOfApp2"))
 
         val result = subscriptionService.findForEventType("grant_0.grant:assocation_0.update")
 
@@ -87,9 +91,11 @@ class SubscriptionServiceTest {
     fun `it should return all subscriptions`() {
 
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create"),
+            secret = "secretOfApp1"))
         mongoTemplate.save(Subscription(url = "http://localhost:8080",
-            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.update")))
+            applicationName = "App 2", events = listOf("grant_0.grant:assocation_0.update"),
+            secret = "secretOfApp2"))
 
         val result = subscriptionService.findAll()
 
@@ -106,14 +112,11 @@ class SubscriptionServiceTest {
 
     @Test
     fun `it should call one notifier and log a successful notification`() {
-        val dcResourceJson = """
-            {
-              "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"
-            }
-        """.trimIndent()
+        val dcResourceJson = """{"@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/1234"}"""
         val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create"),
+            secret = "secretOfApp1"))
 
         stubFor(
             post(urlMatching("/notify"))
@@ -135,6 +138,8 @@ class SubscriptionServiceTest {
         verify(postRequestedFor(urlPathEqualTo("/notify"))
             .withHeader("X-Ozwillo-Event", equalTo("grant_0.grant:assocation_0.create"))
             .withHeader("X-Ozwillo-Delivery", AnythingPattern())
+            .withHeader("X-Hub-Signature",
+                equalTo("3534c4bca9affe08352a830272ddc2ec66390c1c43d4cdab2f1475584666578b"))
             .withRequestBody(equalToJson(dcResourceJson)))
     }
 
@@ -147,7 +152,8 @@ class SubscriptionServiceTest {
         """.trimIndent()
         val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create"),
+            secret = "secretOfApp1"))
 
         stubFor(
             post(urlMatching("/notify"))
@@ -178,7 +184,8 @@ class SubscriptionServiceTest {
         """.trimIndent()
         val subscriptionId = UUID.randomUUID().toString()
         mongoTemplate.save(Subscription(uuid = subscriptionId, url = "http://localhost:8089/notify",
-            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create")))
+            applicationName = "App 1", events = listOf("grant_0.grant:assocation_0.create"),
+            secret = "secretOfApp1"))
 
         stubFor(
             post(urlMatching("/notify"))

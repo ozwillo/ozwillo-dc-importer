@@ -2,6 +2,8 @@ package org.ozwillo.dcimporter.service
 
 import java.time.LocalDateTime
 import java.util.*
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.apache.commons.codec.digest.HmacUtils
 import org.ozwillo.dcimporter.model.NotificationLog
 import org.ozwillo.dcimporter.model.Subscription
 import org.ozwillo.dcimporter.repository.NotificationLogRepository
@@ -48,11 +50,13 @@ class SubscriptionService(
     }
 
     fun callSubscriber(subscription: Subscription, eventType: String, dcResourceJson: String): Mono<Triple<Subscription, Int, String?>> {
+        val hmacUtils = HmacUtils(HmacAlgorithms.HMAC_SHA_256, subscription.secret)
         return WebClient.create(subscription.url)
             .post()
             .bodyValue(dcResourceJson)
             .header("X-Ozwillo-Event", eventType)
             .header("X-Ozwillo-Delivery", UUID.randomUUID().toString())
+            .header("X-Hub-Signature", hmacUtils.hmacHex(dcResourceJson))
             .retrieve()
             .toBodilessEntity()
             .map {

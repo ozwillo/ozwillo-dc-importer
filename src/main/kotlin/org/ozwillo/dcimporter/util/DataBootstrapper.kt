@@ -17,9 +17,11 @@ class DataBootstrapper(
 
     override fun run(vararg args: String?) {
         val subscription1 = Subscription(applicationName = "app1", url = "http://localhost:8080/api/notification/dummy",
-            events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.update", "org_1.org:Organization_0.create"))
+            events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.update", "org_1.org:Organization_0.create"),
+            secret = "secretOfApp1")
         val subscription2 = Subscription(applicationName = "app2", url = "http://localhost:8080/api/notification/dummy",
-            events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete"))
+            events = listOf("grant_0.grant:assocation_0.create", "grant_0.grant:assocation_0.delete"),
+            secret = "secretOfApp2")
 
         subscriptionRepository.count()
             .filter {

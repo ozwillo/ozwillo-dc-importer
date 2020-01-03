@@ -9,5 +9,6 @@ data class Subscription(
     @Id val uuid: String = UUID.randomUUID().toString(),
     val applicationName: String,
     val url: String,
+    val secret: String,
     val events: List<String>
 )
