@@ -5,7 +5,6 @@ import org.ozwillo.dcimporter.model.datacore.DCOperator
 import org.ozwillo.dcimporter.model.datacore.DCOrdering
 import org.ozwillo.dcimporter.model.datacore.DCQueryParameters
 import org.ozwillo.dcimporter.model.datacore.DCResource
-import org.ozwillo.dcimporter.model.sirene.Organization
 import org.ozwillo.dcimporter.service.DatacoreService
 import org.ozwillo.dcimporter.service.exceptions.BearerNotFoundException
 import org.slf4j.LoggerFactory
@@ -68,8 +67,7 @@ class DatacoreHandler(
                 DCQueryParameters("org:regNumber", DCOperator.EQ, DCOrdering.DESCENDING, req.queryParam("siret").get())
 
         return datacoreService.findResources("oasis.main", modelOrg, dcQueryParameters, 0, 100, bearer)
-            .map { Organization.fromDcObject(it) }
-            .reduce(listOf<Organization>(), { acc, org -> acc.plus(org) })
+            .reduce(listOf<DCResource>(), { acc, org -> acc.plus(org) })
             .flatMap {
                 ok().bodyValue(it)
             }
