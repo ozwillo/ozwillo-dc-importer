@@ -1,7 +1,6 @@
 package org.ozwillo.dcimporter.service
 
 import java.net.URLDecoder
-import java.nio.charset.Charset
 import org.ozwillo.dcimporter.config.DatacoreProperties
 import org.ozwillo.dcimporter.model.datacore.*
 import org.ozwillo.dcimporter.service.rabbitMQ.Sender
@@ -184,7 +183,7 @@ class DatacoreService(
         // NB. This will also encode all parameters including the regex ^ and other matches like "geo:country=http..." which is wrong
 
         // Okay so to avoid encoded parameters and as long I can't directly modify uriComponents.query alone : I decode uriComponents.query and replace everything following the "?" in the final String query by it
-        val decodedQuery = URLDecoder.decode(uriComponents.query, Charset.forName("UTF-8"))
+        val decodedQuery = URLDecoder.decode(uriComponents.query, "UTF-8")
 
         val requestUri = uriComponents.toUriString().substringBefore("?") + "?" + decodedQuery
         // and NOT uriComponents.toString() else variable expansion encodes it once too many

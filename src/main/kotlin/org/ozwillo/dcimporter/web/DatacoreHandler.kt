@@ -56,7 +56,7 @@ class DatacoreHandler(
     fun getOrganization(req: ServerRequest): Mono<ServerResponse> {
         val bearer = extractBearer(req.headers())
 
-        if (req.queryParam("name").isEmpty && req.queryParam("siret").isEmpty)
+        if (!req.queryParam("name").isPresent && !req.queryParam("siret").isPresent)
             return badRequest().bodyValue("Missing query parameter \"name\" or \"siret\"")
         else if (req.queryParam("name").isPresent && req.queryParam("siret").isPresent)
             return badRequest().bodyValue("Please provided one of \"name\" or \"siret\" parameters, not both")
