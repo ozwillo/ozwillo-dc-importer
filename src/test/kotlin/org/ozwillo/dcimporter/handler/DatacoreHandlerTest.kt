@@ -59,7 +59,6 @@ class DatacoreHandlerTest {
         """.trimIndent()
         every { datacoreService.checkAndCreateLinkedResources(any(), any(), any()) } answers { Mono.just(emptyList()) }
         every { datacoreService.saveResource(any(), any(), any(), any()) } answers { Mono.just(DCResource(resourceUri, emptyMap())) }
-        every { datacoreService.getResourceFromIRI(any(), any(), any(), any()) } answers { Mono.just(DCResource("", emptyMap())) }
 
         webClient.post()
             .uri("/dc/type/grant:association_0")
@@ -73,8 +72,6 @@ class DatacoreHandlerTest {
         verify { datacoreService.checkAndCreateLinkedResources(eq("grant_0"), eq("mybearer"),
             match { dcResource -> dcResource.getUri() == resourceUri }) }
         verify { datacoreService.saveResource(eq("grant_0"), eq("grant:association_0"), any(), eq("mybearer")) }
-        verify { datacoreService.getResourceFromIRI(eq("grant_0"), eq("grant:association_0"),
-            eq("FR/1234/4567"), eq("mybearer")) }
 
         confirmVerified()
     }
