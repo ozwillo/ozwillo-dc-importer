@@ -207,7 +207,7 @@ class DatacoreService(
 
         val parametersMap = LinkedMultiValueMap<String, String>()
         queryParameters.forEach {
-            parametersMap.add(it.subject, it.operator.value + it.getObject() + it.ordering.value)
+            parametersMap.add(it.subject, it.operator.value + it.getObject())
         }
 
         return findResources(project, type, parametersMap, start, maxResult, bearer)

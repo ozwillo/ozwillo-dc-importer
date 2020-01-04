@@ -19,15 +19,10 @@ class DCQueryParameters(
         fun getObject(): String {
             val builder = StringBuilder()
 
-            if ("".equals(objectAsString)) {
-                // nothing
-            } else {
+            if (objectAsString.isNotEmpty())
                 builder.append(objectAsString)
-            }
 
-            if (ordering != null) {
-                builder.append(ordering.value)
-            }
+            builder.append(ordering.value)
 
             return builder.toString()
         }
@@ -58,7 +53,7 @@ class DCQueryParameters(
 
     private var params: MutableList<DCQueryParam> = ArrayList()
 
-    override fun iterator(): kotlin.collections.Iterator<DCQueryParam> {
+    override fun iterator(): Iterator<DCQueryParam> {
         return params.iterator()
     }
 
