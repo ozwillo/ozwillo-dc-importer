@@ -87,9 +87,6 @@ class DatacoreHandler(
                 datacoreService.saveResource(project, type, it.t1, bearer)
             }
             .flatMap {
-                datacoreService.getResourceFromIRI(project, type, it.getIri(), bearer)
-            }
-            .flatMap {
                 status(HttpStatus.CREATED).contentType(MediaType.APPLICATION_JSON).bodyValue(it)
             }
             .onErrorResume {
