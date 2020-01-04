@@ -8,6 +8,7 @@ import org.ozwillo.dcimporter.util.BindingKeyAction
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -19,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.util.UriComponentsBuilder
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.publisher.toFlux
 
 @Service
@@ -53,16 +55,25 @@ class DatacoreService(
             }
     }
 
+    var dcResourceListTypeRef: ParameterizedTypeReference<List<DCResource>> =
+        object : ParameterizedTypeReference<List<DCResource>>() {}
+
     fun updateResource(project: String, type: String, resource: DCResource, bearer: String): Mono<DCResource> {
 
         val uri = encodedUrlToType(type)
         logger.debug("Updating resource at URI $uri")
 
-        return getResourceFromIRI(project, type, resource.getIri(), bearer)
+        val resourceVersion = Mono.justOrEmpty(resource.getVersion())
+            .switchIfEmpty {
+                getResourceFromIRI(project, type, resource.getIri(), bearer)
+                    .map {
+                        it.getIntValue("o:version")
+                    }
+            }
+
+        return resourceVersion
             .map {
-                resource.setStringValue(
-                    "o:version",
-                    it.getValues().getOrElse("o:version") { "0" }.toString())
+                resource.setIntegerValue("o:version", it)
                 resource
             }.flatMap {
                 WebClient.create().put()
@@ -72,7 +83,9 @@ class DatacoreService(
                     .bodyValue(it)
                     .retrieve()
                     .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
-                    .bodyToMono(DCResource::class.java)
+                    .bodyToMono(dcResourceListTypeRef)
+            }.map {
+                it[0]
             }.doOnSuccess {
                 sender.send(resource, project, type, BindingKeyAction.UPDATE)
             }
@@ -138,12 +151,11 @@ class DatacoreService(
     fun getResourceFromIRI(project: String, type: String, iri: String, bearer: String): Mono<DCResource> {
         // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25 ("some iri" -> "some%20iri" -> "some%2520iri")
         val resourceUri = checkEncoding(dcResourceUri(type, iri))
-        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        logger.debug("Fetching resource from URI $encodedUri")
+        logger.debug("Fetching resource from URI $resourceUri")
 
         return WebClient.create().get()
-            .uri(encodedUri)
+            .uri(resourceUri)
             .header("X-Datacore-Project", project)
             .header("Authorization", "Bearer $bearer")
             .retrieve()

@@ -92,10 +92,12 @@ class IntegrationTest(
         """
 
     private val dcPutSubventionResponse = """
-        {
+        [
+          {
             "@id": "http://data.ozwillo.com/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet-1",
             "o:version": 1
-        }
+          }
+        ]
         """
 
     @BeforeAll
@@ -256,11 +258,11 @@ class IntegrationTest(
         )
         WireMock.stubFor(
             WireMock.post(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(200))
         )
         WireMock.stubFor(
             WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+                .willReturn(WireMock.okJson(dcGetSubventionResponse).withStatus(200))
         )
 
         WireMock.stubFor(
@@ -273,7 +275,7 @@ class IntegrationTest(
         )
         WireMock.stubFor(
             WireMock.get(WireMock.urlMatching("/dc/type/grant:association_0/FR/$siret/$dateConvention/$objet-1"))
-                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(200))
+                .willReturn(WireMock.okJson(dcGetSubventionResponse).withStatus(200))
         )
         WireMock.stubFor(
             WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
@@ -378,7 +380,7 @@ class IntegrationTest(
         )
         WireMock.stubFor(
             WireMock.put(WireMock.urlMatching("/dc/type/grant:association_0"))
-                .willReturn(WireMock.okJson(dcPostSubventionResponse).withStatus(201))
+                .willReturn(WireMock.okJson(dcPutSubventionResponse).withStatus(201))
         )
 
         val resourceLight = DCResource(

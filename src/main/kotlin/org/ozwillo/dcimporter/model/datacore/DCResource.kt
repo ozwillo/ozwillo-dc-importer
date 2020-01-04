@@ -40,6 +40,13 @@ class DCResource(
         return uri.substring(idSlashIndex + 1)
     }
 
+    @JsonIgnore
+    fun getVersion(): Int? =
+        if (values.contains("o:version"))
+            values["o:version"] as Int
+        else
+            null
+
     @JsonAnyGetter
     fun getValues(): Map<String, Any> {
         return values

@@ -26,7 +26,7 @@ class ProcessingStatHandlerTest(@Autowired private val restTemplate: TestRestTem
             model = "model",
             organization = "123456789",
             action = "create"
-        )).subscribe()
+        )).block()
     }
 
     @Test

@@ -107,7 +107,7 @@ class DatacoreHandler(
                 datacoreService.updateResource(project, type, it.t1, bearer)
             }
             .flatMap {
-                ok().build()
+                ok().bodyValue(it)
             }
             .onErrorResume {
                 throwableToResponse(it)
