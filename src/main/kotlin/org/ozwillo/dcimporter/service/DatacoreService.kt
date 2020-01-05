@@ -112,19 +112,20 @@ class DatacoreService(
 
     fun deleteResource(project: String, type: String, iri: String, bearer: String): Mono<Boolean> {
         val resourceUri = checkEncoding(dcResourceUri(type, iri))
-        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
         return getResourceFromIRI(project, type, iri, bearer)
             .flatMap {
                 WebClient.create().delete()
-                    .uri(encodedUri)
+                    .uri(resourceUri)
                     .header("X-Datacore-Project", project)
                     .header("Authorization", "Bearer $bearer")
                     .header("If-Match", it.getIntValue("o:version").toString())
-                    .exchange()
+                    .retrieve()
+                    .onStatus(HttpStatus::is4xxClientError, this::unwrapDatacoreError)
+                    .toBodilessEntity()
             }
             .map {
-                it.statusCode() == HttpStatus.NO_CONTENT
+                it.statusCode == HttpStatus.NO_CONTENT
             }
             .doOnSuccess {
                 sender.send(DCResource(resourceUri), project, type, BindingKeyAction.DELETE)
@@ -135,12 +136,11 @@ class DatacoreService(
         // If dcResourceIri already encoded return the decoded version to avoid % encoding to %25
         // e.g. "some iri" -> "some%20iri" -> "some%2520iri"
         val resourceUri = checkEncoding(dcResourceUri(type, iri))
-        val encodedUri = UriComponentsBuilder.fromUriString(resourceUri).build().encode().toUriString()
 
-        logger.debug("Checking existence of resource $encodedUri")
+        logger.debug("Checking existence of resource $resourceUri")
 
         return WebClient.create().get()
-            .uri(encodedUri)
+            .uri(resourceUri)
             .header("X-Datacore-Project", project)
             .header("Authorization", "Bearer $bearer")
             .exchange()
