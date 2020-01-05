@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.messaging.handler.annotation.Header
 import org.springframework.stereotype.Service
-import reactor.kotlin.core.publisher.toMono
 
 @Service
 class IoTReceiver(
@@ -115,10 +114,15 @@ class IoTReceiver(
             it.u.isNotEmpty() && it.u != "lat" && it.u != "lon"
         }
 
-        recordableMeasures.toMono()
-            .zipWith(ioTService.getOrCreateDevice(deviceId, measureLatitude, measureLongitude))
+        kernelService.getAccessToken()
+            .flatMap { token ->
+                ioTService.getOrCreateDevice(deviceId, measureLatitude, measureLongitude, token)
+                    .map {
+                        Triple(it, recordableMeasures, token)
+                    }
+            }
             .flatMapIterable {
-                it.t1.map { measure -> Pair(measure, it.t2) }
+                it.second.map { measure -> Triple(measure, it.first, it.third) }
             }.map {
                 val finalIri = "${deviceId.extractDeviceId()}/${it.first.n}/$measureTimeAsString"
                 val dcBusinessResource = DCResource(
@@ -134,18 +138,16 @@ class IoTReceiver(
 
                 val latitude = measureLatitude ?: it.second.getFloatValue("iotdevice:lat")
                 val longitude = measureLongitude ?: it.second.getFloatValue("iotdevice:lon")
-                latitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lat", it) }
-                longitude?.let { dcBusinessResource.setFloatValue("iotmeasure:lon", it) }
+                latitude?.run { dcBusinessResource.setFloatValue("iotmeasure:lat", this) }
+                longitude?.run { dcBusinessResource.setFloatValue("iotmeasure:lon", this) }
 
-                dcBusinessResource
-            }.map { dcBusinessResource ->
-                ioTSender.send(dcBusinessResource)
-                dcBusinessResource
-            }.zipWith<String> {
-                kernelService.getAccessToken()
+                Pair(dcBusinessResource, it.third)
             }.flatMap {
-                datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, it.t1, it.t2)
+                datacoreService.saveResource(datacoreIotProject, datacoreIotMeasure, it.first, it.second)
+            }.map {
+                ioTSender.send(it)
             }.doOnComplete {
+                logger.debug("Processing complete, sending ack")
                 channel.basicAck(tag, false)
             }.doOnError {
                 logger.error("Measure recording failed with error $it")

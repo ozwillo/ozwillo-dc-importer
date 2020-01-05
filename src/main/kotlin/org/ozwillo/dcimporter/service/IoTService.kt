@@ -10,7 +10,6 @@ import reactor.core.publisher.Mono
 @Service
 class IoTService(
     private val datacoreService: DatacoreService,
-    private val kernelService: KernelService,
     private val datacoreProperties: DatacoreProperties
 ) {
 
@@ -20,13 +19,11 @@ class IoTService(
     @Value("\${datacore.model.iotDevice}")
     private val datacoreIotDevice: String = "iot:device_0"
 
-    fun getOrCreateDevice(fullDeviceId: String, latitude: Float?, longitude: Float?): Mono<DCResource> {
+    fun getOrCreateDevice(fullDeviceId: String, latitude: Float?, longitude: Float?, bearer: String): Mono<DCResource> {
 
         val deviceIdAndName = fullDeviceId.parseDevice()
 
-        return kernelService.getAccessToken()
-            .flatMap { bearer ->
-                datacoreService.getResourceFromIRI(
+        return datacoreService.getResourceFromIRI(
                     project = datacoreIotProject,
                     iri = deviceIdAndName.first,
                     type = datacoreIotDevice,
@@ -44,6 +41,5 @@ class IoTService(
                     longitude?.let { dcDeviceResource.setFloatValue("iotdevice:lon", it) }
                     datacoreService.saveResource(datacoreIotProject, datacoreIotDevice, dcDeviceResource, bearer)
                 }
-            }
     }
 }
