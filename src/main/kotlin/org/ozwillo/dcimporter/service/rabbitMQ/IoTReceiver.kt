@@ -105,8 +105,7 @@ class IoTReceiver(
         }
 
         val deviceId = parsedMeasures.find { it.bn.isNotEmpty() }?.bn ?: routingKey.substringAfterLast(".")
-        val measureTime = parsedMeasures.find { it.bt.isNotEmpty() }?.bt?.substringBefore(".")?.toZonedDateTime() ?: ZonedDateTime.now()
-        val measureTimeAsString = measureTime.format(DateTimeFormatter.ISO_INSTANT)
+        val measureBaseTime = parsedMeasures.find { it.bt.isNotEmpty() }?.bt?.substringBefore(".")?.toZonedDateTime() ?: ZonedDateTime.now()
         val measureLatitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lat" }?.v
         val measureLongitude = parsedMeasures.find { it.u.isNotEmpty() && it.u == "lon" }?.v
 
@@ -124,7 +123,10 @@ class IoTReceiver(
             .flatMapIterable {
                 it.second.map { measure -> Triple(measure, it.first, it.third) }
             }.map {
-                val finalIri = "${deviceId.extractDeviceId()}/${it.first.n}/$measureTimeAsString"
+                val measureTime =
+                    if (it.first.t.isNotEmpty()) it.first.t.substringBefore(".").toZonedDateTime()
+                    else measureBaseTime
+                val finalIri = "${deviceId.extractDeviceId()}/${it.first.n}/${measureTime.format(DateTimeFormatter.ISO_INSTANT)}"
                 val dcBusinessResource = DCResource(
                     datacoreBaseUri = datacoreProperties.baseResourceUri(),
                     type = datacoreIotMeasure, iri = finalIri
@@ -163,6 +165,7 @@ class IoTReceiver(
         val vs: String = "",
         val v: Float = Float.MIN_VALUE,
         val u: String = "",
-        val n: String = ""
+        val n: String = "",
+        val t: String = ""
     )
 }
